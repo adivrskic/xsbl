@@ -26,7 +26,7 @@ import ReportButton from "../../components/dashboard/ReportButton";
 import ReportGenerator from "../../components/dashboard/ReportGenerator";
 import AccessibilitySimulator from "../../components/dashboard/AccessibilitySimulator";
 import SchedulePicker from "../../components/dashboard/SchedulePicker";
-import GitHubConnect from "../../components/dashboard/GitHubConnect";
+import GitHubConnect from "../../components/dashboard/GithubConnect";
 import BadgeEmbed from "../../components/dashboard/BadgeEmbed";
 
 /* ── CSV Export ── */
