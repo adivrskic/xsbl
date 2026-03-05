@@ -139,7 +139,6 @@ export default function LoginPage() {
             fontSize: "1.5rem",
             color: t.ink,
             textDecoration: "none",
-            display: "block",
             marginBottom: "2.5rem",
             display: "flex",
             alignItems: "center",
