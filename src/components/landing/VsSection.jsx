@@ -125,6 +125,7 @@ export default function VsSection() {
           <VsColumn items={vsOverlay.bad} isBad />
         </FadeIn>
         <div
+          className="vs-divider"
           style={{
             display: "flex",
             alignItems: "center",
@@ -147,6 +148,7 @@ export default function VsSection() {
           <VsColumn items={vsOverlay.good} isBad={false} />
         </FadeIn>
       </div>
+      <style>{`@media (max-width: 680px) { .vs-divider { display: none !important; } }`}</style>
     </Section>
   );
 }

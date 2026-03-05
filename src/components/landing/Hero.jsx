@@ -181,7 +181,7 @@ export default function Hero() {
                   }}
                 />
               )}
-              {scanning ? "Scanning" : "Scan free "}
+              {scanning ? "Scanning\u2026" : "Scan free \u2192"}
             </button>
           </div>
           <style>{`@keyframes xsbl-spin { to { transform: rotate(360deg); } }`}</style>
@@ -394,10 +394,17 @@ export default function Hero() {
               }}
             >
               <span>No signup required</span>
-              <span style={{ width: 1, height: 14, background: t.ink20 }} />
+              <span
+                className="hero-pipe"
+                style={{ width: 1, height: 14, background: t.ink20 }}
+              />
               <span>WCAG 2.2 AA + AAA</span>
-              <span style={{ width: 1, height: 14, background: t.ink20 }} />
+              <span
+                className="hero-pipe"
+                style={{ width: 1, height: 14, background: t.ink20 }}
+              />
               <span>Auto GitHub PRs</span>
+              <style>{`@media (max-width: 680px) { .hero-pipe { display: none !important; } }`}</style>
             </div>
           </FadeIn>
         )}
