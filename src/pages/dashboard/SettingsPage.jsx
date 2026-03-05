@@ -695,8 +695,8 @@ export default function SettingsPage() {
   const [members, setMembers] = useState([]);
   const [pendingInvites, setPendingInvites] = useState([]);
   const [loadingMembers, setLoadingMembers] = useState(true);
-  const [notifScans, setNotifScans] = useState(true);
-  const [notifIssues, setNotifIssues] = useState(true);
+  const [notifScans, setNotifScans] = useState(false);
+  const [notifIssues, setNotifIssues] = useState(false);
   const [notifWeekly, setNotifWeekly] = useState(false);
   const [notifSaving, setNotifSaving] = useState(false);
 
@@ -762,8 +762,8 @@ export default function SettingsPage() {
       .maybeSingle()
       .then(({ data }) => {
         if (data) {
-          setNotifScans(data.scan_complete ?? true);
-          setNotifIssues(data.critical_issues ?? true);
+          setNotifScans(data.scan_complete ?? false);
+          setNotifIssues(data.critical_issues ?? false);
           setNotifWeekly(data.weekly_digest ?? false);
         }
       });

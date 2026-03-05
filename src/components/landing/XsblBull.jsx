@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useTheme } from "../../context/ThemeContext";
 
-export default function XsblBull({ size = 40, style = {} }) {
+export default function XsblBull({ size = 36, style = {} }) {
   const { t } = useTheme();
   const [blink, setBlink] = useState(false);
 
@@ -17,7 +17,7 @@ export default function XsblBull({ size = 40, style = {} }) {
     };
   }, []);
 
-  var eyeR = blink ? 1.5 : 7;
+  var eyeR = blink ? 1.5 : 9;
 
   return (
     <svg
@@ -27,21 +27,27 @@ export default function XsblBull({ size = 40, style = {} }) {
       fill="none"
       style={{ display: "block", ...style }}
     >
-      {/* Left horn — wide base, sharp tip, slight curve */}
+      {/* LEFT HORN */}
       <path
-        d="M38 46 C34 40 26 32 24 30 C30 30 42 38 50 48 Z"
+        d="M52 58
+           C25 50 18 40 28 26
+           C28 38 65 36 45 48
+           Z"
         fill={t.accent}
-        opacity="0.75"
+        opacity="0.85"
       />
 
-      {/* Right horn — wide base, sharp tip, slight curve */}
+      {/* RIGHT HORN */}
       <path
-        d="M112 46 C116 40 124 32 126 30 C120 30 108 38 100 48 Z"
+        d="M98 58
+           C125 50 132 40 122 26
+           C122 38 85 36 105 48
+           Z"
         fill={t.accent}
-        opacity="0.75"
+        opacity="0.85"
       />
 
-      {/* Left ear — filled */}
+      {/* LEFT EAR */}
       <path
         d="M46 78C27 89 14 79 8 73C15 71 29 61 42 69Z"
         fill={t.cardBg}
@@ -54,7 +60,7 @@ export default function XsblBull({ size = 40, style = {} }) {
         opacity="0.6"
       />
 
-      {/* Right ear — filled */}
+      {/* RIGHT EAR */}
       <path
         d="M104 78C123 89 136 79 142 73C135 71 121 61 108 69Z"
         fill={t.cardBg}
@@ -67,67 +73,89 @@ export default function XsblBull({ size = 40, style = {} }) {
         opacity="0.6"
       />
 
-      {/* Head — filled */}
+      {/* HEAD (wider bull shape) */}
       <path
-        d="M115 74C115 87 102 93 102 98C102 118 102 128 90 131L87 135H63L60 131C48 128 48 118 48 98C48 93 35 87 35 74C35 45 53 41 75 41C97 41 115 45 115 74Z"
+        d="M118 72
+           C118 92 104 98 104 104
+           C104 124 96 132 88 134
+           L84 138
+           H66
+           L62 134
+           C54 132 46 124 46 104
+           C46 98 32 92 32 72
+           C32 45 55 38 75 38
+           C95 38 118 45 118 72Z"
         fill={t.cardBg}
         stroke={t.ink20}
         strokeWidth="2"
         strokeLinejoin="round"
       />
 
-      {/* Snout — filled lighter */}
+      {/* HEAVY BULL SNOUT */}
       <path
-        d="M95 115C95 123 91 127 86 127C82 127 79 124 76 124C73 124 69 127 65 127C60 127 55 123 55 115C55 107 62 103 66 103C70 103 69 105 76 105C82 105 81 103 85 103C89 103 95 107 95 115Z"
+        d="M98 115
+           C98 126 92 132 86 132
+           C82 132 78 129 75 129
+           C72 129 68 132 64 132
+           C58 132 52 126 52 115
+           C52 104 62 100 67 100
+           C72 100 70 103 75 103
+           C80 103 78 100 83 100
+           C88 100 98 104 98 115Z"
         fill={t.paper}
         stroke={t.ink08}
         strokeWidth="1.5"
       />
 
-      {/* Left eye */}
-      <circle
-        cx="57"
-        cy="73"
-        r={eyeR}
-        fill={t.ink}
-        style={{ transition: "r 0.1s ease" }}
-      />
-
-      {/* Right eye */}
-      <circle
-        cx="92"
-        cy="73"
-        r={eyeR}
-        fill={t.ink}
-        style={{ transition: "r 0.1s ease" }}
-      />
-
-      {/* Eye shine */}
-      {!blink && (
-        <circle cx="59.5" cy="70" r="3" fill={t.cardBg} opacity="0.85" />
-      )}
-      {!blink && (
-        <circle cx="94.5" cy="70" r="3" fill={t.cardBg} opacity="0.85" />
-      )}
-
-      {/* Left nostril */}
-      <ellipse cx="66" cy="116" rx="2.5" ry="1.5" fill={t.ink} opacity="0.3" />
-
-      {/* Right nostril */}
-      <ellipse cx="84" cy="116" rx="2.5" ry="1.5" fill={t.ink} opacity="0.3" />
-
-      {/* Mouth — happy curve */}
+      {/* NOSE RING */}
       <path
-        d="M68 122 Q75 126 82 122"
+        d="M70 120
+           A8 8 0 0 0 80 120"
+        stroke="#D4A21A"
+        strokeWidth="3"
+        strokeLinecap="round"
+      />
+
+      {/* EYES */}
+      <circle
+        cx="60"
+        cy="72"
+        r={eyeR}
+        fill={t.ink}
+        style={{ transition: "r 0.1s ease" }}
+      />
+      <circle
+        cx="90"
+        cy="72"
+        r={eyeR}
+        fill={t.ink}
+        style={{ transition: "r 0.1s ease" }}
+      />
+
+      {/* EYE SHINE */}
+      {!blink && (
+        <circle cx="62" cy="69" r="5" fill={t.cardBg} opacity="0.85" />
+      )}
+      {!blink && (
+        <circle cx="92" cy="69" r="6" fill={t.cardBg} opacity="0.85" />
+      )}
+
+      {/* NOSTRILS */}
+      <ellipse cx="66" cy="116" rx="3" ry="2" fill={t.ink} opacity="0.35" />
+      <ellipse cx="84" cy="116" rx="3" ry="2" fill={t.ink} opacity="0.35" />
+
+      {/* SMILE */}
+      <path
+        d="M69 125 Q75 129 81 125"
         stroke={t.ink20}
         strokeWidth="1.5"
         strokeLinecap="round"
         fill="none"
       />
 
-      {/* Cheek blush */}
-      <circle cx="44" cy="80" r="5" fill={t.accent} opacity="0.06" />
-      <circle cx="106" cy="80" r="5" fill={t.accent} opacity="0.06" />
+      {/* CHEEKS */}
+      <circle cx="44" cy="80" r="6" fill={t.accent} opacity="0.05" />
+      <circle cx="106" cy="80" r="6" fill={t.accent} opacity="0.05" />
     </svg>
   );
 }

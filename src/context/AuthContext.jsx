@@ -152,6 +152,16 @@ export function AuthProvider({ children }) {
     });
   };
 
+  const resetPassword = function (email) {
+    return supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: window.location.origin + "/reset-password",
+    });
+  };
+
+  const updatePassword = function (newPassword) {
+    return supabase.auth.updateUser({ password: newPassword });
+  };
+
   const signInWithOAuth = function (provider) {
     return supabase.auth.signInWithOAuth({
       provider: provider,
@@ -224,6 +234,8 @@ export function AuthProvider({ children }) {
         signIn: signIn,
         signInWithOAuth: signInWithOAuth,
         signOut: signOut,
+        resetPassword: resetPassword,
+        updatePassword: updatePassword,
         refreshOrg: refreshOrg,
         refreshUsage: refreshUsage,
         refreshSites: refreshSites,

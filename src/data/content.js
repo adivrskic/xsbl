@@ -214,6 +214,6 @@ export const navLinks = [
 export const footerLinks = [
   { label: "Docs", href: "/docs" },
   { label: "Blog", href: "/blog" },
-  { label: "GitHub", href: "https://github.com/xsbl" },
+  { label: "GitHub", href: "https://github.com/adivrskic/xsbl" },
   { label: "Contact", href: "/contact" },
 ];

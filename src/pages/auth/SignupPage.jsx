@@ -3,9 +3,10 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { useTheme } from "../../context/ThemeContext";
 import XsblBull from "../../components/landing/XsblBull";
+import { Sun, Moon } from "lucide-react";
 
 export default function SignupPage() {
-  const { t } = useTheme();
+  const { t, dark, toggle } = useTheme();
   const { signUp, signInWithOAuth } = useAuth();
   const navigate = useNavigate();
 
@@ -91,8 +92,39 @@ export default function SignupPage() {
           justifyContent: "center",
           background: t.paper,
           padding: "2rem",
+          position: "relative",
         }}
       >
+        <button
+          onClick={toggle}
+          title="Toggle theme"
+          style={{
+            position: "absolute",
+            top: "1.5rem",
+            right: "1.5rem",
+            background: t.ink08,
+            border: "none",
+            borderRadius: 8,
+            padding: "0.45rem 0.55rem",
+            cursor: "pointer",
+            color: t.ink,
+            transition: "background 0.2s",
+            display: "flex",
+            alignItems: "center",
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = t.ink20;
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = t.ink08;
+          }}
+        >
+          {dark ? (
+            <Sun size={16} strokeWidth={2} />
+          ) : (
+            <Moon size={16} strokeWidth={2} />
+          )}
+        </button>
         <div style={{ width: "100%", maxWidth: 400, textAlign: "center" }}>
           <div
             style={{
@@ -157,8 +189,39 @@ export default function SignupPage() {
         justifyContent: "center",
         background: t.paper,
         padding: "2rem",
+        position: "relative",
       }}
     >
+      <button
+        onClick={toggle}
+        title="Toggle theme"
+        style={{
+          position: "absolute",
+          top: "1.5rem",
+          right: "1.5rem",
+          background: t.ink08,
+          border: "none",
+          borderRadius: 8,
+          padding: "0.45rem 0.55rem",
+          cursor: "pointer",
+          color: t.ink,
+          transition: "background 0.2s",
+          display: "flex",
+          alignItems: "center",
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.background = t.ink20;
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.background = t.ink08;
+        }}
+      >
+        {dark ? (
+          <Sun size={16} strokeWidth={2} />
+        ) : (
+          <Moon size={16} strokeWidth={2} />
+        )}
+      </button>
       <div style={{ width: "100%", maxWidth: 400 }}>
         <Link
           to="/"

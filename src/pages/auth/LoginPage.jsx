@@ -36,7 +36,7 @@ function GoogleIcon() {
 
 export default function LoginPage() {
   const { t } = useTheme();
-  const { signIn, signInWithOAuth } = useAuth();
+  const { signIn, signInWithOAuth, resetPassword } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const from = location.state?.from?.pathname || "/dashboard";
@@ -45,6 +45,8 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [forgotMode, setForgotMode] = useState(false);
+  const [resetSent, setResetSent] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -55,6 +57,24 @@ export default function LoginPage() {
       setError(err.message);
       setLoading(false);
     } else navigate(from, { replace: true });
+  };
+
+  const handleForgotSubmit = async (e) => {
+    e.preventDefault();
+    setError(null);
+    if (!email.trim()) {
+      setError("Please enter your email address.");
+      return;
+    }
+    setLoading(true);
+    const { error: err } = await resetPassword(email);
+    if (err) {
+      setError(err.message);
+      setLoading(false);
+    } else {
+      setResetSent(true);
+      setLoading(false);
+    }
   };
 
   const handleOAuth = async (provider) => {
@@ -197,7 +217,7 @@ export default function LoginPage() {
         </div>
 
         <form
-          onSubmit={handleSubmit}
+          onSubmit={forgotMode ? handleForgotSubmit : handleSubmit}
           style={{ display: "flex", flexDirection: "column", gap: "0.8rem" }}
         >
           <div>
@@ -225,55 +245,126 @@ export default function LoginPage() {
               onBlur={(e) => (e.target.style.borderColor = t.ink20)}
             />
           </div>
-          <div>
-            <label
-              htmlFor="login-pw"
+          {!forgotMode && (
+            <div>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "baseline",
+                  marginBottom: "0.35rem",
+                }}
+              >
+                <label
+                  htmlFor="login-pw"
+                  style={{
+                    fontSize: "0.78rem",
+                    fontWeight: 500,
+                    color: t.ink,
+                  }}
+                >
+                  Password
+                </label>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setForgotMode(true);
+                    setError(null);
+                    setResetSent(false);
+                  }}
+                  style={{
+                    background: "none",
+                    border: "none",
+                    color: t.accent,
+                    fontSize: "0.74rem",
+                    fontWeight: 500,
+                    cursor: "pointer",
+                    padding: 0,
+                    fontFamily: "var(--body)",
+                  }}
+                >
+                  Forgot password?
+                </button>
+              </div>
+              <input
+                id="login-pw"
+                type="password"
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Your password"
+                style={inp}
+                onFocus={(e) => (e.target.style.borderColor = t.accent)}
+                onBlur={(e) => (e.target.style.borderColor = t.ink20)}
+              />
+            </div>
+          )}
+          {forgotMode && resetSent && (
+            <div
               style={{
-                display: "block",
-                fontSize: "0.78rem",
-                fontWeight: 500,
-                color: t.ink,
-                marginBottom: "0.35rem",
+                padding: "0.8rem 1rem",
+                borderRadius: 8,
+                background: `${t.green}10`,
+                border: `1px solid ${t.green}30`,
               }}
             >
-              Password
-            </label>
-            <input
-              id="login-pw"
-              type="password"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Your password"
-              style={inp}
-              onFocus={(e) => (e.target.style.borderColor = t.accent)}
-              onBlur={(e) => (e.target.style.borderColor = t.ink20)}
-            />
-          </div>
+              <p
+                style={{
+                  fontSize: "0.84rem",
+                  color: t.green,
+                  margin: 0,
+                  fontWeight: 500,
+                  marginBottom: "0.3rem",
+                }}
+              >
+                Check your inbox
+              </p>
+              <p
+                style={{
+                  fontSize: "0.78rem",
+                  color: t.ink50,
+                  margin: 0,
+                  lineHeight: 1.5,
+                }}
+              >
+                We sent a password reset link to{" "}
+                <strong style={{ color: t.ink }}>{email}</strong>. Click the
+                link in the email to set a new password.
+              </p>
+            </div>
+          )}
           {error && (
             <p style={{ color: t.red, fontSize: "0.82rem", margin: 0 }}>
               {error}
             </p>
           )}
-          <button
-            type="submit"
-            disabled={loading}
-            style={{
-              marginTop: "0.4rem",
-              padding: "0.7rem",
-              borderRadius: 8,
-              border: "none",
-              background: t.accent,
-              color: "white",
-              fontFamily: "var(--body)",
-              fontSize: "0.9rem",
-              fontWeight: 600,
-              cursor: loading ? "not-allowed" : "pointer",
-              opacity: loading ? 0.6 : 1,
-            }}
-          >
-            {loading ? "Signing in\u2026" : "Sign in"}
-          </button>
+          {!(forgotMode && resetSent) && (
+            <button
+              type="submit"
+              disabled={loading}
+              style={{
+                marginTop: "0.4rem",
+                padding: "0.7rem",
+                borderRadius: 8,
+                border: "none",
+                background: t.accent,
+                color: "white",
+                fontFamily: "var(--body)",
+                fontSize: "0.9rem",
+                fontWeight: 600,
+                cursor: loading ? "not-allowed" : "pointer",
+                opacity: loading ? 0.6 : 1,
+              }}
+            >
+              {loading
+                ? forgotMode
+                  ? "Sending…"
+                  : "Signing in…"
+                : forgotMode
+                ? "Send reset link"
+                : "Sign in"}
+            </button>
+          )}
         </form>
 
         <p
@@ -284,13 +375,45 @@ export default function LoginPage() {
             textAlign: "center",
           }}
         >
-          Don't have an account?{" "}
-          <Link
-            to="/signup"
-            style={{ color: t.accent, textDecoration: "none", fontWeight: 600 }}
-          >
-            Sign up
-          </Link>
+          {forgotMode ? (
+            <>
+              Remember your password?{" "}
+              <button
+                onClick={() => {
+                  setForgotMode(false);
+                  setError(null);
+                  setResetSent(false);
+                }}
+                style={{
+                  background: "none",
+                  border: "none",
+                  color: t.accent,
+                  textDecoration: "none",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  padding: 0,
+                  fontSize: "0.85rem",
+                  fontFamily: "var(--body)",
+                }}
+              >
+                Back to sign in
+              </button>
+            </>
+          ) : (
+            <>
+              Don't have an account?{" "}
+              <Link
+                to="/signup"
+                style={{
+                  color: t.accent,
+                  textDecoration: "none",
+                  fontWeight: 600,
+                }}
+              >
+                Sign up
+              </Link>
+            </>
+          )}
         </p>
       </div>
     </div>

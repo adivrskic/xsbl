@@ -9,6 +9,7 @@ import { ConfirmProvider } from "./components/ui/ConfirmModal";
 import AuthGuard from "./components/auth/AuthGuard";
 import LoginPage from "./pages/auth/LoginPage";
 import SignupPage from "./pages/auth/SignupPage";
+import ResetPasswordPage from "./pages/auth/ResetPasswordPage";
 
 // Landing page
 import Nav from "./components/landing/Nav";
@@ -86,6 +87,7 @@ export default function App() {
               <Route path="/" element={<LandingPage />} />
               <Route path="/login" element={<LoginPage />} />
               <Route path="/signup" element={<SignupPage />} />
+              <Route path="/reset-password" element={<ResetPasswordPage />} />
               <Route
                 path="/docs"
                 element={

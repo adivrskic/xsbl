@@ -639,6 +639,20 @@ export default function OnboardingPage() {
       .from("organizations")
       .update({ onboarding_complete: true })
       .eq("id", org.id);
+
+    // Initialize notification preferences as all off
+    if (user) {
+      await supabase.from("notification_prefs").upsert(
+        {
+          user_id: user.id,
+          scan_complete: false,
+          critical_issues: false,
+          weekly_digest: false,
+        },
+        { onConflict: "user_id" }
+      );
+    }
+
     await refreshOrg?.();
     navigate("/dashboard", { replace: true });
   };

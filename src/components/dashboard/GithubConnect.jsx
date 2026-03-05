@@ -216,7 +216,7 @@ export default function GitHubConnect({ site, onUpdate }) {
           type="password"
           value={ghToken}
           onChange={(e) => setGhToken(e.target.value)}
-          onFocus={() => {
+          onFocus={(e) => {
             if (ghToken === "••••••••") {
               e.target.style.borderColor = t.accent;
               setGhToken("");
