@@ -121,7 +121,7 @@ export default function CtaSection() {
             e.currentTarget.style.color = "white";
           }}
         >
-          Start scanning free →
+          Start scanning free
         </a>
         <a
           href="/login"

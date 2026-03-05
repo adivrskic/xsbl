@@ -297,7 +297,7 @@ export default function BlogArticlePage() {
               fontWeight: 600,
             }}
           >
-            Start scanning free →
+            Start scanning free
           </Link>
         </div>
 

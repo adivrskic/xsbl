@@ -181,7 +181,7 @@ export default function Hero() {
                   }}
                 />
               )}
-              {scanning ? "Scanning\u2026" : "Scan free \u2192"}
+              {scanning ? "Scanning" : "Scan free "}
             </button>
           </div>
           <style>{`@keyframes xsbl-spin { to { transform: rotate(360deg); } }`}</style>
