@@ -1,0 +1,67 @@
+# .github/workflows/xsbl-a11y.yml
+# Scans your site for accessibility issues after every deploy.
+# Add XSBL_API_KEY and XSBL_SITE_ID as repository secrets.
+
+name: Accessibility Scan
+
+on:
+  deployment_status:
+    types: [completed]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  scan:
+    if: github.event_name != 'deployment_status' || github.event.deployment_status.state == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger xsbl scan
+        id: scan
+        run: |
+          RESPONSE=$(curl -s -w "\n%{http_code}" \
+            -X POST "${{ vars.XSBL_API_URL || 'https://vvfrbhvrhhuooopnnnlw.supabase.co' }}/functions/v1/scan-site" \
+            -H "Authorization: Bearer ${{ secrets.XSBL_API_KEY }}" \
+            -H "Content-Type: application/json" \
+            -d '{"site_id": "${{ secrets.XSBL_SITE_ID }}"}')
+
+          HTTP_CODE=$(echo "$RESPONSE" | tail -1)
+          BODY=$(echo "$RESPONSE" | head -n -1)
+
+          echo "status=$HTTP_CODE" >> $GITHUB_OUTPUT
+          echo "body=$BODY" >> $GITHUB_OUTPUT
+
+          SCORE=$(echo "$BODY" | jq -r '.score // "N/A"')
+          ISSUES=$(echo "$BODY" | jq -r '.issues_found // 0')
+          PAGES=$(echo "$BODY" | jq -r '.pages_scanned // 0')
+
+          echo "score=$SCORE" >> $GITHUB_OUTPUT
+          echo "issues=$ISSUES" >> $GITHUB_OUTPUT
+          echo "pages=$PAGES" >> $GITHUB_OUTPUT
+
+          echo "### ♿ Accessibility Scan Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Metric | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|--------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Score | **$SCORE** |" >> $GITHUB_STEP_SUMMARY
+          echo "| Issues | $ISSUES |" >> $GITHUB_STEP_SUMMARY
+          echo "| Pages | $PAGES |" >> $GITHUB_STEP_SUMMARY
+
+          if [ "$HTTP_CODE" != "200" ]; then
+            echo "::error::Scan failed with status $HTTP_CODE"
+            exit 1
+          fi
+
+      - name: Check score threshold
+        if: steps.scan.outputs.score != 'N/A'
+        run: |
+          SCORE=${{ steps.scan.outputs.score }}
+          THRESHOLD=${{ vars.XSBL_SCORE_THRESHOLD || 70 }}
+
+          if (( $(echo "$SCORE < $THRESHOLD" | bc -l) )); then
+            echo "::warning::Accessibility score ($SCORE) is below threshold ($THRESHOLD)"
+            # Uncomment to fail the build:
+            # exit 1
+          else
+            echo "✅ Score $SCORE meets threshold $THRESHOLD"
+          fi

@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr" prefix="og: https://ogp.me/ns#">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+
+    <!-- ── Primary Meta Tags ── -->
+    <title>xsbl — Web Accessibility Scanner & WCAG 2.2 Compliance Tool</title>
+    <meta
+      name="title"
+      content="xsbl — Web Accessibility Scanner & WCAG 2.2 Compliance Tool"
+    />
+    <meta
+      name="description"
+      content="xsbl scans your website for WCAG 2.2 AA & AAA accessibility violations and generates AI-powered fix suggestions for your actual code. Continuous monitoring, score tracking, GitHub PR integration, and compliance reports. Not an overlay — real fixes."
+    />
+    <meta
+      name="keywords"
+      content="web accessibility, WCAG 2.2, accessibility scanner, ADA compliance, Section 508, accessibility testing, accessibility audit, a11y, VPAT, accessibility monitoring, screen reader testing, alt text generator, ARIA validator, contrast checker, keyboard navigation testing, accessibility remediation, inclusive design, digital accessibility, accessibility compliance tool, automated accessibility testing, AI accessibility fixes, web accessibility checker, accessibility score, accessibility dashboard, WCAG AA, WCAG AAA, axe-core, accessibility CI/CD, accessibility GitHub integration"
+    />
+    <meta name="author" content="xsbl" />
+    <meta
+      name="robots"
+      content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"
+    />
+    <meta name="googlebot" content="index, follow" />
+    <meta name="bingbot" content="index, follow" />
+    <meta
+      name="theme-color"
+      content="#0e0e11"
+      media="(prefers-color-scheme: dark)"
+    />
+    <meta
+      name="theme-color"
+      content="#f6f1eb"
+      media="(prefers-color-scheme: light)"
+    />
+    <meta name="color-scheme" content="dark light" />
+    <meta name="format-detection" content="telephone=no" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta
+      name="apple-mobile-web-app-status-bar-style"
+      content="black-translucent"
+    />
+    <meta name="apple-mobile-web-app-title" content="xsbl" />
+    <meta name="application-name" content="xsbl" />
+    <meta name="msapplication-TileColor" content="#4338f0" />
+
+    <!-- ── Canonical URL ── -->
+    <link rel="canonical" href="https://xsbl.dev/" />
+
+    <!-- ── Favicon & Icons ── -->
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+
+    <!-- ── Open Graph / Facebook ── -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://xsbl.dev/" />
+    <meta property="og:site_name" content="xsbl" />
+    <meta property="og:locale" content="en_US" />
+    <meta
+      property="og:title"
+      content="xsbl — Web Accessibility Scanner & WCAG 2.2 Compliance Tool"
+    />
+    <meta
+      property="og:description"
+      content="Scan your website for WCAG 2.2 accessibility violations and get AI-powered code fixes. Continuous monitoring, GitHub PR integration, compliance reports. Not an overlay — real fixes for real code."
+    />
+    <meta property="og:image" content="https://xsbl.dev/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta
+      property="og:image:alt"
+      content="xsbl — make your web accessible. AI-powered WCAG 2.2 accessibility scanner with fix suggestions."
+    />
+
+    <!-- ── Twitter Card ── -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:url" content="https://xsbl.dev/" />
+    <meta
+      name="twitter:title"
+      content="xsbl — Web Accessibility Scanner & WCAG 2.2 Compliance Tool"
+    />
+    <meta
+      name="twitter:description"
+      content="Scan your website for WCAG 2.2 accessibility violations and get AI-powered code fixes. Not an overlay — real fixes."
+    />
+    <meta name="twitter:image" content="https://xsbl.dev/og-image.png" />
+    <meta name="twitter:image:alt" content="xsbl — make your web accessible" />
+    <meta name="twitter:site" content="@xsbl_dev" />
+    <meta name="twitter:creator" content="@xsbl_dev" />
+
+    <!-- ── Structured Data: Organization ── -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "Organization",
+        "name": "xsbl",
+        "url": "https://xsbl.dev",
+        "logo": "https://xsbl.dev/logo.png",
+        "description": "AI-powered web accessibility scanner and WCAG 2.2 compliance tool.",
+        "sameAs": ["https://github.com/xsbl", "https://twitter.com/xsbl_dev"],
+        "contactPoint": {
+          "@type": "ContactPoint",
+          "url": "https://xsbl.dev/contact",
+          "contactType": "customer support"
+        }
+      }
+    </script>
+
+    <!-- ── Structured Data: SoftwareApplication ── -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "xsbl",
+        "url": "https://xsbl.dev",
+        "applicationCategory": "DeveloperApplication",
+        "operatingSystem": "Web",
+        "description": "xsbl scans your website for WCAG 2.2 AA & AAA accessibility violations and generates AI-powered fix suggestions specific to your markup. Features include continuous monitoring, score tracking, GitHub PR integration, compliance reports, VPAT generation, and AI-generated alt text.",
+        "offers": [
+          {
+            "@type": "Offer",
+            "price": "0",
+            "priceCurrency": "USD",
+            "name": "Free",
+            "description": "1 site, 3 scans/month, basic issue list, WCAG 2.2 AA scanning"
+          },
+          {
+            "@type": "Offer",
+            "price": "19",
+            "priceCurrency": "USD",
+            "priceSpecification": {
+              "@type": "UnitPriceSpecification",
+              "billingDuration": "P1M"
+            },
+            "name": "Starter",
+            "description": "1 site, 10 scans/month, AI fix suggestions, accessibility score badge"
+          },
+          {
+            "@type": "Offer",
+            "price": "69",
+            "priceCurrency": "USD",
+            "priceSpecification": {
+              "@type": "UnitPriceSpecification",
+              "billingDuration": "P1M"
+            },
+            "name": "Pro",
+            "description": "Unlimited sites, 100 scans/month, scheduled scans, AI fixes & alt text, per-page breakdown, score trends, Slack & email alerts, PDF compliance reports, WCAG 2.2 AA + AAA"
+          },
+          {
+            "@type": "Offer",
+            "price": "249",
+            "priceCurrency": "USD",
+            "priceSpecification": {
+              "@type": "UnitPriceSpecification",
+              "billingDuration": "P1M"
+            },
+            "name": "Agency",
+            "description": "Everything in Pro plus multi-org dashboard, white-label reports, VPAT generation, compliance audit log, SOC 2/ISO evidence export, API access, dedicated account manager"
+          }
+        ],
+        "featureList": [
+          "WCAG 2.2 AA & AAA scanning",
+          "AI-powered fix suggestions",
+          "Real browser DOM rendering",
+          "Continuous accessibility monitoring",
+          "Accessibility score tracking",
+          "Per-page breakdown",
+          "AI-generated alt text",
+          "Slack & email alerts",
+          "GitHub PR integration",
+          "PDF compliance reports",
+          "VPAT document generation",
+          "SOC 2 / ISO evidence export",
+          "White-label reports",
+          "Accessibility simulation",
+          "Bulk fix via pull request"
+        ],
+        "screenshot": "https://xsbl.dev/og-image.png"
+      }
+    </script>
+
+    <!-- ── Structured Data: WebSite (enables Sitelinks Search Box) ── -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        "name": "xsbl",
+        "url": "https://xsbl.dev",
+        "description": "AI-powered web accessibility scanner. Scan for WCAG 2.2 violations and get code fixes.",
+        "potentialAction": {
+          "@type": "SearchAction",
+          "target": "https://xsbl.dev/docs?q={search_term_string}",
+          "query-input": "required name=search_term_string"
+        }
+      }
+    </script>
+
+    <!-- ── Structured Data: FAQPage ── -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        "mainEntity": [
+          {
+            "@type": "Question",
+            "name": "What is xsbl?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "xsbl is an AI-powered web accessibility scanner that checks your website against WCAG 2.2 AA and AAA criteria. It scans your rendered pages in a real browser, identifies violations like missing alt text, contrast failures, broken ARIA, and keyboard traps, and generates specific code fix suggestions for your actual markup."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "How is xsbl different from accessibility overlays?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Unlike overlays that inject JavaScript and only detect about 30% of WCAG issues, xsbl scans your actual rendered DOM in a real Chromium browser. It provides real code fixes instead of cosmetic patches, works with screen readers rather than against them, and produces exportable compliance evidence accepted by courts and auditors."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Does xsbl support WCAG 2.2?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Yes. xsbl covers 90+ rules across WCAG 2.2 AA and AAA criteria, including contrast, alt text, ARIA, keyboard navigation, forms, headings, landmarks, and more. Each issue is mapped to the specific WCAG success criterion it violates."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Can xsbl create GitHub pull requests with accessibility fixes?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Yes. Connect your GitHub repository and xsbl can generate pull requests with AI-suggested code fixes for accessibility issues. You can fix individual issues or use bulk fix to address multiple issues in a single PR."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "How much does xsbl cost?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "xsbl offers a free tier with 1 site and 3 scans per month. Paid plans start at $19/month for Starter, $69/month for Pro with unlimited sites and 100 scans, and $249/month for Agency with white-label reports, VPAT generation, and dedicated support."
+            }
+          }
+        ]
+      }
+    </script>
+
+    <!-- ── Structured Data: BreadcrumbList ── -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+          {
+            "@type": "ListItem",
+            "position": 1,
+            "name": "Home",
+            "item": "https://xsbl.dev/"
+          },
+          {
+            "@type": "ListItem",
+            "position": 2,
+            "name": "Docs",
+            "item": "https://xsbl.dev/docs"
+          },
+          {
+            "@type": "ListItem",
+            "position": 3,
+            "name": "Blog",
+            "item": "https://xsbl.dev/blog"
+          },
+          {
+            "@type": "ListItem",
+            "position": 4,
+            "name": "Pricing",
+            "item": "https://xsbl.dev/#pricing"
+          },
+          {
+            "@type": "ListItem",
+            "position": 5,
+            "name": "Contact",
+            "item": "https://xsbl.dev/contact"
+          }
+        ]
+      }
+    </script>
+
+    <!-- ── Preconnect to key origins ── -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+
+    <!-- ── DNS Prefetch ── -->
+    <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
+    <link rel="dns-prefetch" href="https://fonts.gstatic.com" />
+  </head>
+  <body>
+    <!-- ── Accessible skip link (hidden visually, available to screen readers) ── -->
+    <a
+      href="#root"
+      style="
+        position: absolute;
+        left: -9999px;
+        top: auto;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+      "
+      >Skip to main content</a
+    >
+
+    <div id="root"></div>
+
+    <!-- ── Noscript fallback for SEO crawlers that don't run JS ── -->
+    <noscript>
+      <div
+        style="
+          max-width: 800px;
+          margin: 4rem auto;
+          padding: 2rem;
+          font-family: system-ui, sans-serif;
+          line-height: 1.7;
+        "
+      >
+        <h1>xsbl — Make Your Web Accessible</h1>
+        <p>
+          xsbl is an AI-powered web accessibility scanner that checks your
+          website against WCAG 2.2 AA and AAA criteria. Scan your rendered pages
+          in a real browser, get detailed issue breakdowns, and receive
+          AI-generated code fix suggestions specific to your markup.
+        </p>
+        <h2>Features</h2>
+        <p>
+          Full-page rendering in a real Chromium browser. 90+ rules covering
+          WCAG 2.2 AA and AAA: contrast, alt text, ARIA, keyboard navigation,
+          forms, headings, and landmarks. AI fix suggestions with contextual
+          code snippets. Continuous monitoring with daily or weekly scheduled
+          scans. Accessibility score tracking over time with per-page breakdown.
+          AI-generated alt text for images. Slack and email alerts. GitHub pull
+          request integration for one-click fixes. PDF compliance reports, VPAT
+          generation, audit logs, and SOC 2 / ISO evidence export.
+        </p>
+        <h2>Why Not Overlays?</h2>
+        <p>
+          Accessibility overlays inject JavaScript and only detect about 30% of
+          WCAG issues. They break screen readers and assistive technology.
+          Courts reject overlays as compliance evidence, and the FTC fined the
+          market leader $1M for misleading claims. xsbl scans your actual code
+          and provides real fixes.
+        </p>
+        <h2>How It Works</h2>
+        <p>
+          1. Enter your URL — we scan the rendered page in a real browser. No
+          install needed. 2. See every issue — violations organized by severity
+          and WCAG criterion. 3. Get fix suggestions — AI-generated code fixes
+          specific to your markup.
+        </p>
+        <h2>Pricing</h2>
+        <p>
+          Free: 1 site, 3 scans/month. Starter: $19/month. Pro: $69/month with
+          unlimited sites. Agency: $249/month with white-label reports and VPAT
+          generation.
+        </p>
+        <p>
+          <a href="/docs">Documentation</a> | <a href="/blog">Blog</a> |
+          <a href="/contact">Contact</a> |
+          <a href="https://github.com/xsbl">GitHub</a>
+        </p>
+      </div>
+    </noscript>
+
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>

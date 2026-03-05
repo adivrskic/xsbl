@@ -1,0 +1,77 @@
+@import url("https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Outfit:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap");
+
+:root {
+  --serif: "Libre Baskerville", Georgia, serif;
+  --body: "Outfit", sans-serif;
+  --mono: "IBM Plex Mono", monospace;
+}
+
+*,
+*::before,
+*::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+  font-size: 16px;
+}
+
+body {
+  font-family: var(--body);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  line-height: 1.7;
+}
+
+::selection {
+  background: #4338f0;
+  color: white;
+}
+
+/* ── KEYFRAMES ── */
+@keyframes scrollLeft {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-33.33%);
+  }
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.3;
+  }
+}
+
+/* ── RESPONSIVE HELPERS ── */
+@media (max-width: 768px) {
+  .hide-mobile {
+    display: none !important;
+  }
+  .grid-1-mobile {
+    grid-template-columns: 1fr !important;
+  }
+  .grid-2-mobile {
+    grid-template-columns: 1fr 1fr !important;
+  }
+  .hero-layout {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+@media (max-width: 1024px) {
+  .hero-layout {
+    grid-template-columns: 1fr !important;
+  }
+  .grid-2-tablet {
+    grid-template-columns: 1fr 1fr !important;
+  }
+}
