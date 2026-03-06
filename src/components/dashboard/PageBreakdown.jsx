@@ -6,6 +6,7 @@ import {
   ChevronDown,
   ChevronRight,
 } from "lucide-react";
+import "../../styles/dashboard.css";
 
 export default function PageBreakdown({ scan, issues, onFilterByPage }) {
   const { t } = useTheme();
@@ -19,54 +20,17 @@ export default function PageBreakdown({ scan, issues, onFilterByPage }) {
   );
 
   return (
-    <div
-      style={{
-        borderRadius: 10,
-        border: `1px solid ${t.ink08}`,
-        background: t.cardBg,
-        overflow: "hidden",
-        marginBottom: "1.5rem",
-      }}
-    >
+    <div className="page-breakdown">
       <button
         onClick={() => setExpanded(!expanded)}
-        style={{
-          width: "100%",
-          padding: "0.9rem 1.1rem",
-          background: "none",
-          border: "none",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          cursor: "pointer",
-          color: t.ink,
-        }}
+        className="page-breakdown__toggle"
       >
         <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
           {expanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-          <span style={{ fontSize: "0.88rem", fontWeight: 600 }}>
-            Per-page breakdown
-          </span>
-          <span
-            style={{
-              fontFamily: "var(--mono)",
-              fontSize: "0.62rem",
-              color: t.ink50,
-              background: t.ink04,
-              padding: "0.12rem 0.4rem",
-              borderRadius: 3,
-            }}
-          >
-            {pages.length} pages
-          </span>
+          <span className="page-breakdown__title">Per-page breakdown</span>
+          <span className="page-breakdown__count">{pages.length} pages</span>
         </div>
-        <span
-          style={{
-            fontFamily: "var(--mono)",
-            fontSize: "0.68rem",
-            color: t.ink50,
-          }}
-        >
+        <span className="page-breakdown__method">
           {scan.summary_json?.crawl_method === "sitemap"
             ? "via sitemap"
             : "via link discovery"}
@@ -74,7 +38,7 @@ export default function PageBreakdown({ scan, issues, onFilterByPage }) {
       </button>
 
       {expanded && (
-        <div style={{ borderTop: `1px solid ${t.ink08}` }}>
+        <div style={{ borderTop: "1px solid var(--ink08)" }}>
           {sortedPages.map((page, i) => {
             const pageIssueCount = issues.filter(
               (iss) => iss.page_url === page.url
@@ -92,55 +56,20 @@ export default function PageBreakdown({ scan, issues, onFilterByPage }) {
               <div
                 key={i}
                 onClick={() => onFilterByPage?.(page.url)}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  padding: "0.65rem 1.1rem",
-                  borderBottom: `1px solid ${t.ink04}`,
-                  cursor: "pointer",
-                  transition: "background 0.15s",
-                }}
-                onMouseEnter={(e) =>
-                  (e.currentTarget.style.background = t.ink04)
-                }
-                onMouseLeave={(e) =>
-                  (e.currentTarget.style.background = "transparent")
-                }
+                className="page-breakdown__row"
               >
                 <div style={{ flex: 1, minWidth: 0, marginRight: "0.8rem" }}>
-                  <div
-                    style={{
-                      fontSize: "0.82rem",
-                      color: t.ink,
-                      fontWeight: 500,
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                      whiteSpace: "nowrap",
-                    }}
-                  >
+                  <div className="page-breakdown__page-title">
                     {page.title || page.url}
                   </div>
-                  <div
-                    style={{
-                      fontFamily: "var(--mono)",
-                      fontSize: "0.65rem",
-                      color: t.ink50,
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                      whiteSpace: "nowrap",
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "0.3rem",
-                    }}
-                  >
+                  <div className="page-breakdown__page-path">
                     {new URL(page.url).pathname}
                     <a
                       href={page.url}
                       target="_blank"
                       rel="noopener noreferrer"
                       onClick={(e) => e.stopPropagation()}
-                      style={{ color: t.ink50, display: "flex" }}
+                      style={{ color: "var(--ink50)", display: "flex" }}
                     >
                       <ExternalLink size={10} />
                     </a>
@@ -160,7 +89,7 @@ export default function PageBreakdown({ scan, issues, onFilterByPage }) {
                       style={{
                         fontFamily: "var(--mono)",
                         fontSize: "0.62rem",
-                        color: t.red,
+                        color: "var(--red)",
                         display: "flex",
                         alignItems: "center",
                         gap: "0.2rem",
@@ -187,7 +116,7 @@ export default function PageBreakdown({ scan, issues, onFilterByPage }) {
                       style={{
                         fontFamily: "var(--mono)",
                         fontSize: "0.68rem",
-                        color: t.red,
+                        color: "var(--red)",
                       }}
                     >
                       {page.error ? "Failed" : "\u2014"}

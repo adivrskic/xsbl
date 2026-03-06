@@ -10,6 +10,8 @@ import {
   Eye,
   AlertTriangle,
 } from "lucide-react";
+import "../../styles/dashboard.css";
+import "../../styles/dashboard-modals.css";
 
 /*
   AltTextGenerator — shown in the IssueDetailModal when the issue is

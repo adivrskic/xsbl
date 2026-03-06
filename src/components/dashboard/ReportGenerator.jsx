@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { useTheme } from "../../context/ThemeContext";
 import { FileText, Download, Loader2, X } from "lucide-react";
+import "../../styles/dashboard.css";
+import "../../styles/dashboard-modals.css";
 
 /*
   Client-side PDF generation using jsPDF + AutoTable.

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useTheme } from "../../context/ThemeContext";
 import FadeIn from "./FadeIn";
 import CodeCard from "./CodeCard";
+import "./Hero.css";
 
 export default function Hero() {
   const { t } = useTheme();
@@ -41,72 +42,23 @@ export default function Hero() {
   };
 
   return (
-    <section
-      className="hero-layout"
-      style={{
-        padding: "10rem clamp(1.5rem, 3vw, 3rem) 6rem",
-        maxWidth: 1200,
-        margin: "0 auto",
-        display: "grid",
-        gridTemplateColumns: "1fr 1fr",
-        gap: "4rem",
-        alignItems: "center",
-        minHeight: "100vh",
-      }}
-    >
-      <div style={{ maxWidth: 540 }}>
+    <section className="hero-layout hero">
+      <div className="hero__content">
         <FadeIn>
-          <div
-            style={{
-              fontFamily: "var(--mono)",
-              fontSize: "0.72rem",
-              letterSpacing: "0.12em",
-              textTransform: "uppercase",
-              color: t.accent,
-              fontWeight: 600,
-              marginBottom: "1.5rem",
-              display: "flex",
-              alignItems: "center",
-              gap: "0.6rem",
-            }}
-          >
-            <span style={{ width: 24, height: 1.5, background: t.accent }} />
+          <div className="hero__eyebrow">
+            <span className="hero__eyebrow-line" />
             Accessibility scanning
           </div>
         </FadeIn>
 
         <FadeIn delay={0.07}>
-          <h1
-            style={{
-              fontFamily: "var(--serif)",
-              fontSize: "clamp(2.5rem, 4.5vw, 3.8rem)",
-              lineHeight: 1.12,
-              fontWeight: 700,
-              letterSpacing: "-0.02em",
-              marginBottom: "1.5rem",
-              color: t.ink,
-            }}
-          >
-            No Bull. Make it{" "}
-            <span
-              style={{ fontWeight: 400, fontStyle: "italic", color: t.accent }}
-            >
-              xsbl.
-            </span>
+          <h1 className="hero__title">
+            No Bull. Make it <span className="italic-accent">xsbl.</span>
           </h1>
         </FadeIn>
 
         <FadeIn delay={0.14}>
-          <p
-            style={{
-              fontSize: "1.08rem",
-              color: t.ink50,
-              lineHeight: 1.75,
-              marginBottom: "2rem",
-              maxWidth: 440,
-              fontWeight: 400,
-            }}
-          >
+          <p className="hero__subtitle">
             xsbl scans your site in a real browser, finds WCAG&nbsp;2.2
             violations, and opens pull requests with the fixes. No overlays. No
             runtime scripts. No bull — just accessible code.
@@ -116,11 +68,8 @@ export default function Hero() {
         {/* URL scan input */}
         <FadeIn delay={0.2}>
           <div
-            style={{
-              display: "flex",
-              gap: "0.5rem",
-              marginBottom: result ? "1rem" : "2rem",
-            }}
+            className="hero__scan-row"
+            style={{ marginBottom: result ? "1rem" : "2rem" }}
           >
             <input
               type="url"
@@ -128,118 +77,38 @@ export default function Hero() {
               onChange={(e) => setUrl(e.target.value)}
               placeholder="https://your-site.com"
               disabled={scanning}
-              style={{
-                flex: 1,
-                padding: "0.72rem 1rem",
-                borderRadius: 8,
-                border: `1.5px solid ${t.ink20}`,
-                background: t.cardBg,
-                color: t.ink,
-                fontFamily: "var(--body)",
-                fontSize: "0.9rem",
-                outline: "none",
-                transition: "border-color 0.2s",
-                minWidth: 0,
-                opacity: scanning ? 0.6 : 1,
-              }}
-              onFocus={(e) => (e.target.style.borderColor = t.accent)}
-              onBlur={(e) => (e.target.style.borderColor = t.ink20)}
+              className="hero__input"
               onKeyDown={(e) => e.key === "Enter" && handleScan(e)}
             />
             <button
               onClick={handleScan}
               disabled={scanning}
-              style={{
-                background: t.accent,
-                color: "white",
-                border: "none",
-                fontFamily: "var(--body)",
-                fontSize: "0.9rem",
-                fontWeight: 600,
-                padding: "0.72rem 1.4rem",
-                borderRadius: 8,
-                cursor: scanning ? "not-allowed" : "pointer",
-                transition: "all 0.25s",
-                whiteSpace: "nowrap",
-                flexShrink: 0,
-                opacity: scanning ? 0.7 : 1,
-                display: "flex",
-                alignItems: "center",
-                gap: "0.5rem",
-              }}
+              className="hero__scan-btn"
             >
-              {scanning && (
-                <span
-                  style={{
-                    width: 14,
-                    height: 14,
-                    border: "2px solid rgba(255,255,255,0.3)",
-                    borderTopColor: "white",
-                    borderRadius: "50%",
-                    animation: "xsbl-spin 0.6s linear infinite",
-                    flexShrink: 0,
-                  }}
-                />
-              )}
+              {scanning && <span className="hero__spinner" />}
               {scanning ? "Scanning\u2026" : "Scan free \u2192"}
             </button>
           </div>
-          <style>{`@keyframes xsbl-spin { to { transform: rotate(360deg); } }`}</style>
         </FadeIn>
 
         {/* Error */}
         {error && (
           <FadeIn>
-            <div
-              style={{
-                padding: "0.7rem 1rem",
-                borderRadius: 8,
-                marginBottom: "1.5rem",
-                background: `${t.red}08`,
-                border: `1px solid ${t.red}20`,
-                color: t.red,
-                fontSize: "0.82rem",
-              }}
-            >
-              {error}
-            </div>
+            <div className="hero__error">{error}</div>
           </FadeIn>
         )}
 
         {/* Quick scan results */}
         {result && (
           <FadeIn>
-            <div
-              style={{
-                padding: "1.2rem",
-                borderRadius: 12,
-                marginBottom: "1.5rem",
-                background: t.cardBg,
-                border: `1px solid ${t.ink08}`,
-              }}
-            >
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  marginBottom: "0.8rem",
-                }}
-              >
-                <div
-                  style={{
-                    fontFamily: "var(--mono)",
-                    fontSize: "0.68rem",
-                    color: t.ink50,
-                  }}
-                >
+            <div className="hero__result">
+              <div className="hero__result-header">
+                <div className="hero__result-title">
                   {result.page_info?.title || result.title || result.url}
                 </div>
                 <div
+                  className="hero__result-score"
                   style={{
-                    fontFamily: "var(--serif)",
-                    fontSize: "1.3rem",
-                    fontWeight: 700,
                     color:
                       result.score >= 80
                         ? t.green
@@ -252,14 +121,7 @@ export default function Hero() {
                 </div>
               </div>
 
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(4, 1fr)",
-                  gap: "0.4rem",
-                  marginBottom: "0.8rem",
-                }}
-              >
+              <div className="hero__result-impacts">
                 {[
                   {
                     label: "Critical",
@@ -282,63 +144,24 @@ export default function Hero() {
                     color: t.accent,
                   },
                 ].map(({ label, count, color }) => (
-                  <div
-                    key={label}
-                    style={{
-                      textAlign: "center",
-                      padding: "0.4rem",
-                      borderRadius: 6,
-                      background: t.ink04,
-                    }}
-                  >
+                  <div key={label} className="hero__result-impact">
                     <div
-                      style={{
-                        fontFamily: "var(--serif)",
-                        fontSize: "1.1rem",
-                        fontWeight: 700,
-                        color,
-                      }}
+                      className="hero__result-impact-count"
+                      style={{ color }}
                     >
                       {count}
                     </div>
-                    <div
-                      style={{
-                        fontFamily: "var(--mono)",
-                        fontSize: "0.55rem",
-                        color: t.ink50,
-                        textTransform: "uppercase",
-                      }}
-                    >
-                      {label}
-                    </div>
+                    <div className="hero__result-impact-label">{label}</div>
                   </div>
                 ))}
               </div>
 
               {/* Top issues preview */}
               {result.top_issues?.slice(0, 3).map((issue, i) => (
-                <div
-                  key={i}
-                  style={{
-                    padding: "0.5rem 0",
-                    fontSize: "0.78rem",
-                    color: t.ink50,
-                    borderTop: i > 0 ? `1px solid ${t.ink04}` : "none",
-                    lineHeight: 1.5,
-                    display: "flex",
-                    alignItems: "flex-start",
-                    gap: "0.4rem",
-                  }}
-                >
+                <div key={i} className="hero__result-issue">
                   <span
+                    className="hero__result-issue-badge"
                     style={{
-                      fontFamily: "var(--mono)",
-                      fontSize: "0.55rem",
-                      fontWeight: 600,
-                      padding: "0.1rem 0.3rem",
-                      borderRadius: 3,
-                      flexShrink: 0,
-                      marginTop: "0.15rem",
                       background:
                         issue.impact === "critical" ||
                         issue.impact === "serious"
@@ -349,7 +172,6 @@ export default function Hero() {
                         issue.impact === "serious"
                           ? t.red
                           : t.amber,
-                      textTransform: "uppercase",
                     }}
                   >
                     {issue.impact}
@@ -358,22 +180,7 @@ export default function Hero() {
                 </div>
               ))}
 
-              <a
-                href="/signup"
-                style={{
-                  display: "block",
-                  textAlign: "center",
-                  marginTop: "0.8rem",
-                  padding: "0.55rem",
-                  borderRadius: 8,
-                  background: t.accent,
-                  color: "white",
-                  fontFamily: "var(--body)",
-                  fontSize: "0.82rem",
-                  fontWeight: 600,
-                  textDecoration: "none",
-                }}
-              >
+              <a href="/signup" className="hero__result-cta">
                 Sign up to see full report & fixes →
               </a>
             </div>
@@ -383,28 +190,12 @@ export default function Hero() {
         {/* Trust badges */}
         {!result && (
           <FadeIn delay={0.26}>
-            <div
-              style={{
-                fontSize: "0.79rem",
-                color: t.ink50,
-                display: "flex",
-                alignItems: "center",
-                gap: "1.3rem",
-                flexWrap: "wrap",
-              }}
-            >
+            <div className="hero__trust">
               <span>No signup required</span>
-              <span
-                className="hero-pipe"
-                style={{ width: 1, height: 14, background: t.ink20 }}
-              />
+              <span className="hero__pipe" />
               <span>WCAG 2.2 AA + AAA</span>
-              <span
-                className="hero-pipe"
-                style={{ width: 1, height: 14, background: t.ink20 }}
-              />
+              <span className="hero__pipe" />
               <span>Auto GitHub PRs</span>
-              <style>{`@media (max-width: 680px) { .hero-pipe { display: none !important; } }`}</style>
             </div>
           </FadeIn>
         )}

@@ -4,35 +4,16 @@ import FadeIn from "./FadeIn";
 import Section from "./Section";
 import { Eyebrow, H2, SubText, Italic } from "./Typography";
 import { X, ArrowRight } from "lucide-react";
+import "./VsSection.css";
 
 function VsColumn({ items, isBad }) {
   const { t } = useTheme();
 
   return (
     <div
-      style={{
-        padding: "2.2rem",
-        borderRadius: 14,
-        background: isBad ? `${t.red}08` : t.greenBg,
-        border: `1px solid ${isBad ? `${t.red}18` : `${t.green}18`}`,
-        flex: 1,
-        minWidth: 280,
-      }}
+      className={"vs-column" + (isBad ? " vs-column--bad" : " vs-column--good")}
     >
-      <h3
-        style={{
-          fontFamily: "var(--mono)",
-          fontSize: "0.76rem",
-          letterSpacing: "0.06em",
-          textTransform: "uppercase",
-          marginBottom: "1.4rem",
-          fontWeight: 600,
-          color: isBad ? t.red : t.green,
-          display: "flex",
-          alignItems: "center",
-          gap: "0.4rem",
-        }}
-      >
+      <h3 className="vs-column__heading">
         {isBad ? (
           <>
             <X size={14} strokeWidth={2.5} /> Overlays (accessiBe, UserWay…)
@@ -45,27 +26,10 @@ function VsColumn({ items, isBad }) {
         )}
       </h3>
 
-      <ul
-        style={{
-          listStyle: "none",
-          display: "flex",
-          flexDirection: "column",
-          gap: "0.75rem",
-          padding: 0,
-        }}
-      >
+      <ul className="vs-column__list">
         {items.map((item, i) => (
-          <li
-            key={i}
-            style={{
-              fontSize: "0.88rem",
-              color: t.ink50,
-              paddingLeft: "1.5rem",
-              position: "relative",
-              lineHeight: 1.6,
-            }}
-          >
-            <span style={{ position: "absolute", left: 0, top: "0.25rem" }}>
+          <li key={i} className="vs-column__item">
+            <span className="vs-column__item-icon">
               {isBad ? (
                 <X size={13} color={t.red} strokeWidth={2.5} />
               ) : (
@@ -77,16 +41,7 @@ function VsColumn({ items, isBad }) {
         ))}
       </ul>
 
-      <p
-        style={{
-          marginTop: "1.4rem",
-          fontSize: "0.76rem",
-          color: t.ink50,
-          fontStyle: "italic",
-          paddingTop: "1rem",
-          borderTop: `1px solid ${t.ink08}`,
-        }}
-      >
+      <p className="vs-column__footer">
         {isBad
           ? '"Overlay solutions do not meet the legal requirements for accessibility." — 600+ signatories'
           : "Your code gets better. Your users notice. No lawsuits."}
@@ -113,42 +68,17 @@ export default function VsSection() {
         </SubText>
       </FadeIn>
 
-      <div
-        style={{
-          display: "flex",
-          gap: "1rem",
-          flexWrap: "wrap",
-          alignItems: "stretch",
-        }}
-      >
+      <div className="vs-columns">
         <FadeIn delay={0} style={{ flex: 1, minWidth: 280, display: "flex" }}>
           <VsColumn items={vsOverlay.bad} isBad />
         </FadeIn>
-        <div
-          className="vs-divider"
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: "0 0.5rem",
-          }}
-        >
-          <span
-            style={{
-              fontFamily: "var(--serif)",
-              fontSize: "0.85rem",
-              fontStyle: "italic",
-              color: "rgba(128,128,128,0.5)",
-            }}
-          >
-            vs.
-          </span>
+        <div className="vs-divider">
+          <span className="vs-divider__text">vs.</span>
         </div>
         <FadeIn delay={0.1} style={{ flex: 1, minWidth: 280, display: "flex" }}>
           <VsColumn items={vsOverlay.good} isBad={false} />
         </FadeIn>
       </div>
-      <style>{`@media (max-width: 680px) { .vs-divider { display: none !important; } }`}</style>
     </Section>
   );
 }

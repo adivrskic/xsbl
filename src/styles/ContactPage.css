@@ -1,0 +1,198 @@
+/* ContactPage.css */
+.contact-page {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 7rem clamp(1.5rem, 3vw, 3rem) 4rem;
+}
+
+.contact-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4rem;
+  align-items: start;
+}
+
+.contact-info__item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.7rem;
+}
+
+.contact-info__icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: var(--accent-bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.contact-info__label {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.contact-info__value {
+  font-size: 0.82rem;
+  color: var(--ink50);
+}
+
+.contact-form {
+  padding: 2rem;
+  border-radius: 16px;
+  border: 1px solid var(--ink08);
+  background: var(--card-bg);
+}
+
+.contact-form__grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.8rem;
+  margin-bottom: 0.8rem;
+}
+
+.contact-form__input {
+  width: 100%;
+  padding: 0.65rem 0.9rem;
+  border-radius: 8px;
+  border: 1.5px solid var(--ink20);
+  background: var(--card-bg);
+  color: var(--ink);
+  font-family: var(--body);
+  font-size: 0.88rem;
+  outline: none;
+  box-sizing: border-box;
+  transition: border-color 0.2s;
+}
+
+.contact-form__input:focus {
+  border-color: var(--accent);
+}
+
+.contact-form__select {
+  width: 100%;
+  padding: 0.65rem 0.9rem;
+  border-radius: 8px;
+  border: 1.5px solid var(--ink20);
+  background: var(--card-bg);
+  color: var(--ink);
+  font-family: var(--body);
+  font-size: 0.88rem;
+  outline: none;
+  box-sizing: border-box;
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23999' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  padding-right: 2rem;
+  transition: border-color 0.2s;
+}
+
+.contact-form__select:focus {
+  border-color: var(--accent);
+}
+
+.contact-form__textarea {
+  width: 100%;
+  padding: 0.65rem 0.9rem;
+  border-radius: 8px;
+  border: 1.5px solid var(--ink20);
+  background: var(--card-bg);
+  color: var(--ink);
+  font-family: var(--body);
+  font-size: 0.88rem;
+  outline: none;
+  box-sizing: border-box;
+  resize: vertical;
+  line-height: 1.6;
+  transition: border-color 0.2s;
+}
+
+.contact-form__textarea:focus {
+  border-color: var(--accent);
+}
+
+.contact-form__label {
+  display: block;
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ink50);
+  margin-bottom: 0.3rem;
+  font-weight: 600;
+}
+
+.contact-form__submit {
+  width: 100%;
+  padding: 0.7rem 1.5rem;
+  border-radius: 8px;
+  border: none;
+  background: var(--accent);
+  color: white;
+  font-family: var(--body);
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  transition: all 0.2s;
+}
+
+.contact-form__submit:hover:not(:disabled) {
+  background: var(--accent-light);
+}
+
+.contact-form__submit:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.contact-form__hint {
+  font-size: 0.68rem;
+  color: var(--ink50);
+  margin-top: 0.6rem;
+  text-align: center;
+}
+
+/* Success state */
+.contact-success {
+  padding: 3rem 2rem;
+  border-radius: 16px;
+  border: 1px solid color-mix(in srgb, var(--green) 15%, transparent);
+  background: color-mix(in srgb, var(--green) 2%, transparent);
+  text-align: center;
+}
+
+.contact-success__icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--green) 8%, transparent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 1rem;
+}
+
+.contact-success__title {
+  font-family: var(--serif);
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--ink);
+  margin-bottom: 0.5rem;
+}
+
+.contact-success__text {
+  font-size: 0.92rem;
+  color: var(--ink50);
+  line-height: 1.6;
+  max-width: 340px;
+  margin: 0 auto 1.2rem;
+}

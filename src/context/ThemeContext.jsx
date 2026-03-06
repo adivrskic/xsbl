@@ -19,9 +19,26 @@ function getInitialDark() {
   return true;
 }
 
+function applyCssVars(themeObj) {
+  var root = document.documentElement;
+  Object.entries(themeObj).forEach(function ([key, value]) {
+    // Convert camelCase to kebab-case: paperWarm -> paper-warm
+    var cssKey = key.replace(/([A-Z])/g, "-$1").toLowerCase();
+    root.style.setProperty("--" + cssKey, value);
+  });
+}
+
 export function ThemeProvider({ children }) {
   const [dark, setDark] = useState(getInitialDark);
   const t = dark ? themes.dark : themes.light;
+
+  // Sync CSS custom properties whenever theme changes
+  useEffect(
+    function () {
+      applyCssVars(t);
+    },
+    [dark, t]
+  );
 
   const toggle = () =>
     setDark((d) => {

@@ -1,0 +1,126 @@
+/* CodeCard.css */
+.code-card {
+  border-radius: 14px;
+  overflow: hidden;
+  position: relative;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04), 0 8px 28px rgba(0, 0, 0, 0.1),
+    0 32px 64px rgba(0, 0, 0, 0.14);
+  transform: rotate(1.2deg);
+  transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.code-card:hover {
+  transform: rotate(0deg);
+}
+
+.code-card__badge {
+  position: absolute;
+  right: -12px;
+  top: 42%;
+  background: var(--paper);
+  border: 1.5px solid var(--accent-bg2);
+  padding: 0.4rem 0.75rem;
+  border-radius: 8px;
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  color: var(--accent);
+  font-weight: 600;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  transform: rotate(-2deg);
+  z-index: 2;
+  white-space: nowrap;
+}
+
+.code-card__bar {
+  padding: 0.8rem 1.2rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: rgba(255, 255, 255, 0.03);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.code-card__dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+}
+
+.code-card__bar-title {
+  flex: 1;
+  text-align: center;
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  color: var(--ink);
+}
+
+.code-card__body {
+  padding: 1.2rem 1.5rem;
+  font-family: var(--mono);
+  font-size: 0.76rem;
+  line-height: 1.85;
+  overflow-x: auto;
+}
+
+.code-card__line {
+  white-space: pre;
+}
+
+.code-card__line--del {
+  background: color-mix(in srgb, var(--red) 5%, transparent);
+  margin: 0 -1.5rem;
+  padding: 0 1.5rem;
+  color: var(--red);
+  text-decoration: line-through;
+  text-decoration-color: color-mix(in srgb, var(--red) 27%, transparent);
+}
+
+.code-card__line--add {
+  background: color-mix(in srgb, var(--green) 4%, transparent);
+  margin: 0 -1.5rem;
+  padding: 0 1.5rem;
+  color: var(--green);
+}
+
+.code-card__line--comment {
+  color: var(--ink20);
+  font-style: italic;
+}
+
+.code-card__line--blank {
+  min-height: 1.2em;
+  color: transparent;
+}
+
+.code-card__line--code {
+  color: rgba(255, 255, 255, 0.35);
+}
+
+.code-card__footer {
+  padding: 0.85rem 1.5rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.code-card__footer-status {
+  color: #28ca41;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.code-card__footer-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #28ca41;
+  animation: pulse 2s infinite;
+}
+
+.code-card__footer-meta {
+  color: rgba(255, 255, 255, 0.18);
+}

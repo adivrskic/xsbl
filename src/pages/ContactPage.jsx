@@ -3,6 +3,8 @@ import { useTheme } from "../context/ThemeContext";
 import { Link } from "react-router-dom";
 import { Send, Loader2, Check, Mail, MessageSquare } from "lucide-react";
 import XsblBull from "../components/landing/XsblBull";
+import "../styles/ContactPage.css";
+import "../styles/dashboard.css";
 
 var SUBJECTS = [
   "General inquiry",
@@ -68,94 +70,21 @@ export default function ContactPage() {
     setSending(false);
   };
 
-  var inputStyle = {
-    width: "100%",
-    padding: "0.65rem 0.9rem",
-    borderRadius: 8,
-    border: "1.5px solid " + t.ink20,
-    background: t.cardBg,
-    color: t.ink,
-    fontFamily: "var(--body)",
-    fontSize: "0.88rem",
-    outline: "none",
-    boxSizing: "border-box",
-    transition: "border-color 0.2s",
-  };
-
-  var labelStyle = {
-    display: "block",
-    fontFamily: "var(--mono)",
-    fontSize: "0.62rem",
-    textTransform: "uppercase",
-    letterSpacing: "0.06em",
-    color: t.ink50,
-    marginBottom: "0.3rem",
-    fontWeight: 600,
-  };
-
   return (
     <div>
-      <div
-        style={{
-          maxWidth: 960,
-          margin: "0 auto",
-          padding: "7rem clamp(1.5rem, 3vw, 3rem) 4rem",
-        }}
-      >
-        <div
-          className="hero-layout"
-          style={{
-            display: "grid",
-            gridTemplateColumns: "1fr 1fr",
-            gap: "4rem",
-            alignItems: "start",
-          }}
-        >
+      <div className="contact-page">
+        <div className="hero-layout contact-layout">
           {/* Left — info */}
           <div>
-            <div
-              style={{
-                fontFamily: "var(--mono)",
-                fontSize: "0.68rem",
-                color: t.accent,
-                textTransform: "uppercase",
-                letterSpacing: "0.1em",
-                fontWeight: 600,
-                marginBottom: "0.5rem",
-                display: "flex",
-                alignItems: "center",
-                gap: "0.4rem",
-              }}
-            >
-              <span style={{ width: 20, height: 1.5, background: t.accent }} />{" "}
-              Contact
+            <div className="eyebrow">
+              <span className="eyebrow-line" /> Contact
             </div>
-            <h1
-              style={{
-                fontFamily: "var(--serif)",
-                fontSize: "clamp(2rem, 3.5vw, 2.6rem)",
-                fontWeight: 700,
-                color: t.ink,
-                lineHeight: 1.15,
-                marginBottom: "0.8rem",
-              }}
-            >
-              Get in touch
-            </h1>
-            <p
-              style={{
-                fontSize: "1.02rem",
-                color: t.ink50,
-                lineHeight: 1.75,
-                marginBottom: "2.5rem",
-                maxWidth: 400,
-              }}
-            >
+            <h1 className="blog-header__title">Get in touch</h1>
+            <p className="sub-text" style={{ maxWidth: 400 }}>
               Have a question, feedback, or need help with your accessibility
               workflow? We'd love to hear from you.
             </p>
 
-            {/* Quick links */}
             <div
               style={{
                 display: "flex",
@@ -164,89 +93,34 @@ export default function ContactPage() {
                 marginBottom: "2.5rem",
               }}
             >
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "flex-start",
-                  gap: "0.7rem",
-                }}
-              >
-                <div
-                  style={{
-                    width: 36,
-                    height: 36,
-                    borderRadius: 8,
-                    background: t.accentBg,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    flexShrink: 0,
-                  }}
-                >
+              <div className="contact-info__item">
+                <div className="contact-info__icon">
                   <Mail size={16} color={t.accent} />
                 </div>
                 <div>
-                  <div
-                    style={{
-                      fontSize: "0.88rem",
-                      fontWeight: 600,
-                      color: t.ink,
-                    }}
-                  >
-                    Email us directly
-                  </div>
+                  <div className="contact-info__label">Email us directly</div>
                   <a
                     href="mailto:hello@xsbl.dev"
-                    style={{
-                      fontFamily: "var(--mono)",
-                      fontSize: "0.78rem",
-                      color: t.accent,
-                      textDecoration: "none",
-                    }}
+                    className="dash-accent-link"
+                    style={{ fontFamily: "var(--mono)", fontSize: "0.78rem" }}
                   >
                     hello@xsbl.dev
                   </a>
                 </div>
               </div>
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "flex-start",
-                  gap: "0.7rem",
-                }}
-              >
-                <div
-                  style={{
-                    width: 36,
-                    height: 36,
-                    borderRadius: 8,
-                    background: t.accentBg,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    flexShrink: 0,
-                  }}
-                >
+              <div className="contact-info__item">
+                <div className="contact-info__icon">
                   <MessageSquare size={16} color={t.accent} />
                 </div>
                 <div>
-                  <div
-                    style={{
-                      fontSize: "0.88rem",
-                      fontWeight: 600,
-                      color: t.ink,
-                    }}
-                  >
-                    Response time
-                  </div>
-                  <div style={{ fontSize: "0.82rem", color: t.ink50 }}>
+                  <div className="contact-info__label">Response time</div>
+                  <div className="contact-info__value">
                     We typically respond within 24 hours
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Bull mascot */}
             <div style={{ opacity: 0.5 }}>
               <XsblBull size={80} />
             </div>
@@ -255,54 +129,15 @@ export default function ContactPage() {
           {/* Right — form */}
           <div>
             {sent ? (
-              /* Success state */
-              <div
-                style={{
-                  padding: "3rem 2rem",
-                  borderRadius: 16,
-                  border: "1px solid " + t.green + "25",
-                  background: t.green + "06",
-                  textAlign: "center",
-                }}
-              >
-                <div
-                  style={{
-                    width: 48,
-                    height: 48,
-                    borderRadius: "50%",
-                    background: t.green + "15",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    margin: "0 auto 1rem",
-                  }}
-                >
+              <div className="contact-success">
+                <div className="contact-success__icon">
                   <Check size={24} color={t.green} strokeWidth={2.5} />
                 </div>
-                <h2
-                  style={{
-                    fontFamily: "var(--serif)",
-                    fontSize: "1.4rem",
-                    fontWeight: 700,
-                    color: t.ink,
-                    marginBottom: "0.5rem",
-                  }}
-                >
-                  Message sent
-                </h2>
-                <p
-                  style={{
-                    fontSize: "0.92rem",
-                    color: t.ink50,
-                    lineHeight: 1.6,
-                    marginBottom: "1.2rem",
-                    maxWidth: 340,
-                    margin: "0 auto 1.2rem",
-                  }}
-                >
+                <h2 className="contact-success__title">Message sent</h2>
+                <p className="contact-success__text">
                   Thanks for reaching out! We've sent a confirmation to{" "}
-                  <strong style={{ color: t.ink }}>{form.email}</strong> and
-                  will get back to you within 24 hours.
+                  <strong style={{ color: "var(--ink)" }}>{form.email}</strong>{" "}
+                  and will get back to you within 24 hours.
                 </p>
                 <div
                   style={{
@@ -311,60 +146,26 @@ export default function ContactPage() {
                     justifyContent: "center",
                   }}
                 >
-                  <Link
-                    to="/"
-                    style={{
-                      padding: "0.5rem 1.1rem",
-                      borderRadius: 7,
-                      border: "1.5px solid " + t.ink20,
-                      background: "none",
-                      color: t.ink,
-                      fontFamily: "var(--body)",
-                      fontSize: "0.82rem",
-                      fontWeight: 500,
-                      textDecoration: "none",
-                    }}
-                  >
+                  <Link to="/" className="btn-outline">
                     Back to home
                   </Link>
                   <Link
                     to="/docs"
-                    style={{
-                      padding: "0.5rem 1.1rem",
-                      borderRadius: 7,
-                      border: "none",
-                      background: t.accent,
-                      color: "white",
-                      fontFamily: "var(--body)",
-                      fontSize: "0.82rem",
-                      fontWeight: 600,
-                      textDecoration: "none",
-                    }}
+                    className="btn btn-accent"
+                    style={{ padding: "0.5rem 1.1rem", fontSize: "0.82rem" }}
                   >
                     Read the docs
                   </Link>
                 </div>
               </div>
             ) : (
-              /* Form */
-              <div
-                style={{
-                  padding: "2rem",
-                  borderRadius: 16,
-                  border: "1px solid " + t.ink08,
-                  background: t.cardBg,
-                }}
-              >
-                <div
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "1fr 1fr",
-                    gap: "0.8rem",
-                    marginBottom: "0.8rem",
-                  }}
-                >
+              <div className="contact-form">
+                <div className="contact-form__grid">
                   <div>
-                    <label htmlFor="contact-name" style={labelStyle}>
+                    <label
+                      htmlFor="contact-name"
+                      className="contact-form__label"
+                    >
                       Name
                     </label>
                     <input
@@ -372,17 +173,14 @@ export default function ContactPage() {
                       value={form.name}
                       onChange={handleChange("name")}
                       placeholder="Jane Smith"
-                      style={inputStyle}
-                      onFocus={function (e) {
-                        e.target.style.borderColor = t.accent;
-                      }}
-                      onBlur={function (e) {
-                        e.target.style.borderColor = t.ink20;
-                      }}
+                      className="contact-form__input"
                     />
                   </div>
                   <div>
-                    <label htmlFor="contact-email" style={labelStyle}>
+                    <label
+                      htmlFor="contact-email"
+                      className="contact-form__label"
+                    >
                       Email *
                     </label>
                     <input
@@ -391,27 +189,17 @@ export default function ContactPage() {
                       value={form.email}
                       onChange={handleChange("email")}
                       placeholder="jane@company.com"
-                      style={inputStyle}
-                      onFocus={function (e) {
-                        e.target.style.borderColor = t.accent;
-                      }}
-                      onBlur={function (e) {
-                        e.target.style.borderColor = t.ink20;
-                      }}
+                      className="contact-form__input"
                     />
                   </div>
                 </div>
 
-                <div
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "1fr 1fr",
-                    gap: "0.8rem",
-                    marginBottom: "0.8rem",
-                  }}
-                >
+                <div className="contact-form__grid">
                   <div>
-                    <label htmlFor="contact-company" style={labelStyle}>
+                    <label
+                      htmlFor="contact-company"
+                      className="contact-form__label"
+                    >
                       Company
                     </label>
                     <input
@@ -419,33 +207,21 @@ export default function ContactPage() {
                       value={form.company}
                       onChange={handleChange("company")}
                       placeholder="Acme Inc"
-                      style={inputStyle}
-                      onFocus={function (e) {
-                        e.target.style.borderColor = t.accent;
-                      }}
-                      onBlur={function (e) {
-                        e.target.style.borderColor = t.ink20;
-                      }}
+                      className="contact-form__input"
                     />
                   </div>
                   <div>
-                    <label htmlFor="contact-subject" style={labelStyle}>
+                    <label
+                      htmlFor="contact-subject"
+                      className="contact-form__label"
+                    >
                       Subject
                     </label>
                     <select
                       id="contact-subject"
                       value={form.subject}
                       onChange={handleChange("subject")}
-                      style={{
-                        ...inputStyle,
-                        cursor: "pointer",
-                        appearance: "none",
-                        backgroundImage:
-                          "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23999' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E\")",
-                        backgroundRepeat: "no-repeat",
-                        backgroundPosition: "right 10px center",
-                        paddingRight: "2rem",
-                      }}
+                      className="contact-form__select"
                     >
                       {SUBJECTS.map(function (s) {
                         return (
@@ -459,7 +235,10 @@ export default function ContactPage() {
                 </div>
 
                 <div style={{ marginBottom: "1rem" }}>
-                  <label htmlFor="contact-message" style={labelStyle}>
+                  <label
+                    htmlFor="contact-message"
+                    className="contact-form__label"
+                  >
                     Message *
                   </label>
                   <textarea
@@ -468,32 +247,14 @@ export default function ContactPage() {
                     onChange={handleChange("message")}
                     placeholder="Tell us what's on your mind..."
                     rows={5}
-                    style={{
-                      ...inputStyle,
-                      resize: "vertical",
-                      fontFamily: "var(--body)",
-                      lineHeight: 1.6,
-                    }}
-                    onFocus={function (e) {
-                      e.target.style.borderColor = t.accent;
-                    }}
-                    onBlur={function (e) {
-                      e.target.style.borderColor = t.ink20;
-                    }}
+                    className="contact-form__textarea"
                   />
                 </div>
 
                 {error && (
                   <div
-                    style={{
-                      padding: "0.5rem 0.7rem",
-                      borderRadius: 6,
-                      background: t.red + "08",
-                      border: "1px solid " + t.red + "20",
-                      color: t.red,
-                      fontSize: "0.78rem",
-                      marginBottom: "0.8rem",
-                    }}
+                    className="hero__error"
+                    style={{ marginBottom: "0.8rem" }}
                   >
                     {error}
                   </div>
@@ -504,34 +265,7 @@ export default function ContactPage() {
                   disabled={
                     sending || !form.email.trim() || !form.message.trim()
                   }
-                  style={{
-                    width: "100%",
-                    padding: "0.7rem 1.5rem",
-                    borderRadius: 8,
-                    border: "none",
-                    background: t.accent,
-                    color: "white",
-                    fontFamily: "var(--body)",
-                    fontSize: "0.9rem",
-                    fontWeight: 600,
-                    cursor: sending ? "not-allowed" : "pointer",
-                    opacity:
-                      sending || !form.email.trim() || !form.message.trim()
-                        ? 0.6
-                        : 1,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: "0.4rem",
-                    transition: "all 0.2s",
-                  }}
-                  onMouseEnter={function (e) {
-                    if (!sending)
-                      e.currentTarget.style.background = t.accentLight;
-                  }}
-                  onMouseLeave={function (e) {
-                    e.currentTarget.style.background = t.accent;
-                  }}
+                  className="contact-form__submit"
                 >
                   {sending ? (
                     <Loader2 size={16} className="xsbl-spin" />
@@ -541,14 +275,7 @@ export default function ContactPage() {
                   {sending ? "Sending..." : "Send message"}
                 </button>
 
-                <p
-                  style={{
-                    fontSize: "0.68rem",
-                    color: t.ink50,
-                    marginTop: "0.6rem",
-                    textAlign: "center",
-                  }}
-                >
+                <p className="contact-form__hint">
                   We'll respond to your email within 24 hours. You'll also
                   receive a confirmation email.
                 </p>
@@ -557,8 +284,6 @@ export default function ContactPage() {
           </div>
         </div>
       </div>
-
-      <style>{`.xsbl-spin { animation: xsbl-spin 0.6s linear infinite; } @keyframes xsbl-spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   );
 }

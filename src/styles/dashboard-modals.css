@@ -1,0 +1,305 @@
+/* dashboard-modals.css — shared styles for dashboard modals and config panels */
+
+/* ── MODAL DIALOG ── */
+.dash-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(5px);
+  padding: 1rem;
+}
+
+.dash-modal__dialog {
+  background: var(--card-bg);
+  border-radius: 14px;
+  width: 100%;
+  border: 1px solid var(--ink08);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.18);
+}
+
+.dash-modal__header {
+  padding: 1.2rem 1.4rem;
+  border-bottom: 1px solid var(--ink08);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.dash-modal__title {
+  font-family: var(--serif);
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--ink);
+  margin: 0;
+}
+
+.dash-modal__close {
+  background: var(--ink04);
+  border: none;
+  border-radius: 8px;
+  padding: 0.3rem;
+  cursor: pointer;
+  color: var(--ink50);
+  display: flex;
+}
+
+.dash-modal__body {
+  padding: 1.3rem 1.4rem;
+}
+
+.dash-modal__desc {
+  font-size: 0.84rem;
+  color: var(--ink50);
+  margin-bottom: 1rem;
+  line-height: 1.6;
+}
+
+/* ── CONFIG INPUT (mono-style) ── */
+.dash-config-input {
+  width: 100%;
+  padding: 0.45rem 0.7rem;
+  border-radius: 6px;
+  border: 1.5px solid var(--ink20);
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--mono);
+  font-size: 0.8rem;
+  outline: none;
+  box-sizing: border-box;
+  transition: border-color 0.2s;
+}
+
+.dash-config-input:focus {
+  border-color: var(--accent);
+}
+
+.dash-config-textarea {
+  width: 100%;
+  padding: 0.6rem 0.8rem;
+  border-radius: 8px;
+  border: 1.5px solid var(--ink20);
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--mono);
+  font-size: 0.76rem;
+  line-height: 1.7;
+  outline: none;
+  resize: vertical;
+  box-sizing: border-box;
+  transition: border-color 0.2s;
+}
+
+.dash-config-textarea:focus {
+  border-color: var(--accent);
+}
+
+.dash-config-label {
+  display: block;
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  color: var(--ink50);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 0.25rem;
+}
+
+.dash-config-hint {
+  font-size: 0.68rem;
+  color: var(--ink50);
+  margin-top: 0.2rem;
+}
+
+/* ── OPTION CARD (selectable row) ── */
+.dash-option {
+  padding: 0.8rem 1rem;
+  border-radius: 8px;
+  cursor: pointer;
+  border: 1.5px solid var(--ink08);
+  background: transparent;
+  transition: all 0.15s;
+}
+
+.dash-option--active {
+  border-color: var(--accent);
+  background: var(--accent-bg);
+}
+
+.dash-option--locked {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.dash-option__label {
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: var(--ink);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.15rem;
+}
+
+.dash-option--active .dash-option__label {
+  color: var(--accent);
+}
+
+.dash-option__desc {
+  font-size: 0.74rem;
+  color: var(--ink50);
+  margin: 0;
+  padding-left: 1.55rem;
+}
+
+.dash-option__check {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ── SCHEDULE OPTION (smaller) ── */
+.dash-schedule-opt {
+  padding: 0.6rem 0.8rem;
+  border-radius: 7px;
+  cursor: pointer;
+  border: 1.5px solid var(--ink08);
+  background: transparent;
+  opacity: 1;
+  transition: all 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.dash-schedule-opt--active {
+  border-color: var(--accent);
+  background: var(--accent-bg);
+}
+
+.dash-schedule-opt--locked {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.dash-schedule-opt__label {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--ink);
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.dash-schedule-opt--active .dash-schedule-opt__label {
+  color: var(--accent);
+}
+
+.dash-schedule-opt__desc {
+  font-size: 0.72rem;
+  color: var(--ink50);
+}
+
+/* ── INFO BOX ── */
+.dash-info-box {
+  padding: 0.7rem 0.9rem;
+  border-radius: 8px;
+  background: var(--ink04);
+  font-size: 0.76rem;
+  color: var(--ink50);
+  line-height: 1.6;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+/* ── CONNECTED BADGE ── */
+.dash-connected-badge {
+  font-family: var(--mono);
+  font-size: 0.58rem;
+  font-weight: 600;
+  padding: 0.15rem 0.4rem;
+  border-radius: 3px;
+  text-transform: uppercase;
+  background: color-mix(in srgb, var(--green) 7%, transparent);
+  color: var(--green);
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
+}
+
+/* ── SMALL BUTTON VARIANTS ── */
+.dash-btn-sm {
+  padding: 0.4rem 0.8rem;
+  border-radius: 6px;
+  font-family: var(--body);
+  font-size: 0.78rem;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.dash-btn-sm:disabled {
+  opacity: 0.5;
+}
+
+.dash-btn-sm--outline {
+  border: 1.5px solid var(--ink20);
+  background: none;
+  color: var(--ink);
+}
+
+.dash-btn-sm--accent {
+  border: none;
+  background: var(--accent);
+  color: white;
+  font-weight: 600;
+}
+
+.dash-btn-sm--green {
+  border: none;
+  background: var(--green);
+  color: white;
+  font-weight: 600;
+}
+
+.dash-btn-sm--red {
+  border: 1.5px solid color-mix(in srgb, var(--red) 25%, transparent);
+  background: none;
+  color: var(--red);
+}
+
+/* ── SELECT (config) ── */
+.dash-config-select {
+  padding: 0.45rem 0.7rem;
+  border-radius: 6px;
+  border: 1.5px solid var(--ink20);
+  background: var(--card-bg);
+  color: var(--ink);
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  outline: none;
+  cursor: pointer;
+}
+
+/* ── ACCENT CODE INLINE ── */
+.dash-code-accent {
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  color: var(--accent);
+}
+
+/* ── ACCENT LINK ── */
+.dash-accent-link {
+  color: var(--accent);
+  text-decoration: none;
+}

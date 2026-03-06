@@ -1,0 +1,34 @@
+/* ComplianceSection.css */
+.compliance-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1px;
+  background: var(--ink08);
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.compliance-card {
+  padding: 1.6rem 1.4rem;
+  background: var(--paper);
+  transition: background 0.3s;
+  height: 100%;
+}
+
+.compliance-card:hover {
+  background: var(--paper-warm);
+}
+
+.compliance-card__title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--ink);
+  margin-bottom: 0.35rem;
+}
+
+.compliance-card__desc {
+  font-size: 0.8rem;
+  color: var(--ink50);
+  line-height: 1.6;
+  margin: 0;
+}

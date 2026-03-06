@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import { useTheme } from "../../context/ThemeContext";
 import { X, Play, Globe, FileText, List, Loader2 } from "lucide-react";
+import "../../styles/dashboard.css";
+import "../../styles/dashboard-modals.css";
 
 export default function ScanConfigModal({
   site,
@@ -83,17 +85,7 @@ export default function ScanConfigModal({
 
   return (
     <div
-      style={{
-        position: "fixed",
-        inset: 0,
-        zIndex: 200,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        background: "rgba(0,0,0,0.5)",
-        backdropFilter: "blur(5px)",
-        padding: "1rem",
-      }}
+      className="dash-modal"
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
       <div
@@ -101,69 +93,30 @@ export default function ScanConfigModal({
         role="dialog"
         aria-modal="true"
         aria-labelledby="scan-config-title"
-        style={{
-          background: t.cardBg,
-          borderRadius: 14,
-          width: "100%",
-          maxWidth: 460,
-          border: `1px solid ${t.ink08}`,
-          boxShadow: "0 20px 60px rgba(0,0,0,0.18)",
-        }}
+        className="dash-modal__dialog"
+        style={{ maxWidth: 460 }}
       >
-        {/* Header */}
-        <div
-          style={{
-            padding: "1.2rem 1.4rem",
-            borderBottom: `1px solid ${t.ink08}`,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-          }}
-        >
-          <h3
-            id="scan-config-title"
-            style={{
-              fontFamily: "var(--serif)",
-              fontSize: "1.1rem",
-              fontWeight: 700,
-              color: t.ink,
-              margin: 0,
-            }}
-          >
+        <div className="dash-modal__header">
+          <h3 id="scan-config-title" className="dash-modal__title">
             Configure scan
           </h3>
           <button
             onClick={onClose}
             aria-label="Close dialog"
-            style={{
-              background: t.ink04,
-              border: "none",
-              borderRadius: 8,
-              padding: "0.3rem",
-              cursor: "pointer",
-              color: t.ink50,
-              display: "flex",
-            }}
+            className="dash-modal__close"
           >
             <X size={16} />
           </button>
         </div>
 
-        {/* Body */}
-        <div style={{ padding: "1.3rem 1.4rem" }}>
-          <p
-            style={{
-              fontSize: "0.84rem",
-              color: t.ink50,
-              marginBottom: "1rem",
-              lineHeight: 1.6,
-            }}
-          >
-            Scanning <strong style={{ color: t.ink }}>{site.domain}</strong> —
-            up to {maxPages} pages on your{" "}
+        <div className="dash-modal__body">
+          <p className="dash-modal__desc">
+            Scanning{" "}
+            <strong style={{ color: "var(--ink)" }}>{site.domain}</strong> — up
+            to {maxPages} pages on your{" "}
             <span
               style={{
-                color: t.accent,
+                color: "var(--accent)",
                 fontWeight: 600,
                 textTransform: "capitalize",
               }}
@@ -173,7 +126,6 @@ export default function ScanConfigModal({
             plan.
           </p>
 
-          {/* Mode selector */}
           <div
             style={{
               display: "flex",
@@ -186,66 +138,26 @@ export default function ScanConfigModal({
               <div
                 key={id}
                 onClick={() => setMode(id)}
-                style={{
-                  padding: "0.8rem 1rem",
-                  borderRadius: 8,
-                  cursor: "pointer",
-                  border: `1.5px solid ${mode === id ? t.accent : t.ink08}`,
-                  background: mode === id ? t.accentBg : "transparent",
-                  transition: "all 0.15s",
-                }}
+                className={
+                  "dash-option" + (mode === id ? " dash-option--active" : "")
+                }
               >
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "0.5rem",
-                    marginBottom: "0.15rem",
-                  }}
-                >
+                <div className="dash-option__label">
                   <Icon
                     size={15}
                     color={mode === id ? t.accent : t.ink50}
                     strokeWidth={1.8}
                   />
-                  <span
-                    style={{
-                      fontSize: "0.86rem",
-                      fontWeight: 600,
-                      color: mode === id ? t.accent : t.ink,
-                    }}
-                  >
-                    {label}
-                  </span>
+                  {label}
                 </div>
-                <p
-                  style={{
-                    fontSize: "0.74rem",
-                    color: t.ink50,
-                    margin: 0,
-                    paddingLeft: "1.55rem",
-                  }}
-                >
-                  {desc}
-                </p>
+                <p className="dash-option__desc">{desc}</p>
               </div>
             ))}
           </div>
 
-          {/* Manual URL input */}
           {mode === "manual" && (
             <div style={{ marginBottom: "1rem" }}>
-              <label
-                style={{
-                  display: "block",
-                  fontFamily: "var(--mono)",
-                  fontSize: "0.62rem",
-                  color: t.ink50,
-                  textTransform: "uppercase",
-                  letterSpacing: "0.06em",
-                  marginBottom: "0.3rem",
-                }}
-              >
+              <label className="dash-config-label">
                 URLs to scan (one per line, max {maxPages})
               </label>
               <textarea
@@ -253,28 +165,13 @@ export default function ScanConfigModal({
                 onChange={(e) => setManualUrls(e.target.value)}
                 placeholder={`https://${site.domain}/\nhttps://${site.domain}/about\nhttps://${site.domain}/contact`}
                 rows={5}
-                style={{
-                  width: "100%",
-                  padding: "0.6rem 0.8rem",
-                  borderRadius: 8,
-                  border: `1.5px solid ${t.ink20}`,
-                  background: t.paper,
-                  color: t.ink,
-                  fontFamily: "var(--mono)",
-                  fontSize: "0.76rem",
-                  lineHeight: 1.7,
-                  outline: "none",
-                  resize: "vertical",
-                  boxSizing: "border-box",
-                }}
-                onFocus={(e) => (e.target.style.borderColor = t.accent)}
-                onBlur={(e) => (e.target.style.borderColor = t.ink20)}
+                className="dash-config-textarea"
               />
               <div
                 style={{
                   fontFamily: "var(--mono)",
                   fontSize: "0.6rem",
-                  color: t.ink50,
+                  color: "var(--ink50)",
                   marginTop: "0.2rem",
                 }}
               >
@@ -284,25 +181,10 @@ export default function ScanConfigModal({
             </div>
           )}
 
-          {/* Info box */}
-          <div
-            style={{
-              padding: "0.7rem 0.9rem",
-              borderRadius: 8,
-              background: t.ink04,
-              fontSize: "0.76rem",
-              color: t.ink50,
-              lineHeight: 1.6,
-              marginBottom: "1rem",
-              display: "flex",
-              alignItems: "flex-start",
-              gap: "0.5rem",
-            }}
-          >
+          <div className="dash-info-box">
             <FileText
               size={14}
-              color={t.ink50}
-              style={{ flexShrink: 0, marginTop: 2 }}
+              style={{ flexShrink: 0, marginTop: 2, color: "var(--ink50)" }}
             />
             <span>
               {mode === "auto"
@@ -311,30 +193,18 @@ export default function ScanConfigModal({
             </span>
           </div>
 
-          {/* Actions */}
           <div style={{ display: "flex", gap: "0.5rem" }}>
             <button
               onClick={handleScan}
               disabled={scanning || (mode === "manual" && !manualUrls.trim())}
+              className="auth-submit"
               style={{
                 flex: 1,
-                padding: "0.65rem",
-                borderRadius: 8,
-                border: "none",
-                background: t.accent,
-                color: "white",
-                fontFamily: "var(--body)",
-                fontSize: "0.88rem",
-                fontWeight: 600,
-                cursor: scanning ? "not-allowed" : "pointer",
-                opacity:
-                  scanning || (mode === "manual" && !manualUrls.trim())
-                    ? 0.5
-                    : 1,
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
                 gap: "0.5rem",
+                fontSize: "0.88rem",
               }}
             >
               {scanning ? (
@@ -347,8 +217,6 @@ export default function ScanConfigModal({
           </div>
         </div>
       </div>
-
-      <style>{`@keyframes xsbl-spin { to { transform: rotate(360deg); } } .xsbl-spin { animation: xsbl-spin 0.6s linear infinite; }`}</style>
     </div>
   );
 }

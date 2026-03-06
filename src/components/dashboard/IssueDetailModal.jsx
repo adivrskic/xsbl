@@ -13,6 +13,8 @@ import {
 } from "lucide-react";
 import CreatePRButton from "./CreatePRButton";
 import AltTextGenerator from "./AltTextGenerator";
+import "../../styles/dashboard.css";
+import "../../styles/dashboard-modals.css";
 
 const STATUS_OPTIONS = [
   { value: "open", label: "Open" },
@@ -123,17 +125,8 @@ export default function IssueDetailModal({ issue, site, onClose, onUpdate }) {
 
   return (
     <div
-      style={{
-        position: "fixed",
-        inset: 0,
-        zIndex: 200,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        background: "rgba(0,0,0,0.55)",
-        backdropFilter: "blur(6px)",
-        padding: "1rem",
-      }}
+      className="dash-modal"
+      style={{ background: "rgba(0,0,0,0.55)", backdropFilter: "blur(6px)" }}
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
       <div
@@ -141,17 +134,14 @@ export default function IssueDetailModal({ issue, site, onClose, onUpdate }) {
         role="dialog"
         aria-modal="true"
         aria-labelledby="issue-detail-title"
+        className="dash-modal__dialog"
         style={{
-          background: t.cardBg,
-          borderRadius: 16,
-          width: "100%",
           maxWidth: 620,
           maxHeight: "85vh",
           overflow: "hidden",
           display: "flex",
           flexDirection: "column",
-          border: `1px solid ${t.ink08}`,
-          boxShadow: "0 24px 64px rgba(0,0,0,0.2)",
+          borderRadius: 16,
         }}
       >
         {/* Header */}

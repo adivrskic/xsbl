@@ -6,6 +6,184 @@
   --mono: "IBM Plex Mono", monospace;
 }
 
+/* ── SHARED BUTTON STYLES ── */
+.btn {
+  font-family: var(--body);
+  font-weight: 600;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 0.25s;
+  display: inline-block;
+}
+
+.btn-primary {
+  background: var(--ink);
+  color: var(--paper);
+  font-size: 0.85rem;
+  padding: 0.55rem 1.3rem;
+}
+
+.btn-primary:hover {
+  background: var(--accent);
+  transform: translateY(-1px);
+}
+
+.btn-accent {
+  background: var(--accent);
+  color: white;
+  font-size: 0.9rem;
+  padding: 0.72rem 1.6rem;
+}
+
+.btn-accent:hover {
+  background: var(--accent-light);
+  transform: translateY(-1px);
+}
+
+.btn-outline {
+  background: none;
+  border: 1.5px solid var(--ink20);
+  color: var(--ink);
+  font-family: var(--body);
+  font-size: 0.84rem;
+  font-weight: 500;
+  padding: 0.5rem 1rem;
+  border-radius: 7px;
+  cursor: pointer;
+}
+
+.btn-outline:hover {
+  border-color: var(--ink50);
+  background: var(--ink04);
+}
+
+.btn-danger {
+  background: var(--red);
+  color: white;
+  font-family: var(--body);
+  font-size: 0.84rem;
+  font-weight: 600;
+  padding: 0.5rem 1rem;
+  border-radius: 7px;
+  border: none;
+  cursor: pointer;
+}
+
+/* ── SHARED LINK STYLES ── */
+.nav-link {
+  color: var(--ink50);
+  text-decoration: none;
+  font-size: 0.85rem;
+  font-weight: 500;
+  transition: color 0.2s;
+}
+
+.nav-link:hover {
+  color: var(--ink);
+}
+
+/* ── SHARED CARD STYLES ── */
+.card {
+  background: var(--card-bg);
+  border: 1px solid var(--ink08);
+  border-radius: 14px;
+}
+
+/* ── SHARED ICON BOX ── */
+.icon-box {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  background: var(--accent-bg);
+}
+
+/* ── SECTION LAYOUT ── */
+.section {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 6rem clamp(1.5rem, 3vw, 3rem);
+}
+
+/* ── EYEBROW TYPOGRAPHY ── */
+.eyebrow {
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--accent);
+  font-weight: 600;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.eyebrow-line {
+  width: 20px;
+  height: 1.5px;
+  background: var(--accent);
+}
+
+/* ── HEADING TYPOGRAPHY ── */
+.h2-serif {
+  font-family: var(--serif);
+  font-size: clamp(1.9rem, 3.5vw, 2.8rem);
+  line-height: 1.18;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  max-width: 640px;
+  margin-bottom: 1.2rem;
+  color: var(--ink);
+}
+
+.sub-text {
+  font-size: 1.02rem;
+  color: var(--ink50);
+  max-width: 520px;
+  line-height: 1.75;
+  margin-bottom: 3rem;
+}
+
+.italic-accent {
+  font-weight: 400;
+  font-style: italic;
+  color: var(--accent);
+}
+
+/* ── OVERLAY / MODAL SHARED ── */
+.overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  padding: 1rem;
+}
+
+/* ── THEME TOGGLE BUTTON ── */
+.theme-toggle {
+  background: var(--ink08);
+  border: none;
+  border-radius: 8px;
+  padding: 0.45rem 0.55rem;
+  cursor: pointer;
+  color: var(--ink);
+  transition: background 0.2s;
+  display: flex;
+  align-items: center;
+}
+
+.theme-toggle:hover {
+  background: var(--ink20);
+}
+
 *,
 *::before,
 *::after {

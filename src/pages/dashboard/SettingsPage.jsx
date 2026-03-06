@@ -1,5 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import { useTheme } from "../../context/ThemeContext";
+import "../../styles/dashboard.css";
+import "../../styles/dashboard-pages.css";
+import "../../styles/dashboard-modals.css";
 import { useAuth } from "../../context/AuthContext";
 import { supabase } from "../../lib/supabase";
 import { useToast } from "../../components/ui/Toast";

@@ -3,6 +3,8 @@ import { useTheme } from "../../context/ThemeContext";
 import { supabase } from "../../lib/supabase";
 import { useToast } from "../ui/Toast";
 import { Loader2, ExternalLink, Check, X } from "lucide-react";
+import "../../styles/github-pr.css";
+import "../../styles/dashboard.css";
 
 function GitHubIcon({ size = 14 }) {
   return (
@@ -28,7 +30,6 @@ export default function BulkFixBar({
   var count = selectedIds.length;
   if (count === 0) return null;
 
-  // Count by impact
   var selectedIssues = issues.filter(function (iss) {
     return selectedIds.indexOf(iss.id) !== -1;
   });
@@ -70,89 +71,31 @@ export default function BulkFixBar({
   };
 
   return (
-    <div
-      style={{
-        position: "fixed",
-        bottom: 24,
-        left: "50%",
-        transform: "translateX(-50%)",
-        zIndex: 150,
-        display: "flex",
-        alignItems: "center",
-        gap: "0.8rem",
-        padding: "0.7rem 1.2rem",
-        borderRadius: 12,
-        background: t.cardBg,
-        border: "1px solid " + t.ink08,
-        boxShadow: "0 8px 32px rgba(0,0,0,0.15), 0 2px 8px rgba(0,0,0,0.1)",
-        animation: "bulkBarIn 0.25s ease",
-        maxWidth: "90vw",
-      }}
-    >
-      {/* Count + impact badges */}
+    <div className="bulk-bar">
       <div style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
-        <span
-          style={{
-            fontFamily: "var(--serif)",
-            fontSize: "1.1rem",
-            fontWeight: 700,
-            color: t.ink,
-          }}
-        >
-          {count}
-        </span>
-        <span style={{ fontSize: "0.78rem", color: t.ink50 }}>selected</span>
+        <span className="bulk-bar__count">{count}</span>
+        <span className="bulk-bar__label">selected</span>
         {impacts.critical > 0 && (
-          <span
-            style={{
-              fontFamily: "var(--mono)",
-              fontSize: "0.55rem",
-              fontWeight: 600,
-              padding: "0.1rem 0.3rem",
-              borderRadius: 3,
-              background: t.red + "15",
-              color: t.red,
-            }}
-          >
+          <span className="bulk-bar__impact bulk-bar__impact--critical">
             {impacts.critical} critical
           </span>
         )}
         {impacts.serious > 0 && (
-          <span
-            style={{
-              fontFamily: "var(--mono)",
-              fontSize: "0.55rem",
-              fontWeight: 600,
-              padding: "0.1rem 0.3rem",
-              borderRadius: 3,
-              background: t.red + "10",
-              color: t.red,
-            }}
-          >
+          <span className="bulk-bar__impact bulk-bar__impact--serious">
             {impacts.serious} serious
           </span>
         )}
       </div>
 
-      {/* Divider */}
-      <div style={{ width: 1, height: 24, background: t.ink08 }} />
+      <div className="bulk-bar__divider" />
 
-      {/* Result */}
       {result ? (
         <a
           href={result.pr_url}
           target="_blank"
           rel="noopener noreferrer"
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "0.3rem",
-            fontFamily: "var(--mono)",
-            fontSize: "0.78rem",
-            color: t.green,
-            textDecoration: "none",
-            fontWeight: 600,
-          }}
+          className="pr-result__link"
+          style={{ color: "var(--green)", fontWeight: 600 }}
         >
           <Check size={15} /> PR #{result.pr_number} <ExternalLink size={11} />
         </a>
@@ -160,21 +103,8 @@ export default function BulkFixBar({
         <button
           onClick={handleBulkFix}
           disabled={loading || !hasGitHub}
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "0.4rem",
-            padding: "0.45rem 1rem",
-            borderRadius: 7,
-            border: "none",
-            background: hasGitHub ? "#24292e" : t.ink20,
-            color: "white",
-            fontFamily: "var(--body)",
-            fontSize: "0.82rem",
-            fontWeight: 600,
-            cursor: loading || !hasGitHub ? "not-allowed" : "pointer",
-            opacity: loading ? 0.6 : 1,
-          }}
+          className={"gh-btn" + (!hasGitHub ? " gh-btn--disabled-look" : "")}
+          style={{ padding: "0.45rem 1rem" }}
         >
           {loading ? (
             <Loader2 size={14} className="xsbl-spin" />
@@ -189,26 +119,9 @@ export default function BulkFixBar({
         </button>
       )}
 
-      {/* Close */}
-      <button
-        onClick={onClear}
-        style={{
-          background: "none",
-          border: "none",
-          padding: "0.2rem",
-          cursor: "pointer",
-          color: t.ink50,
-          display: "flex",
-        }}
-      >
+      <button onClick={onClear} className="bulk-bar__close">
         <X size={16} />
       </button>
-
-      <style>{`
-        @keyframes bulkBarIn { from { opacity: 0; transform: translateX(-50%) translateY(10px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
-        .xsbl-spin { animation: xsbl-spin 0.6s linear infinite; }
-        @keyframes xsbl-spin { to { transform: rotate(360deg); } }
-      `}</style>
     </div>
   );
 }

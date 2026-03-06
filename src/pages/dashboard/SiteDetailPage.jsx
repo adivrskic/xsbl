@@ -1,6 +1,9 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { useTheme } from "../../context/ThemeContext";
+import "../../styles/dashboard.css";
+import "../../styles/dashboard-pages.css";
+import "../../styles/dashboard-modals.css";
 import { useAuth } from "../../context/AuthContext";
 import { supabase } from "../../lib/supabase";
 import {
@@ -24,6 +27,8 @@ import ScanConfigModal from "../../components/dashboard/ScanConfigModal";
 import BulkFixBar from "../../components/dashboard/BulkFixBar";
 import ReportButton from "../../components/dashboard/ReportButton";
 import AccessibilitySimulator from "../../components/dashboard/AccessibilitySimulator";
+import GitHubConnect from "../../components/dashboard/GithubConnect";
+import SchedulePicker from "../../components/dashboard/SchedulePicker";
 
 /* ── GitHub icon (no lucide brand icons) ── */
 /* ── CSV Export ── */
@@ -77,190 +82,6 @@ function GitHubIcon({ size = 16 }) {
     >
       <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z" />
     </svg>
-  );
-}
-
-/* ── Schedule Picker Inline ── */
-function SchedulePickerInline({ site, plan, onUpdate }) {
-  const { t } = useTheme();
-  const [schedule, setSchedule] = useState(site.scan_schedule || "manual");
-  const [hour, setHour] = useState(site.schedule_hour ?? 6);
-  const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
-
-  const isPaid = ["starter", "pro", "agency"].includes(plan);
-  const hasChanged =
-    schedule !== (site.scan_schedule || "manual") ||
-    hour !== (site.schedule_hour ?? 6);
-
-  const handleSave = async () => {
-    setSaving(true);
-    await supabase
-      .from("sites")
-      .update({ scan_schedule: schedule, schedule_hour: hour })
-      .eq("id", site.id);
-    setSaving(false);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
-    onUpdate?.({ ...site, scan_schedule: schedule, schedule_hour: hour });
-  };
-
-  const options = [
-    { value: "manual", label: "Manual only" },
-    { value: "daily", label: "Daily" },
-    { value: "weekly", label: "Weekly" },
-  ];
-
-  return (
-    <div
-      style={{
-        padding: "1.2rem",
-        borderRadius: 10,
-        border: `1px solid ${t.ink08}`,
-        background: t.cardBg,
-        marginBottom: "1rem",
-      }}
-    >
-      <div
-        style={{
-          fontSize: "0.88rem",
-          fontWeight: 600,
-          color: t.ink,
-          marginBottom: "0.6rem",
-        }}
-      >
-        Scan schedule
-      </div>
-      <div
-        style={{
-          display: "flex",
-          gap: "0.3rem",
-          marginBottom: "0.8rem",
-          background: t.ink04,
-          padding: "0.25rem",
-          borderRadius: 8,
-          width: "fit-content",
-        }}
-      >
-        {options.map(function (opt) {
-          var isActive = schedule === opt.value;
-          var isLocked = opt.value !== "manual" && !isPaid;
-          return (
-            <button
-              key={opt.value}
-              onClick={function () {
-                if (!isLocked) setSchedule(opt.value);
-              }}
-              disabled={isLocked}
-              style={{
-                padding: "0.4rem 0.75rem",
-                borderRadius: 6,
-                border: "none",
-                background: isActive ? t.cardBg : "transparent",
-                color: isLocked ? t.ink20 : isActive ? t.ink : t.ink50,
-                fontFamily: "var(--mono)",
-                fontSize: "0.7rem",
-                fontWeight: 600,
-                cursor: isLocked ? "not-allowed" : "pointer",
-                boxShadow: isActive ? "0 1px 3px rgba(0,0,0,0.08)" : "none",
-              }}
-            >
-              {opt.label} {isLocked ? "🔒" : ""}
-            </button>
-          );
-        })}
-      </div>
-
-      {schedule !== "manual" && isPaid && (
-        <div style={{ marginBottom: "0.8rem" }}>
-          <label
-            style={{
-              fontFamily: "var(--mono)",
-              fontSize: "0.62rem",
-              color: t.ink50,
-              textTransform: "uppercase",
-              letterSpacing: "0.06em",
-            }}
-          >
-            Run at (UTC)
-          </label>
-          <select
-            value={hour}
-            onChange={function (e) {
-              setHour(parseInt(e.target.value));
-            }}
-            style={{
-              display: "block",
-              marginTop: "0.25rem",
-              padding: "0.4rem 0.6rem",
-              borderRadius: 6,
-              border: "1.5px solid " + t.ink20,
-              background: t.paper,
-              color: t.ink,
-              fontFamily: "var(--mono)",
-              fontSize: "0.76rem",
-            }}
-          >
-            {Array.from({ length: 24 }, function (_, i) {
-              return i;
-            }).map(function (h) {
-              return (
-                <option key={h} value={h}>
-                  {String(h).padStart(2, "0") + ":00 UTC"}
-                </option>
-              );
-            })}
-          </select>
-          <div
-            style={{
-              fontFamily: "var(--mono)",
-              fontSize: "0.62rem",
-              color: t.ink50,
-              marginTop: "0.25rem",
-            }}
-          >
-            {schedule === "daily" ? "Runs every day" : "Runs every 7 days"} at
-            this time.
-          </div>
-        </div>
-      )}
-
-      {!isPaid && schedule === "manual" && (
-        <p
-          style={{
-            fontSize: "0.74rem",
-            color: t.ink50,
-            fontStyle: "italic",
-            margin: "0 0 0.5rem 0",
-          }}
-        >
-          Scheduled scans available on Starter, Pro, and Agency plans.
-        </p>
-      )}
-
-      {isPaid && hasChanged && (
-        <button
-          onClick={handleSave}
-          disabled={saving}
-          style={{
-            padding: "0.4rem 0.9rem",
-            borderRadius: 6,
-            border: "none",
-            background: t.accent,
-            color: "white",
-            fontFamily: "var(--body)",
-            fontSize: "0.78rem",
-            fontWeight: 600,
-            cursor: "pointer",
-            display: "flex",
-            alignItems: "center",
-            gap: "0.3rem",
-          }}
-        >
-          {saving ? "Saving..." : saved ? "✓ Saved" : "Save schedule"}
-        </button>
-      )}
-    </div>
   );
 }
 
@@ -371,6 +192,11 @@ function ImpactBadge({ impact }) {
         color: c.text,
         textTransform: "uppercase",
         letterSpacing: "0.04em",
+        width: 62,
+        textAlign: "center",
+        flexShrink: 0,
+        display: "inline-block",
+        boxSizing: "border-box",
       }}
     >
       {impact}
@@ -944,304 +770,6 @@ function IssueFilters({ filters, setFilters, issues }) {
   );
 }
 
-/* ── GitHub Connect Panel ── */
-function GitHubConnectPanel({ site, onUpdate }) {
-  const { t } = useTheme();
-  const [repo, setRepo] = useState(site.github_repo || "");
-  const [ghToken, setGhToken] = useState(site.github_token ? "••••••••" : "");
-  const [branch, setBranch] = useState(site.github_default_branch || "main");
-  const [saving, setSaving] = useState(false);
-  const [testing, setTesting] = useState(false);
-  const [status, setStatus] = useState(null); // { type: "success"|"error", text: "..." }
-  const connected = !!(site.github_repo && site.github_token);
-
-  var handleSave = async function () {
-    if (!repo.trim() || !ghToken.trim()) return;
-    setSaving(true);
-    setStatus(null);
-    var updateData = {
-      github_repo: repo.trim(),
-      github_default_branch: branch.trim() || "main",
-    };
-    if (ghToken !== "••••••••") updateData.github_token = ghToken.trim();
-    await supabase.from("sites").update(updateData).eq("id", site.id);
-    setSaving(false);
-    setStatus({ type: "success", text: "GitHub repo saved" });
-    onUpdate && onUpdate({ ...site, ...updateData });
-  };
-
-  var handleTest = async function () {
-    setTesting(true);
-    setStatus(null);
-    try {
-      var tkn = ghToken === "••••••••" ? site.github_token : ghToken;
-      var res = await fetch("https://api.github.com/repos/" + repo.trim(), {
-        headers: {
-          Authorization: "token " + tkn,
-          Accept: "application/vnd.github.v3+json",
-        },
-      });
-      if (res.ok) {
-        var d = await res.json();
-        setBranch(d.default_branch || "main");
-        setStatus({
-          type: "success",
-          text:
-            "Connected to " +
-            d.full_name +
-            " (" +
-            (d.private ? "private" : "public") +
-            ")",
-        });
-      } else {
-        var err = await res.json().catch(function () {
-          return {};
-        });
-        setStatus({
-          type: "error",
-          text: "GitHub error: " + (err.message || res.status),
-        });
-      }
-    } catch (e) {
-      setStatus({
-        type: "error",
-        text: "Connection failed: " + String(e).substring(0, 100),
-      });
-    }
-    setTesting(false);
-  };
-
-  return (
-    <div
-      style={{
-        padding: "1.2rem",
-        borderRadius: 10,
-        border: "1px solid " + t.ink08,
-        background: t.cardBg,
-        marginBottom: "1rem",
-      }}
-    >
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: "0.5rem",
-          marginBottom: "0.6rem",
-        }}
-      >
-        <GitHubIcon size={16} />
-        <span style={{ fontSize: "0.88rem", fontWeight: 600, color: t.ink }}>
-          GitHub Integration
-        </span>
-        {connected && (
-          <span
-            style={{
-              fontFamily: "var(--mono)",
-              fontSize: "0.55rem",
-              fontWeight: 600,
-              padding: "0.12rem 0.35rem",
-              borderRadius: 3,
-              background: t.green + "12",
-              color: t.green,
-            }}
-          >
-            Connected
-          </span>
-        )}
-      </div>
-      <p
-        style={{
-          fontSize: "0.74rem",
-          color: t.ink50,
-          marginBottom: "0.8rem",
-          lineHeight: 1.5,
-        }}
-      >
-        Connect a repo to create pull requests that fix accessibility issues.
-      </p>
-      <div style={{ marginBottom: "0.5rem" }}>
-        <label
-          style={{
-            fontFamily: "var(--mono)",
-            fontSize: "0.58rem",
-            color: t.ink50,
-            textTransform: "uppercase",
-            letterSpacing: "0.06em",
-          }}
-        >
-          Repository (owner/repo)
-        </label>
-        <input
-          value={repo}
-          onChange={function (e) {
-            setRepo(e.target.value);
-          }}
-          placeholder="acme/website"
-          style={{
-            display: "block",
-            width: "100%",
-            marginTop: "0.2rem",
-            padding: "0.4rem 0.65rem",
-            borderRadius: 6,
-            border: "1.5px solid " + t.ink20,
-            background: t.paper,
-            color: t.ink,
-            fontFamily: "var(--mono)",
-            fontSize: "0.76rem",
-            outline: "none",
-            boxSizing: "border-box",
-          }}
-        />
-      </div>
-      <div style={{ marginBottom: "0.5rem" }}>
-        <label
-          style={{
-            fontFamily: "var(--mono)",
-            fontSize: "0.58rem",
-            color: t.ink50,
-            textTransform: "uppercase",
-            letterSpacing: "0.06em",
-          }}
-        >
-          Personal Access Token
-        </label>
-        <input
-          type="password"
-          value={ghToken}
-          onChange={function (e) {
-            setGhToken(e.target.value);
-          }}
-          onFocus={function () {
-            if (ghToken === "••••••••") setGhToken("");
-          }}
-          placeholder="ghp_xxxx"
-          style={{
-            display: "block",
-            width: "100%",
-            marginTop: "0.2rem",
-            padding: "0.4rem 0.65rem",
-            borderRadius: 6,
-            border: "1.5px solid " + t.ink20,
-            background: t.paper,
-            color: t.ink,
-            fontFamily: "var(--mono)",
-            fontSize: "0.76rem",
-            outline: "none",
-            boxSizing: "border-box",
-          }}
-        />
-        <a
-          href="https://github.com/settings/tokens/new?scopes=repo&description=xsbl-fixes"
-          target="_blank"
-          rel="noopener noreferrer"
-          style={{
-            fontFamily: "var(--mono)",
-            fontSize: "0.58rem",
-            color: t.accent,
-            textDecoration: "none",
-          }}
-        >
-          Create token with repo scope →
-        </a>
-      </div>
-      <div style={{ marginBottom: "0.8rem" }}>
-        <label
-          style={{
-            fontFamily: "var(--mono)",
-            fontSize: "0.58rem",
-            color: t.ink50,
-            textTransform: "uppercase",
-            letterSpacing: "0.06em",
-          }}
-        >
-          Default branch
-        </label>
-        <input
-          value={branch}
-          onChange={function (e) {
-            setBranch(e.target.value);
-          }}
-          style={{
-            display: "block",
-            width: 100,
-            marginTop: "0.2rem",
-            padding: "0.4rem 0.65rem",
-            borderRadius: 6,
-            border: "1.5px solid " + t.ink20,
-            background: t.paper,
-            color: t.ink,
-            fontFamily: "var(--mono)",
-            fontSize: "0.76rem",
-            outline: "none",
-          }}
-        />
-      </div>
-      <div style={{ display: "flex", gap: "0.4rem" }}>
-        <button
-          onClick={handleTest}
-          disabled={!repo.trim() || testing}
-          style={{
-            padding: "0.35rem 0.7rem",
-            borderRadius: 6,
-            border: "1.5px solid " + t.ink20,
-            background: "none",
-            color: t.ink,
-            fontSize: "0.74rem",
-            fontWeight: 500,
-            cursor: "pointer",
-            fontFamily: "var(--body)",
-          }}
-        >
-          {testing ? "Testing..." : "Test"}
-        </button>
-        <button
-          onClick={handleSave}
-          disabled={saving || !repo.trim()}
-          style={{
-            padding: "0.35rem 0.7rem",
-            borderRadius: 6,
-            border: "none",
-            background: t.accent,
-            color: "white",
-            fontSize: "0.74rem",
-            fontWeight: 600,
-            cursor: "pointer",
-            fontFamily: "var(--body)",
-          }}
-        >
-          {saving ? "Saving..." : "Save"}
-        </button>
-      </div>
-      {status && (
-        <div
-          style={{
-            marginTop: "0.6rem",
-            padding: "0.5rem 0.7rem",
-            borderRadius: 6,
-            fontSize: "0.76rem",
-            lineHeight: 1.5,
-            background:
-              status.type === "success" ? t.green + "08" : t.red + "08",
-            border:
-              "1px solid " +
-              (status.type === "success" ? t.green + "20" : t.red + "20"),
-            color: status.type === "success" ? t.green : t.red,
-            display: "flex",
-            alignItems: "center",
-            gap: "0.3rem",
-          }}
-        >
-          {status.type === "success" ? (
-            <Check size={13} />
-          ) : (
-            <AlertTriangle size={13} />
-          )}
-          {status.text}
-        </div>
-      )}
-    </div>
-  );
-}
 function BadgeEmbedPanel({ site }) {
   const { t } = useTheme();
   const [style, setStyle] = useState("flat");
@@ -1623,7 +1151,7 @@ export default function SiteDetailPage() {
         headers: { Authorization: `Bearer ${session?.access_token}` },
       });
       if (res.error) throw new Error(res.error.message || "Scan failed");
-      await loadData();
+      await loadData(true);
       setScanProgress(null);
     } catch (err) {
       setScanError(err.message);
@@ -2100,15 +1628,14 @@ export default function SiteDetailPage() {
                   fontFamily: "var(--mono)",
                   fontSize: "0.75rem",
                   color: t.accent,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.5rem",
                 }}
               >
+                <Loader2 size={13} className="xsbl-spin" />
                 {scanProgress}
               </span>
-            )}
-            {scanError && (
-              <p style={{ color: t.red, fontSize: "0.82rem", margin: 0 }}>
-                {scanError}
-              </p>
             )}
             {scans.length > 0 && <ReportButton site={site} scan={scans[0]} />}
             {scans.length > 0 && (
@@ -2144,6 +1671,30 @@ export default function SiteDetailPage() {
               </button>
             )}
           </div>
+          {scanError && (
+            <div
+              style={{
+                marginTop: "0.6rem",
+                padding: "0.55rem 0.9rem",
+                borderRadius: 8,
+                background: `${t.red}08`,
+                border: `1px solid ${t.red}20`,
+                color: t.red,
+                fontSize: "0.82rem",
+                lineHeight: 1.5,
+                display: "flex",
+                alignItems: "center",
+                gap: "0.4rem",
+              }}
+            >
+              <AlertTriangle
+                size={14}
+                strokeWidth={2}
+                style={{ flexShrink: 0 }}
+              />
+              {scanError}
+            </div>
+          )}
           <style>{`@keyframes xsbl-spin { to { transform: rotate(360deg); } } .xsbl-spin { animation: xsbl-spin 0.6s linear infinite; }`}</style>
         </div>
       )}
@@ -2534,6 +2085,11 @@ export default function SiteDetailPage() {
                               fontSize: "0.7rem",
                               color: t.accent,
                               fontWeight: 600,
+                              width: 140,
+                              flexShrink: 0,
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                              whiteSpace: "nowrap",
                             }}
                           >
                             {group.rule_id}
@@ -2567,6 +2123,8 @@ export default function SiteDetailPage() {
                             background: t.ink04,
                             padding: "0.1rem 0.4rem",
                             borderRadius: 3,
+                            minWidth: 32,
+                            textAlign: "center",
                           }}
                         >
                           {group.count}×
@@ -2579,6 +2137,8 @@ export default function SiteDetailPage() {
                             background: t.ink04,
                             padding: "0.1rem 0.4rem",
                             borderRadius: 3,
+                            minWidth: 38,
+                            textAlign: "center",
                           }}
                         >
                           {group.pageCount} pg
@@ -2847,7 +2407,11 @@ export default function SiteDetailPage() {
                               fontFamily: "var(--mono)",
                               fontSize: "0.7rem",
                               color: t.accent,
+                              width: 140,
                               flexShrink: 0,
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                              whiteSpace: "nowrap",
                             }}
                           >
                             {issue.rule_id}
@@ -3055,7 +2619,7 @@ export default function SiteDetailPage() {
       {tab === "settings" && (
         <div>
           {/* Scan Schedule */}
-          <SchedulePickerInline
+          <SchedulePicker
             site={site}
             plan={org?.plan || "free"}
             onUpdate={(s) => setSite(s)}
@@ -3065,7 +2629,7 @@ export default function SiteDetailPage() {
           <VerificationTokenPanel site={site} />
 
           {/* GitHub Integration */}
-          <GitHubConnectPanel site={site} onUpdate={(s) => setSite(s)} />
+          <GitHubConnect site={site} onUpdate={(s) => setSite(s)} />
 
           {/* Badge Embed */}
           <BadgeEmbedPanel site={site} />

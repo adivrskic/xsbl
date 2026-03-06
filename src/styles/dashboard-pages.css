@@ -1,0 +1,196 @@
+/* dashboard-pages.css — shared styles for dashboard page components */
+
+/* ── PAGE HEADER ── */
+.dash-page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.dash-page-title {
+  font-family: var(--serif);
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--ink);
+  margin-bottom: 0.3rem;
+}
+
+.dash-page-subtitle {
+  color: var(--ink50);
+  font-size: 0.88rem;
+}
+
+/* ── STAT CARD ── */
+.stat-card {
+  padding: 1.4rem 1.3rem;
+  border-radius: 12px;
+  border: 1px solid var(--ink08);
+  background: var(--card-bg);
+}
+
+.stat-card__label {
+  font-family: var(--mono);
+  font-size: 0.64rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ink50);
+  margin-bottom: 0.45rem;
+  font-weight: 500;
+}
+
+.stat-card__value {
+  font-family: var(--serif);
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--ink);
+  line-height: 1.1;
+  margin-bottom: 0.2rem;
+}
+
+.stat-card__sub {
+  font-size: 0.75rem;
+  color: var(--ink50);
+}
+
+/* ── STATS GRID ── */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.8rem;
+  margin-bottom: 2.5rem;
+}
+
+/* ── SECTION HEADING (in-page) ── */
+.dash-section-title {
+  font-family: var(--serif);
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--ink);
+  margin-bottom: 1rem;
+}
+
+/* ── SITE ROW ── */
+.site-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.2rem;
+  border-radius: 10px;
+  border: 1px solid var(--ink08);
+  background: var(--card-bg);
+  text-decoration: none;
+  transition: border-color 0.2s;
+}
+
+.site-row:hover {
+  border-color: var(--accent);
+}
+
+.site-row__info {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+}
+
+.site-row__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.site-row__name {
+  font-weight: 600;
+  font-size: 0.88rem;
+  color: var(--ink);
+}
+
+.site-row__domain {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  color: var(--ink50);
+}
+
+.site-row__score {
+  font-family: var(--mono);
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+/* ── EMPTY STATE ── */
+.dash-empty {
+  padding: 3rem 2rem;
+  border-radius: 12px;
+  border: 1px dashed var(--ink20);
+  text-align: center;
+}
+
+.dash-empty__text {
+  color: var(--ink50);
+  font-size: 0.92rem;
+  margin-bottom: 1rem;
+}
+
+/* ── WARNING BAR ── */
+.dash-warning {
+  padding: 0.8rem 1rem;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.84rem;
+}
+
+.dash-warning--amber {
+  background: color-mix(in srgb, var(--amber) 3%, transparent);
+  border: 1px solid color-mix(in srgb, var(--amber) 12.5%, transparent);
+  color: var(--amber);
+}
+
+.dash-warning--red {
+  background: color-mix(in srgb, var(--red) 3%, transparent);
+  border: 1px solid color-mix(in srgb, var(--red) 12.5%, transparent);
+  color: var(--red);
+}
+
+/* ── SKELETON LOADING ── */
+@keyframes skeletonPulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
+}
+
+.skeleton {
+  background: var(--ink08);
+  border-radius: 4px;
+  animation: skeletonPulse 1.5s ease-in-out infinite;
+}
+
+.skeleton-card {
+  padding: 1.3rem;
+  border-radius: 12px;
+  border: 1px solid var(--ink04);
+  background: var(--card-bg);
+}
+
+/* ── ADD SITE BUTTON ── */
+.dash-add-btn {
+  background: var(--accent);
+  color: white;
+  padding: 0.55rem 1.2rem;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-decoration: none;
+  font-family: var(--body);
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}

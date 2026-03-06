@@ -1,4 +1,5 @@
 import { useTheme } from "../../context/ThemeContext";
+import "../../styles/dashboard.css";
 
 // Lightweight inline chart — no recharts dependency needed.
 // Renders an SVG sparkline + area chart from scan history.
@@ -13,16 +14,8 @@ export default function ScoreChart({ scans }) {
 
   if (points.length < 2) {
     return (
-      <div
-        style={{
-          padding: "2rem",
-          borderRadius: 10,
-          border: `1px solid ${t.ink08}`,
-          background: t.cardBg,
-          textAlign: "center",
-        }}
-      >
-        <p style={{ color: t.ink50, fontSize: "0.82rem" }}>
+      <div className="dash-card dash-card--empty">
+        <p style={{ color: "var(--ink50)", fontSize: "0.82rem" }}>
           Run at least 2 scans to see your score trend.
         </p>
       </div>
@@ -57,33 +50,9 @@ export default function ScoreChart({ scans }) {
   const trend = lastScore - firstScore;
 
   return (
-    <div
-      style={{
-        padding: "1.2rem",
-        borderRadius: 10,
-        border: `1px solid ${t.ink08}`,
-        background: t.cardBg,
-      }}
-    >
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          marginBottom: "0.6rem",
-        }}
-      >
-        <div
-          style={{
-            fontFamily: "var(--mono)",
-            fontSize: "0.62rem",
-            color: t.ink50,
-            textTransform: "uppercase",
-            letterSpacing: "0.08em",
-          }}
-        >
-          Score trend
-        </div>
+    <div className="dash-card">
+      <div className="dash-card__header">
+        <div className="dash-card__label">Score trend</div>
         <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
           <span
             style={{

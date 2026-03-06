@@ -1,0 +1,237 @@
+/* GitHubSection.css */
+@keyframes bullFloat {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+.gh-layout {
+  display: grid;
+  grid-template-columns: 1fr 420px;
+  gap: 3.5rem;
+  align-items: center;
+}
+
+.gh-features {
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
+}
+
+.gh-feat {
+  display: flex;
+  gap: 0.8rem;
+  align-items: flex-start;
+}
+
+.gh-feat__icon {
+  font-size: 0.9rem;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background: var(--accent-bg);
+  flex-shrink: 0;
+}
+
+.gh-feat__title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--ink);
+  margin: 0 0 0.2rem 0;
+}
+
+.gh-feat__desc {
+  font-size: 0.82rem;
+  color: var(--ink50);
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* PR Demo */
+.pr-demo {
+  position: relative;
+}
+
+.pr-demo__bull {
+  position: absolute;
+  top: -40px;
+  right: 20px;
+  z-index: 3;
+  animation: bullFloat 3s ease-in-out infinite;
+}
+
+.pr-card {
+  background: var(--code-bg);
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.03), 0 12px 32px rgba(0, 0, 0, 0.1),
+    0 32px 64px rgba(0, 0, 0, 0.08);
+}
+
+.pr-card__bar {
+  padding: 0.75rem 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: rgba(255, 255, 255, 0.03);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.pr-card__dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+}
+
+.pr-card__bar-title {
+  flex: 1;
+  text-align: center;
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  color: rgba(255, 255, 255, 0.2);
+}
+
+.pr-card__body {
+  padding: 1.2rem 1.4rem;
+}
+
+.pr-card__title-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.8rem;
+}
+
+.pr-card__badge-open {
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  font-weight: 600;
+  padding: 0.15rem 0.4rem;
+  border-radius: 10px;
+  background: #238636;
+  color: white;
+}
+
+.pr-card__pr-name {
+  font-family: var(--mono);
+  font-size: 0.82rem;
+  color: #e6edf3;
+  font-weight: 600;
+}
+
+.pr-card__meta {
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  color: rgba(255, 255, 255, 0.3);
+  margin-bottom: 1rem;
+}
+
+.pr-card__branch {
+  padding: 0.1rem 0.3rem;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.pr-card__issues {
+  border-left: 2px solid color-mix(in srgb, var(--accent) 25%, transparent);
+  padding-left: 0.8rem;
+  margin-bottom: 0.8rem;
+}
+
+.pr-card__issue-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: 0.3rem;
+}
+
+.pr-card__impact-badge {
+  font-family: var(--mono);
+  font-size: 0.52rem;
+  font-weight: 600;
+  padding: 0.08rem 0.25rem;
+  border-radius: 3px;
+  text-transform: uppercase;
+}
+
+.pr-card__impact-badge--critical,
+.pr-card__impact-badge--serious {
+  background: color-mix(in srgb, var(--red) 8%, transparent);
+  color: #e05545;
+}
+
+.pr-card__impact-badge--moderate {
+  background: color-mix(in srgb, var(--amber) 8%, transparent);
+  color: var(--amber);
+}
+
+.pr-card__issue-name {
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  color: #8b949e;
+}
+
+.pr-card__issue-count {
+  color: rgba(255, 255, 255, 0.2);
+}
+
+.pr-card__files {
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  color: rgba(255, 255, 255, 0.25);
+  display: flex;
+  gap: 1rem;
+}
+
+/* Step indicators */
+.pr-steps {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.4rem;
+  margin-top: 1rem;
+}
+
+.pr-step {
+  padding: 0.6rem 0.5rem;
+  border-radius: 8px;
+  cursor: pointer;
+  background: transparent;
+  border: 1px solid var(--ink08);
+  transition: all 0.2s;
+  text-align: center;
+}
+
+.pr-step--active {
+  background: var(--accent-bg);
+  border-color: color-mix(in srgb, var(--accent) 19%, transparent);
+}
+
+.pr-step__label {
+  font-family: var(--mono);
+  font-size: 0.55rem;
+  font-weight: 600;
+  color: var(--ink50);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.pr-step--active .pr-step__label {
+  color: var(--accent);
+}
+
+.pr-step__detail {
+  margin-top: 0.5rem;
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  color: var(--ink50);
+  text-align: center;
+  line-height: 1.6;
+}

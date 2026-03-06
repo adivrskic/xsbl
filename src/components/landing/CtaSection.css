@@ -1,0 +1,98 @@
+/* CtaSection.css */
+.cta-section {
+  background: var(--cta-bg);
+  color: var(--cta-text);
+  padding: 7rem clamp(1.5rem, 3vw, 3rem);
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.cta-section__glow {
+  position: absolute;
+  top: -300px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 600px;
+  height: 600px;
+  background: radial-gradient(
+    circle,
+    color-mix(in srgb, var(--accent) 13%, transparent) 0%,
+    transparent 70%
+  );
+  pointer-events: none;
+}
+
+.cta-section .eyebrow {
+  color: var(--accent-light);
+  justify-content: center;
+}
+
+.cta-section .eyebrow-line {
+  background: var(--accent-light);
+}
+
+.cta-section__heading {
+  font-family: var(--serif);
+  font-size: clamp(1.9rem, 3.5vw, 2.8rem);
+  line-height: 1.18;
+  font-weight: 700;
+  max-width: 600px;
+  margin: 0 auto 1.2rem;
+  color: var(--cta-text);
+}
+
+.cta-section__heading .italic-accent {
+  color: var(--accent-light);
+}
+
+.cta-section__sub {
+  color: color-mix(in srgb, var(--cta-text) 53%, transparent);
+  font-size: 1.02rem;
+  max-width: 480px;
+  margin: 0 auto 2.5rem;
+  line-height: 1.7;
+}
+
+.cta-section__buttons {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.cta-section__btn-primary {
+  background: var(--accent);
+  color: white;
+  border: none;
+  font-family: var(--body);
+  font-size: 0.9rem;
+  font-weight: 600;
+  padding: 0.72rem 1.6rem;
+  border-radius: 8px;
+  text-decoration: none;
+  transition: all 0.25s;
+}
+
+.cta-section__btn-primary:hover {
+  background: #fff;
+  color: var(--accent);
+}
+
+.cta-section__btn-secondary {
+  background: none;
+  color: var(--cta-text);
+  border: 1.5px solid color-mix(in srgb, var(--cta-text) 20%, transparent);
+  font-family: var(--body);
+  font-size: 0.9rem;
+  font-weight: 600;
+  padding: 0.65rem 1.5rem;
+  border-radius: 8px;
+  text-decoration: none;
+  transition: all 0.25s;
+}
+
+.cta-section__btn-secondary:hover {
+  border-color: var(--cta-text);
+  background: color-mix(in srgb, var(--cta-text) 4%, transparent);
+}

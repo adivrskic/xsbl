@@ -1,0 +1,95 @@
+/* VsSection.css */
+.vs-columns {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  align-items: stretch;
+}
+
+.vs-column {
+  padding: 2.2rem;
+  border-radius: 14px;
+  flex: 1;
+  min-width: 280px;
+}
+
+.vs-column--bad {
+  background: color-mix(in srgb, var(--red) 3%, transparent);
+  border: 1px solid color-mix(in srgb, var(--red) 9%, transparent);
+}
+
+.vs-column--good {
+  background: var(--green-bg);
+  border: 1px solid color-mix(in srgb, var(--green) 9%, transparent);
+}
+
+.vs-column__heading {
+  font-family: var(--mono);
+  font-size: 0.76rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin-bottom: 1.4rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.vs-column--bad .vs-column__heading {
+  color: var(--red);
+}
+
+.vs-column--good .vs-column__heading {
+  color: var(--green);
+}
+
+.vs-column__list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 0;
+}
+
+.vs-column__item {
+  font-size: 0.88rem;
+  color: var(--ink50);
+  padding-left: 1.5rem;
+  position: relative;
+  line-height: 1.6;
+}
+
+.vs-column__item-icon {
+  position: absolute;
+  left: 0;
+  top: 0.25rem;
+}
+
+.vs-column__footer {
+  margin-top: 1.4rem;
+  font-size: 0.76rem;
+  color: var(--ink50);
+  font-style: italic;
+  padding-top: 1rem;
+  border-top: 1px solid var(--ink08);
+}
+
+.vs-divider {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 0.5rem;
+}
+
+.vs-divider__text {
+  font-family: var(--serif);
+  font-size: 0.85rem;
+  font-style: italic;
+  color: rgba(128, 128, 128, 0.5);
+}
+
+@media (max-width: 680px) {
+  .vs-divider {
+    display: none !important;
+  }
+}

@@ -13,6 +13,7 @@ import {
   LogOut,
 } from "lucide-react";
 import XsblBull from "../../components/landing/XsblBull";
+import "../../styles/dashboard.css";
 
 const navItems = [
   { label: "Overview", path: "/dashboard", icon: LayoutDashboard, end: true },
@@ -32,7 +33,6 @@ export default function DashboardLayout() {
     navigate("/");
   };
 
-  // Close mobile sidebar on Escape
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.key === "Escape" && mobileOpen) setMobileOpen(false);
@@ -41,73 +41,26 @@ export default function DashboardLayout() {
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [mobileOpen]);
 
-  const SW = 240;
-
   return (
-    <div style={{ display: "flex", minHeight: "100vh", background: t.paper }}>
+    <div className="dash-wrapper">
       <a href="#main-content" className="skip-to-content">
         Skip to main content
       </a>
+
       {/* Sidebar */}
       <aside
-        className="xsbl-sidebar"
-        style={{
-          width: SW,
-          flexShrink: 0,
-          borderRight: `1px solid ${t.ink08}`,
-          background: t.cardBg,
-          display: "flex",
-          flexDirection: "column",
-          position: "fixed",
-          top: 0,
-          left: 0,
-          bottom: 0,
-          zIndex: 50,
-          transition: "transform 0.25s ease",
-        }}
+        className={"dash-sidebar" + (mobileOpen ? " dash-sidebar--open" : "")}
       >
-        {/* Logo row */}
-        <div
-          style={{
-            padding: "1.2rem 1.4rem",
-            borderBottom: `1px solid ${t.ink08}`,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-          }}
-        >
-          <NavLink
-            to="/dashboard"
-            style={{
-              fontFamily: "var(--mono)",
-              fontWeight: 600,
-              fontSize: "1.2rem",
-              color: t.ink,
-              textDecoration: "none",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              gap: "4px",
-            }}
-          >
+        <div className="dash-sidebar__header">
+          <NavLink to="/dashboard" className="dash-sidebar__logo">
             <XsblBull />
-            xsbl<span style={{ color: t.accent }}>.</span>
+            xsbl<span className="dash-sidebar__logo-dot">.</span>
           </NavLink>
           <button
             onClick={toggle}
             aria-label={dark ? "Switch to light theme" : "Switch to dark theme"}
-            style={{
-              background: t.ink08,
-              border: "none",
-              borderRadius: 6,
-              padding: "0.3rem 0.45rem",
-              cursor: "pointer",
-              color: t.ink,
-              display: "flex",
-              alignItems: "center",
-            }}
-            onMouseEnter={(e) => (e.currentTarget.style.background = t.ink20)}
-            onMouseLeave={(e) => (e.currentTarget.style.background = t.ink08)}
+            className="theme-toggle"
+            style={{ borderRadius: 6, padding: "0.3rem 0.45rem" }}
           >
             {dark ? (
               <Sun size={15} strokeWidth={2} />
@@ -117,67 +70,23 @@ export default function DashboardLayout() {
           </button>
         </div>
 
-        {/* Org pill */}
         {org && (
-          <div
-            style={{
-              padding: "0.9rem 1.4rem",
-              borderBottom: `1px solid ${t.ink08}`,
-            }}
-          >
-            <div
-              style={{
-                fontSize: "0.78rem",
-                fontWeight: 600,
-                color: t.ink,
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-                whiteSpace: "nowrap",
-                marginBottom: "0.15rem",
-              }}
-            >
-              {org.name}
-            </div>
-            <div
-              style={{
-                fontFamily: "var(--mono)",
-                fontSize: "0.64rem",
-                color: t.accent,
-                textTransform: "uppercase",
-                letterSpacing: "0.06em",
-                fontWeight: 600,
-              }}
-            >
-              {org.plan} plan
-            </div>
+          <div className="dash-sidebar__org">
+            <div className="dash-sidebar__org-name">{org.name}</div>
+            <div className="dash-sidebar__org-plan">{org.plan} plan</div>
           </div>
         )}
 
-        {/* Nav links */}
-        <nav
-          aria-label="Dashboard navigation"
-          style={{ flex: 1, padding: "0.6rem" }}
-        >
+        <nav aria-label="Dashboard navigation" className="dash-sidebar__nav">
           {navItems.map(({ label, path, icon: Icon, end }) => (
             <NavLink
               key={path}
               to={path}
               end={end}
               onClick={() => setMobileOpen(false)}
-              style={({ isActive }) => ({
-                display: "flex",
-                alignItems: "center",
-                gap: "0.7rem",
-                padding: "0.55rem 0.8rem",
-                borderRadius: 8,
-                marginBottom: "0.15rem",
-                textDecoration: "none",
-                fontSize: "0.85rem",
-                fontWeight: 500,
-                color: isActive ? t.accent : t.ink50,
-                background: isActive ? t.accentBg : "transparent",
-                transition: "all 0.15s",
-              })}
+              className={({ isActive }) =>
+                "dash-nav-link" + (isActive ? " dash-nav-link--active" : "")
+              }
             >
               <Icon size={17} strokeWidth={1.8} />
               {label}
@@ -185,118 +94,46 @@ export default function DashboardLayout() {
           ))}
         </nav>
 
-        {/* User footer */}
-        <div
-          style={{ padding: "1rem 1.4rem", borderTop: `1px solid ${t.ink08}` }}
-        >
-          <div
-            style={{
-              fontSize: "0.78rem",
-              fontWeight: 500,
-              color: t.ink,
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              whiteSpace: "nowrap",
-              marginBottom: "0.2rem",
-            }}
-          >
+        <div className="dash-sidebar__footer">
+          <div className="dash-sidebar__user">
             {user?.user_metadata?.full_name || user?.email}
           </div>
-          <button
-            onClick={handleSignOut}
-            style={{
-              background: "none",
-              border: "none",
-              padding: 0,
-              color: t.ink50,
-              fontSize: "0.75rem",
-              cursor: "pointer",
-              fontFamily: "var(--body)",
-              transition: "color 0.2s",
-              display: "flex",
-              alignItems: "center",
-              gap: "0.35rem",
-            }}
-            onMouseEnter={(e) => (e.currentTarget.style.color = t.red)}
-            onMouseLeave={(e) => (e.currentTarget.style.color = t.ink50)}
-          >
+          <button onClick={handleSignOut} className="dash-signout">
             <LogOut size={13} strokeWidth={1.8} /> Sign out
           </button>
         </div>
       </aside>
 
       {/* Main content */}
-      <main id="main-content" style={{ flex: 1, marginLeft: SW, minWidth: 0 }}>
-        {/* Mobile top bar */}
-        <div
-          className="xsbl-mobile-bar"
-          style={{
-            display: "none",
-            padding: "0.8rem 1rem",
-            borderBottom: `1px solid ${t.ink08}`,
-            alignItems: "center",
-            justifyContent: "space-between",
-          }}
-        >
+      <main id="main-content" className="dash-main">
+        <div className="dash-mobile-bar">
           <button
             onClick={() => setMobileOpen(!mobileOpen)}
             aria-label={
               mobileOpen ? "Close navigation menu" : "Open navigation menu"
             }
             aria-expanded={mobileOpen}
-            style={{
-              background: "none",
-              border: "none",
-              color: t.ink,
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-            }}
+            className="dash-mobile-bar__toggle"
           >
             <Menu size={22} strokeWidth={1.8} />
           </button>
-          <span
-            style={{
-              fontFamily: "var(--mono)",
-              fontWeight: 600,
-              fontSize: "1rem",
-              color: t.ink,
-            }}
-          >
-            xsbl<span style={{ color: t.accent }}>.</span>
+          <span className="dash-mobile-bar__brand">
+            xsbl<span className="dash-sidebar__logo-dot">.</span>
           </span>
           <div style={{ width: 28 }} />
         </div>
 
-        <div
-          style={{ padding: "2rem clamp(1.2rem, 3vw, 2.5rem)", maxWidth: 960 }}
-        >
+        <div className="dash-main__content">
           <Outlet />
         </div>
       </main>
 
-      {/* Mobile overlay */}
       {mobileOpen && (
         <div
+          className="dash-mobile-overlay"
           onClick={() => setMobileOpen(false)}
-          style={{
-            position: "fixed",
-            inset: 0,
-            background: "rgba(0,0,0,0.4)",
-            zIndex: 40,
-          }}
         />
       )}
-
-      <style>{`
-        @media (max-width: 768px) {
-          .xsbl-mobile-bar { display: flex !important; }
-          .xsbl-sidebar { transform: translateX(${
-            mobileOpen ? "0" : "-100%"
-          }); }
-          main { margin-left: 0 !important; }
-        }
-      `}</style>
     </div>
   );
 }

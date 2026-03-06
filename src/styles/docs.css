@@ -1,0 +1,178 @@
+/* docs.css — styles for documentation page */
+
+.docs-page {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 6rem clamp(1.5rem, 3vw, 3rem) 4rem;
+  display: flex;
+  gap: 3rem;
+}
+
+/* ── SIDEBAR ── */
+.docs-sidebar {
+  width: 200px;
+  flex-shrink: 0;
+  position: sticky;
+  top: 80px;
+  align-self: flex-start;
+}
+
+.docs-sidebar__group {
+  margin-bottom: 1rem;
+}
+
+.docs-sidebar__group-label {
+  font-family: var(--mono);
+  font-size: 0.58rem;
+  color: var(--ink50);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 0.4rem;
+  font-weight: 600;
+  padding: 0 0.6rem;
+}
+
+.docs-sidebar__links {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.docs-sidebar__link {
+  background: none;
+  border: none;
+  padding: 0.35rem 0.6rem;
+  border-radius: 5px;
+  cursor: pointer;
+  font-family: var(--body);
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: var(--ink50);
+  text-align: left;
+}
+
+.docs-sidebar__link--active {
+  background: var(--accent-bg);
+  color: var(--accent);
+}
+
+/* ── MAIN CONTENT ── */
+.docs-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.docs-header {
+  margin-bottom: 2.5rem;
+}
+
+/* ── SECTION ── */
+.docs-section {
+  margin-bottom: 3.5rem;
+}
+
+.docs-section__header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.docs-section__title {
+  font-family: var(--serif);
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--ink);
+  margin: 0;
+}
+
+.docs-section__body {
+  font-size: 0.92rem;
+  color: var(--ink50);
+  line-height: 1.8;
+}
+
+.docs-section__body p {
+  margin-bottom: 0.8rem;
+}
+
+.docs-section__body strong {
+  color: var(--ink);
+}
+
+.docs-section__body a {
+  color: var(--accent);
+}
+
+/* ── NOTE BOX ── */
+.docs-note {
+  padding: 0.7rem 1rem;
+  border-radius: 8px;
+  background: var(--accent-bg);
+  border: 1px solid color-mix(in srgb, var(--accent) 12.5%, transparent);
+  font-size: 0.84rem;
+  color: var(--ink);
+  margin-bottom: 1rem;
+  line-height: 1.6;
+}
+
+.docs-note a {
+  color: var(--accent);
+}
+
+/* ── INLINE CODE ── */
+.docs-mono {
+  font-family: var(--mono);
+  background: var(--ink04);
+  padding: 0.1rem 0.4rem;
+  border-radius: 3px;
+  font-size: 0.84rem;
+}
+
+/* ── CODE BLOCK ── */
+.docs-code-block {
+  position: relative;
+  border-radius: 10px;
+  overflow: hidden;
+  margin-bottom: 1.2rem;
+}
+
+.docs-code-block__bar {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.5rem 1rem;
+  background: rgba(255, 255, 255, 0.03);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.docs-code-block__lang {
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  color: rgba(255, 255, 255, 0.3);
+}
+
+.docs-code-block__copy {
+  background: none;
+  border: none;
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  color: rgba(255, 255, 255, 0.3);
+  cursor: pointer;
+}
+
+.docs-code-block__copy--copied {
+  color: #34d399;
+}
+
+.docs-code-block pre {
+  padding: 1rem 1.2rem;
+  background: var(--code-bg);
+  font-family: var(--mono);
+  font-size: 0.74rem;
+  color: #a3a3a3;
+  overflow-x: auto;
+  margin: 0;
+  line-height: 1.8;
+  white-space: pre-wrap;
+  word-break: break-all;
+}

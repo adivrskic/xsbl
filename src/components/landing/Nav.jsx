@@ -2,15 +2,13 @@ import { useTheme } from "../../context/ThemeContext";
 import { useScrolled } from "../../hooks/useScrolled";
 import { Sun, Moon } from "lucide-react";
 import XsblBull from "./XsblBull";
+import "./Nav.css";
 
 var landingLinks = [
   { label: "How it works", id: "how" },
   { label: "Features", id: "agent" },
   { label: "GitHub PRs", id: "github" },
   { label: "Pricing", id: "pricing" },
-  // { label: "Docs", href: "/docs" },
-  // { label: "Blog", href: "/blog" },
-  // { label: "Contact", href: "/contact" },
 ];
 
 var pageLinks = [
@@ -36,52 +34,16 @@ export default function Nav() {
   return (
     <nav
       aria-label="Main navigation"
-      style={{
-        position: "fixed",
-        top: 0,
-        width: "100%",
-        zIndex: 100,
-        padding: "0 clamp(1rem, 3vw, 3rem)",
-        height: 64,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
-        background: t.navBg,
-        backdropFilter: "blur(24px) saturate(1.6)",
-        WebkitBackdropFilter: "blur(24px) saturate(1.6)",
-        borderBottom: "1px solid " + (scrolled ? t.navBorder : "transparent"),
-        transition: "border-color 0.3s, background 0.3s",
-      }}
+      className={"nav" + (scrolled ? " nav--scrolled" : "")}
     >
       {/* Logo — always links to / */}
-      <a
-        href="/"
-        style={{
-          display: "flex",
-          gap: "4px",
-          fontFamily: "var(--mono)",
-          fontWeight: 600,
-          fontSize: "1.3rem",
-          letterSpacing: "-0.04em",
-          color: t.ink,
-          textDecoration: "none",
-        }}
-      >
+      <a href="/" className="nav__logo">
         <XsblBull />
-        xsbl<span style={{ color: t.accent }}>.</span>
+        xsbl<span className="nav__logo-dot">.</span>
       </a>
 
       {/* Center links — context-aware */}
-      <div
-        className="hide-mobile"
-        style={{
-          display: "flex",
-          gap: "2.2rem",
-          position: "absolute",
-          left: "50%",
-          transform: "translateX(-50%)",
-        }}
-      >
+      <div className="hide-mobile nav__center">
         {links.map(function (link) {
           var isPageLink = !!link.href;
           return (
@@ -96,19 +58,7 @@ export default function Nav() {
                     }
                   : undefined
               }
-              style={{
-                color: t.ink50,
-                textDecoration: "none",
-                fontSize: "0.85rem",
-                fontWeight: 500,
-                transition: "color 0.2s",
-              }}
-              onMouseEnter={function (e) {
-                e.target.style.color = t.ink;
-              }}
-              onMouseLeave={function (e) {
-                e.target.style.color = t.ink50;
-              }}
+              className="nav-link"
             >
               {link.label}
             </a>
@@ -117,27 +67,11 @@ export default function Nav() {
       </div>
 
       {/* Right actions */}
-      <div style={{ display: "flex", gap: "0.6rem", alignItems: "center" }}>
+      <div className="nav__actions">
         <button
           onClick={toggle}
           aria-label={dark ? "Switch to light theme" : "Switch to dark theme"}
-          style={{
-            background: t.ink08,
-            border: "none",
-            borderRadius: 8,
-            padding: "0.45rem 0.55rem",
-            cursor: "pointer",
-            color: t.ink,
-            transition: "background 0.2s",
-            display: "flex",
-            alignItems: "center",
-          }}
-          onMouseEnter={function (e) {
-            e.currentTarget.style.background = t.ink20;
-          }}
-          onMouseLeave={function (e) {
-            e.currentTarget.style.background = t.ink08;
-          }}
+          className="theme-toggle"
         >
           {dark ? (
             <Sun size={16} strokeWidth={2} />
@@ -145,48 +79,10 @@ export default function Nav() {
             <Moon size={16} strokeWidth={2} />
           )}
         </button>
-        <a
-          href="/login"
-          style={{
-            color: t.ink50,
-            textDecoration: "none",
-            fontSize: "0.85rem",
-            fontWeight: 500,
-            transition: "color 0.2s",
-          }}
-          onMouseEnter={function (e) {
-            e.target.style.color = t.ink;
-          }}
-          onMouseLeave={function (e) {
-            e.target.style.color = t.ink50;
-          }}
-        >
+        <a href="/login" className="nav-link">
           Log in
         </a>
-        <a
-          href="/signup"
-          style={{
-            background: t.ink,
-            color: t.paper,
-            border: "none",
-            fontFamily: "var(--body)",
-            fontSize: "0.85rem",
-            fontWeight: 600,
-            padding: "0.55rem 1.3rem",
-            borderRadius: 8,
-            cursor: "pointer",
-            textDecoration: "none",
-            transition: "all 0.25s",
-          }}
-          onMouseEnter={function (e) {
-            e.currentTarget.style.background = t.accent;
-            e.currentTarget.style.transform = "translateY(-1px)";
-          }}
-          onMouseLeave={function (e) {
-            e.currentTarget.style.background = t.ink;
-            e.currentTarget.style.transform = "translateY(0)";
-          }}
-        >
+        <a href="/signup" className="btn btn-primary">
           Get started
         </a>
       </div>

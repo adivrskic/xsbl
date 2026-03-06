@@ -1,0 +1,409 @@
+/* dashboard.css — shared styles for dashboard layout and components */
+
+/* ── SIDEBAR ── */
+.dash-sidebar {
+  width: 240px;
+  flex-shrink: 0;
+  border-right: 1px solid var(--ink08);
+  background: var(--card-bg);
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  z-index: 50;
+  transition: transform 0.25s ease;
+}
+
+.dash-sidebar__header {
+  padding: 1.2rem 1.4rem;
+  border-bottom: 1px solid var(--ink08);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.dash-sidebar__logo {
+  font-family: var(--mono);
+  font-weight: 600;
+  font-size: 1.2rem;
+  color: var(--ink);
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+}
+
+.dash-sidebar__logo-dot {
+  color: var(--accent);
+}
+
+.dash-sidebar__org {
+  padding: 0.9rem 1.4rem;
+  border-bottom: 1px solid var(--ink08);
+}
+
+.dash-sidebar__org-name {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin-bottom: 0.15rem;
+}
+
+.dash-sidebar__org-plan {
+  font-family: var(--mono);
+  font-size: 0.64rem;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 600;
+}
+
+.dash-sidebar__nav {
+  flex: 1;
+  padding: 0.6rem;
+}
+
+.dash-nav-link {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.55rem 0.8rem;
+  border-radius: 8px;
+  margin-bottom: 0.15rem;
+  text-decoration: none;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--ink50);
+  background: transparent;
+  transition: all 0.15s;
+}
+
+.dash-nav-link--active {
+  color: var(--accent);
+  background: var(--accent-bg);
+}
+
+.dash-sidebar__footer {
+  padding: 1rem 1.4rem;
+  border-top: 1px solid var(--ink08);
+}
+
+.dash-sidebar__user {
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: var(--ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin-bottom: 0.2rem;
+}
+
+.dash-signout {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--ink50);
+  font-size: 0.75rem;
+  cursor: pointer;
+  font-family: var(--body);
+  transition: color 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.dash-signout:hover {
+  color: var(--red);
+}
+
+/* ── MAIN CONTENT ── */
+.dash-wrapper {
+  display: flex;
+  min-height: 100vh;
+  background: var(--paper);
+}
+
+.dash-main {
+  flex: 1;
+  margin-left: 240px;
+  min-width: 0;
+}
+
+.dash-main__content {
+  padding: 2rem clamp(1.2rem, 3vw, 2.5rem);
+  max-width: 960px;
+}
+
+/* ── MOBILE BAR ── */
+.dash-mobile-bar {
+  display: none;
+  padding: 0.8rem 1rem;
+  border-bottom: 1px solid var(--ink08);
+  align-items: center;
+  justify-content: space-between;
+}
+
+.dash-mobile-bar__toggle {
+  background: none;
+  border: none;
+  color: var(--ink);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+}
+
+.dash-mobile-bar__brand {
+  font-family: var(--mono);
+  font-weight: 600;
+  font-size: 1rem;
+  color: var(--ink);
+}
+
+/* ── MOBILE OVERLAY ── */
+.dash-mobile-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  z-index: 40;
+}
+
+@media (max-width: 768px) {
+  .dash-mobile-bar {
+    display: flex !important;
+  }
+  .dash-sidebar {
+    transform: translateX(-100%);
+  }
+  .dash-sidebar--open {
+    transform: translateX(0);
+  }
+  .dash-main {
+    margin-left: 0 !important;
+  }
+}
+
+/* ── DASHBOARD CARDS ── */
+.dash-card {
+  padding: 1.2rem;
+  border-radius: 10px;
+  border: 1px solid var(--ink08);
+  background: var(--card-bg);
+}
+
+.dash-card--empty {
+  padding: 2rem;
+  text-align: center;
+}
+
+.dash-card__label {
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  color: var(--ink50);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.dash-card__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.6rem;
+}
+
+/* ── INLINE CODE BLOCK ── */
+.dash-code-block {
+  padding: 0.7rem 0.8rem;
+  border-radius: 6px;
+  background: var(--code-bg);
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  color: #a3a3a3;
+  overflow-x: auto;
+  white-space: pre-wrap;
+  word-break: break-all;
+  line-height: 1.6;
+  margin: 0;
+  position: relative;
+}
+
+.dash-code-copy {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  border: none;
+  border-radius: 4px;
+  padding: 0.25rem 0.4rem;
+  cursor: pointer;
+  color: #999;
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
+  font-size: 0.6rem;
+  font-family: var(--mono);
+}
+
+/* ── TOGGLE BUTTONS (badge style/format) ── */
+.dash-toggle-btn {
+  padding: 0.25rem 0.5rem;
+  border-radius: 5px;
+  font-size: 0.72rem;
+  font-family: var(--mono);
+  cursor: pointer;
+  border: 1px solid var(--ink08);
+  background: transparent;
+  color: var(--ink50);
+}
+
+.dash-toggle-btn--active {
+  border-color: var(--accent);
+  background: var(--accent-bg);
+  color: var(--accent);
+}
+
+.dash-tab-btn {
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.65rem;
+  font-family: var(--mono);
+  text-transform: uppercase;
+  cursor: pointer;
+  border: none;
+  background: var(--ink04);
+  color: var(--ink50);
+}
+
+.dash-tab-btn--active {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+/* ── SMALL LABEL ── */
+.dash-small-label {
+  font-family: var(--mono);
+  font-size: 0.58rem;
+  color: var(--ink50);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 0.25rem;
+}
+
+/* ── REPORT / ACTION BUTTON ── */
+.dash-action-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.6rem 1.2rem;
+  border-radius: 7px;
+  border: 1.5px solid var(--ink20);
+  background: none;
+  color: var(--ink);
+  font-family: var(--body);
+  font-size: 0.82rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.dash-action-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.dash-action-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* ── SPINNER UTILITY ── */
+.xsbl-spin {
+  animation: xsbl-spin 0.6s linear infinite;
+}
+
+@keyframes xsbl-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ── PAGE BREAKDOWN ── */
+.page-breakdown {
+  border-radius: 10px;
+  border: 1px solid var(--ink08);
+  background: var(--card-bg);
+  overflow: hidden;
+  margin-bottom: 1.5rem;
+}
+
+.page-breakdown__toggle {
+  width: 100%;
+  padding: 0.9rem 1.1rem;
+  background: none;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  color: var(--ink);
+}
+
+.page-breakdown__title {
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+
+.page-breakdown__count {
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  color: var(--ink50);
+  background: var(--ink04);
+  padding: 0.12rem 0.4rem;
+  border-radius: 3px;
+}
+
+.page-breakdown__method {
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  color: var(--ink50);
+}
+
+.page-breakdown__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.65rem 1.1rem;
+  border-bottom: 1px solid var(--ink04);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.page-breakdown__row:hover {
+  background: var(--ink04);
+}
+
+.page-breakdown__page-title {
+  font-size: 0.82rem;
+  color: var(--ink);
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.page-breakdown__page-path {
+  font-family: var(--mono);
+  font-size: 0.65rem;
+  color: var(--ink50);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}

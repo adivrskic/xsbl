@@ -3,44 +3,20 @@ import { Link } from "react-router-dom";
 import { useTheme } from "../../context/ThemeContext";
 import { useAuth } from "../../context/AuthContext";
 import { Plus, AlertTriangle } from "lucide-react";
+import "../../styles/dashboard.css";
+import "../../styles/dashboard-pages.css";
 
 function Stat({ label, value, sub, accent }) {
-  const { t } = useTheme();
   return (
-    <div
-      style={{
-        padding: "1.4rem 1.3rem",
-        borderRadius: 12,
-        border: `1px solid ${t.ink08}`,
-        background: t.cardBg,
-      }}
-    >
+    <div className="stat-card">
+      <div className="stat-card__label">{label}</div>
       <div
-        style={{
-          fontFamily: "var(--mono)",
-          fontSize: "0.64rem",
-          textTransform: "uppercase",
-          letterSpacing: "0.08em",
-          color: t.ink50,
-          marginBottom: "0.45rem",
-          fontWeight: 500,
-        }}
-      >
-        {label}
-      </div>
-      <div
-        style={{
-          fontFamily: "var(--serif)",
-          fontSize: "2rem",
-          fontWeight: 700,
-          color: accent || t.ink,
-          lineHeight: 1.1,
-          marginBottom: "0.2rem",
-        }}
+        className="stat-card__value"
+        style={accent ? { color: accent } : undefined}
       >
         {value}
       </div>
-      {sub && <div style={{ fontSize: "0.75rem", color: t.ink50 }}>{sub}</div>}
+      {sub && <div className="stat-card__sub">{sub}</div>}
     </div>
   );
 }
@@ -49,7 +25,6 @@ export default function OverviewPage() {
   const { t } = useTheme();
   const { org, usage, sites, loading, fetchUsage, fetchSites } = useAuth();
 
-  // Use cached data from AuthContext — only fetch if stale
   useEffect(() => {
     if (org) {
       fetchUsage();
@@ -72,66 +47,22 @@ export default function OverviewPage() {
 
   return (
     <div>
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "flex-start",
-          marginBottom: "2rem",
-          flexWrap: "wrap",
-          gap: "1rem",
-        }}
-      >
+      <div className="dash-page-header">
         <div>
-          <h1
-            style={{
-              fontFamily: "var(--serif)",
-              fontSize: "1.6rem",
-              fontWeight: 700,
-              color: t.ink,
-              marginBottom: "0.3rem",
-            }}
-          >
-            Dashboard
-          </h1>
-          <p style={{ color: t.ink50, fontSize: "0.88rem" }}>
-            Your accessibility overview.
-          </p>
+          <h1 className="dash-page-title">Dashboard</h1>
+          <p className="dash-page-subtitle">Your accessibility overview.</p>
         </div>
-        <Link
-          to="/dashboard/sites?add=true"
-          style={{
-            background: t.accent,
-            color: "white",
-            padding: "0.55rem 1.2rem",
-            borderRadius: 8,
-            fontSize: "0.85rem",
-            fontWeight: 600,
-            textDecoration: "none",
-            fontFamily: "var(--body)",
-            display: "flex",
-            alignItems: "center",
-            gap: "0.3rem",
-          }}
-        >
+        <Link to="/dashboard/sites?add=true" className="dash-add-btn">
           <Plus size={15} strokeWidth={2.5} /> Add site
         </Link>
       </div>
 
       {nearLimit && (
         <div
-          style={{
-            padding: "0.8rem 1rem",
-            borderRadius: 8,
-            marginBottom: "1.5rem",
-            background: atLimit ? `${t.red}08` : `${t.amber}08`,
-            border: `1px solid ${atLimit ? `${t.red}20` : `${t.amber}20`}`,
-            display: "flex",
-            alignItems: "center",
-            gap: "0.5rem",
-            fontSize: "0.84rem",
-            color: atLimit ? t.red : t.amber,
-          }}
+          className={
+            "dash-warning" +
+            (atLimit ? " dash-warning--red" : " dash-warning--amber")
+          }
         >
           <AlertTriangle size={15} strokeWidth={2} />
           {atLimit
@@ -139,7 +70,8 @@ export default function OverviewPage() {
             : `You've used ${usage.scans_used} of ${usage.scans_limit} scans this month.`}{" "}
           <Link
             to="/dashboard/billing"
-            style={{ color: t.accent, fontWeight: 600, textDecoration: "none" }}
+            className="dash-accent-link"
+            style={{ fontWeight: 600 }}
           >
             Upgrade
           </Link>
@@ -148,57 +80,25 @@ export default function OverviewPage() {
 
       {loading && !sites ? (
         <>
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
-              gap: "0.8rem",
-              marginBottom: "2rem",
-            }}
-          >
+          <div className="stats-grid" style={{ marginBottom: "2rem" }}>
             {[1, 2, 3].map(function (i) {
               return (
-                <div
-                  key={i}
-                  style={{
-                    padding: "1.3rem",
-                    borderRadius: 12,
-                    border: "1px solid " + t.ink04,
-                    background: t.cardBg,
-                  }}
-                >
+                <div key={i} className="skeleton-card">
                   <div
-                    style={{
-                      width: "45%",
-                      height: 10,
-                      borderRadius: 4,
-                      background: t.ink08,
-                      animation: "skeletonPulse 1.5s ease-in-out infinite",
-                      marginBottom: "0.6rem",
-                    }}
+                    className="skeleton"
+                    style={{ width: "45%", height: 10, marginBottom: "0.6rem" }}
                   />
                   <div
-                    style={{
-                      width: "35%",
-                      height: 24,
-                      borderRadius: 6,
-                      background: t.ink08,
-                      animation: "skeletonPulse 1.5s ease-in-out infinite",
-                    }}
+                    className="skeleton"
+                    style={{ width: "35%", height: 24, borderRadius: 6 }}
                   />
                 </div>
               );
             })}
           </div>
           <div
-            style={{
-              width: 80,
-              height: 14,
-              borderRadius: 4,
-              background: t.ink08,
-              animation: "skeletonPulse 1.5s ease-in-out infinite",
-              marginBottom: "0.8rem",
-            }}
+            className="skeleton"
+            style={{ width: 80, height: 14, marginBottom: "0.8rem" }}
           />
           <div
             style={{ display: "flex", flexDirection: "column", gap: "0.4rem" }}
@@ -207,14 +107,13 @@ export default function OverviewPage() {
               return (
                 <div
                   key={i}
+                  className="skeleton-card"
                   style={{
-                    padding: "0.9rem 1.1rem",
-                    borderRadius: 10,
-                    border: "1px solid " + t.ink04,
-                    background: t.cardBg,
                     display: "flex",
                     alignItems: "center",
                     gap: "0.8rem",
+                    padding: "0.9rem 1.1rem",
+                    borderRadius: 10,
                   }}
                 >
                   <div
@@ -222,55 +121,35 @@ export default function OverviewPage() {
                       width: 8,
                       height: 8,
                       borderRadius: "50%",
-                      background: t.ink08,
+                      background: "var(--ink08)",
                     }}
                   />
                   <div style={{ flex: 1 }}>
                     <div
+                      className="skeleton"
                       style={{
                         width: "40%",
                         height: 12,
-                        borderRadius: 4,
-                        background: t.ink08,
-                        animation: "skeletonPulse 1.5s ease-in-out infinite",
                         marginBottom: "0.3rem",
                       }}
                     />
                     <div
-                      style={{
-                        width: "25%",
-                        height: 10,
-                        borderRadius: 4,
-                        background: t.ink08,
-                        animation: "skeletonPulse 1.5s ease-in-out infinite",
-                      }}
+                      className="skeleton"
+                      style={{ width: "25%", height: 10 }}
                     />
                   </div>
                   <div
-                    style={{
-                      width: 28,
-                      height: 18,
-                      borderRadius: 4,
-                      background: t.ink08,
-                      animation: "skeletonPulse 1.5s ease-in-out infinite",
-                    }}
+                    className="skeleton"
+                    style={{ width: 28, height: 18, borderRadius: 4 }}
                   />
                 </div>
               );
             })}
           </div>
-          <style>{`@keyframes skeletonPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }`}</style>
         </>
       ) : (
         <>
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
-              gap: "0.8rem",
-              marginBottom: "2.5rem",
-            }}
-          >
+          <div className="stats-grid">
             <Stat
               label="Sites"
               value={siteList.length}
@@ -308,44 +187,15 @@ export default function OverviewPage() {
             />
           </div>
 
-          <h2
-            style={{
-              fontFamily: "var(--serif)",
-              fontSize: "1.15rem",
-              fontWeight: 700,
-              color: t.ink,
-              marginBottom: "1rem",
-            }}
-          >
-            Your sites
-          </h2>
+          <h2 className="dash-section-title">Your sites</h2>
 
           {siteList.length === 0 ? (
-            <div
-              style={{
-                padding: "3rem 2rem",
-                borderRadius: 12,
-                border: `1px dashed ${t.ink20}`,
-                textAlign: "center",
-              }}
-            >
-              <p
-                style={{
-                  color: t.ink50,
-                  fontSize: "0.92rem",
-                  marginBottom: "1rem",
-                }}
-              >
-                No sites added yet.
-              </p>
+            <div className="dash-empty">
+              <p className="dash-empty__text">No sites added yet.</p>
               <Link
                 to="/dashboard/sites?add=true"
-                style={{
-                  color: t.accent,
-                  fontWeight: 600,
-                  fontSize: "0.88rem",
-                  textDecoration: "none",
-                }}
+                className="dash-accent-link"
+                style={{ fontWeight: 600, fontSize: "0.88rem" }}
               >
                 Add a site
               </Link>
@@ -363,65 +213,25 @@ export default function OverviewPage() {
                   <Link
                     key={site.id}
                     to={"/dashboard/sites/" + site.id}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                      padding: "1rem 1.2rem",
-                      borderRadius: 10,
-                      border: "1px solid " + t.ink08,
-                      background: t.cardBg,
-                      textDecoration: "none",
-                      transition: "border-color 0.2s",
-                    }}
-                    onMouseEnter={function (e) {
-                      e.currentTarget.style.borderColor = t.accent;
-                    }}
-                    onMouseLeave={function (e) {
-                      e.currentTarget.style.borderColor = t.ink08;
-                    }}
+                    className="site-row"
                   >
-                    <div
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "0.8rem",
-                      }}
-                    >
+                    <div className="site-row__info">
                       <div
+                        className="site-row__dot"
                         style={{
-                          width: 8,
-                          height: 8,
-                          borderRadius: "50%",
                           background: site.verified ? t.green : t.amber,
                         }}
                       />
                       <div>
-                        <div
-                          style={{
-                            fontWeight: 600,
-                            fontSize: "0.88rem",
-                            color: t.ink,
-                          }}
-                        >
+                        <div className="site-row__name">
                           {site.display_name || site.domain}
                         </div>
-                        <div
-                          style={{
-                            fontFamily: "var(--mono)",
-                            fontSize: "0.72rem",
-                            color: t.ink50,
-                          }}
-                        >
-                          {site.domain}
-                        </div>
+                        <div className="site-row__domain">{site.domain}</div>
                       </div>
                     </div>
                     <div
+                      className="site-row__score"
                       style={{
-                        fontFamily: "var(--mono)",
-                        fontSize: "1rem",
-                        fontWeight: 700,
                         color:
                           site.score != null
                             ? site.score >= 80

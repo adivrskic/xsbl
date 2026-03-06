@@ -3,6 +3,8 @@ import { useTheme } from "../../context/ThemeContext";
 import { supabase } from "../../lib/supabase";
 import { useToast } from "../ui/Toast";
 import { Loader2, ExternalLink, Check, AlertTriangle } from "lucide-react";
+import "../../styles/github-pr.css";
+import "../../styles/dashboard.css";
 
 function GitHubIcon({ size = 14 }) {
   return (
@@ -19,7 +21,6 @@ export default function CreatePRButton({ issue, site }) {
   const [result, setResult] = useState(null);
 
   var hasGitHub = site && site.github_repo && site.github_token;
-
   if (!hasGitHub) return null;
 
   const handleCreatePR = async () => {
@@ -33,19 +34,15 @@ export default function CreatePRButton({ issue, site }) {
         body: { issue_id: issue.id, site_id: site.id },
         headers: { Authorization: "Bearer " + (session?.access_token || "") },
       });
-
       if (error) throw new Error(error.message);
       if (data?.error) throw new Error(data.error);
-
       setResult(data);
-
-      if (data.status === "created") {
+      if (data.status === "created")
         toast.success("PR #" + data.pr_number + " created!");
-      } else if (data.status === "suggestion") {
+      else if (data.status === "suggestion")
         toast.info(
           "Could not find the exact source file — see suggestion below"
         );
-      }
     } catch (err) {
       toast.error("Failed: " + String(err).substring(0, 100));
       setResult({ error: String(err) });
@@ -55,27 +52,8 @@ export default function CreatePRButton({ issue, site }) {
 
   return (
     <div style={{ marginTop: "0.8rem" }}>
-      {/* Create PR button */}
       {!result && (
-        <button
-          onClick={handleCreatePR}
-          disabled={loading}
-          style={{
-            padding: "0.5rem 1rem",
-            borderRadius: 7,
-            border: "none",
-            background: "#24292e",
-            color: "white",
-            fontFamily: "var(--body)",
-            fontSize: "0.82rem",
-            fontWeight: 600,
-            cursor: loading ? "not-allowed" : "pointer",
-            opacity: loading ? 0.6 : 1,
-            display: "flex",
-            alignItems: "center",
-            gap: "0.4rem",
-          }}
-        >
+        <button onClick={handleCreatePR} disabled={loading} className="gh-btn">
           {loading ? (
             <Loader2 size={14} className="xsbl-spin" />
           ) : (
@@ -85,41 +63,18 @@ export default function CreatePRButton({ issue, site }) {
         </button>
       )}
 
-      {/* PR created */}
       {result && result.status === "created" && (
-        <div
-          style={{
-            padding: "0.8rem",
-            borderRadius: 8,
-            background: `${t.green}08`,
-            border: `1px solid ${t.green}20`,
-          }}
-        >
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "0.4rem",
-              marginBottom: "0.4rem",
-            }}
-          >
+        <div className="pr-result pr-result--success">
+          <div className="pr-result__header">
             <Check size={15} color={t.green} strokeWidth={2.5} />
             <span
-              style={{ fontSize: "0.84rem", fontWeight: 600, color: t.green }}
+              className="pr-result__title"
+              style={{ color: "var(--green)" }}
             >
               PR #{result.pr_number} created
             </span>
           </div>
-          <p
-            style={{
-              fontSize: "0.78rem",
-              color: t.ink50,
-              margin: "0 0 0.4rem 0",
-              lineHeight: 1.5,
-            }}
-          >
-            {result.description}
-          </p>
+          <p className="pr-result__desc">{result.description}</p>
           <div
             style={{
               display: "flex",
@@ -132,113 +87,46 @@ export default function CreatePRButton({ issue, site }) {
               href={result.pr_url}
               target="_blank"
               rel="noopener noreferrer"
-              style={{
-                fontFamily: "var(--mono)",
-                fontSize: "0.72rem",
-                color: t.accent,
-                textDecoration: "none",
-                display: "flex",
-                alignItems: "center",
-                gap: "0.2rem",
-              }}
+              className="pr-result__link"
             >
               View on GitHub <ExternalLink size={11} />
             </a>
-            <span
-              style={{
-                fontFamily: "var(--mono)",
-                fontSize: "0.62rem",
-                color: t.ink50,
-              }}
-            >
+            <span className="pr-result__meta">
               {result.file} → {result.branch}
             </span>
           </div>
         </div>
       )}
 
-      {/* Suggestion (no source file found) */}
       {result && result.status === "suggestion" && (
-        <div
-          style={{
-            padding: "0.8rem",
-            borderRadius: 8,
-            background: t.accentBg,
-            border: `1px solid ${t.accent}20`,
-          }}
-        >
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "0.4rem",
-              marginBottom: "0.4rem",
-            }}
-          >
+        <div className="pr-result pr-result--suggestion">
+          <div className="pr-result__header">
             <AlertTriangle size={15} color={t.amber} strokeWidth={2} />
-            <span
-              style={{ fontSize: "0.84rem", fontWeight: 600, color: t.ink }}
-            >
+            <span className="pr-result__title" style={{ color: "var(--ink)" }}>
               Suggested fix
             </span>
           </div>
-          <p
-            style={{
-              fontSize: "0.78rem",
-              color: t.ink50,
-              margin: "0 0 0.5rem 0",
-              lineHeight: 1.5,
-            }}
-          >
-            {result.description}
-          </p>
+          <p className="pr-result__desc">{result.description}</p>
           {result.fixed_content && (
-            <pre
-              style={{
-                padding: "0.6rem 0.8rem",
-                borderRadius: 6,
-                background: t.codeBg,
-                fontFamily: "var(--mono)",
-                fontSize: "0.68rem",
-                color: "#a3a3a3",
-                overflowX: "auto",
-                whiteSpace: "pre-wrap",
-                margin: 0,
-                lineHeight: 1.7,
-              }}
-            >
+            <pre className="dash-code-block" style={{ margin: 0 }}>
               {result.fixed_content}
             </pre>
           )}
-          <p
-            style={{ fontSize: "0.68rem", color: t.ink50, marginTop: "0.4rem" }}
-          >
+          <p className="pr-result__file">
             Suggested file:{" "}
-            <code style={{ fontFamily: "var(--mono)", color: t.accent }}>
-              {result.file_path}
-            </code>
+            <code className="dash-code-accent">{result.file_path}</code>
           </p>
         </div>
       )}
 
-      {/* Error */}
       {result && result.error && !result.status && (
         <div
-          style={{
-            padding: "0.6rem 0.8rem",
-            borderRadius: 8,
-            marginTop: "0.3rem",
-            background: `${t.red}08`,
-            border: `1px solid ${t.red}20`,
-            fontSize: "0.78rem",
-            color: t.red,
-          }}
+          className="pr-result pr-result--error"
+          style={{ marginTop: "0.3rem" }}
         >
           {result.error}
         </div>
       )}
-
-      <style>{`.xsbl-spin { animation: xsbl-spin 0.6s linear infinite; } @keyframes xsbl-spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   );
 }

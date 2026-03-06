@@ -1,11 +1,10 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
-import { useTheme } from "../../context/ThemeContext";
 import XsblBull from "../../components/landing/XsblBull";
+import "../../styles/auth.css";
 
 export default function ResetPasswordPage() {
-  const { t } = useTheme();
   const { updatePassword, session } = useAuth();
   const navigate = useNavigate();
 
@@ -40,155 +39,47 @@ export default function ResetPasswordPage() {
     }
   };
 
-  const inp = {
-    width: "100%",
-    padding: "0.6rem 0.9rem",
-    borderRadius: 8,
-    border: `1.5px solid ${t.ink20}`,
-    background: t.cardBg,
-    color: t.ink,
-    fontFamily: "var(--body)",
-    fontSize: "0.88rem",
-    outline: "none",
-    transition: "border-color 0.2s",
-    boxSizing: "border-box",
-  };
-
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        background: t.paper,
-        padding: "2rem",
-      }}
-    >
-      <div style={{ width: "100%", maxWidth: 400 }}>
-        <Link
-          to="/"
-          style={{
-            fontFamily: "var(--mono)",
-            fontWeight: 600,
-            fontSize: "1.5rem",
-            color: t.ink,
-            textDecoration: "none",
-            display: "flex",
-            alignItems: "center",
-            gap: "4px",
-            marginBottom: "2.5rem",
-          }}
-        >
+    <div className="auth-page">
+      <div className="auth-card">
+        <Link to="/" className="auth-logo">
           <XsblBull />
-          xsbl<span style={{ color: t.accent }}>.</span>
+          xsbl<span className="auth-logo__dot">.</span>
         </Link>
 
-        <h1
-          style={{
-            fontFamily: "var(--serif)",
-            fontSize: "1.8rem",
-            fontWeight: 700,
-            color: t.ink,
-            marginBottom: "0.5rem",
-          }}
-        >
-          Set new password
-        </h1>
-        <p
-          style={{ color: t.ink50, fontSize: "0.92rem", marginBottom: "2rem" }}
-        >
-          Enter your new password below.
-        </p>
+        <h1 className="auth-title">Set new password</h1>
+        <p className="auth-subtitle">Enter your new password below.</p>
 
         {success ? (
-          <div
-            style={{
-              padding: "1rem 1.2rem",
-              borderRadius: 8,
-              background: `${t.green}10`,
-              border: `1px solid ${t.green}30`,
-            }}
-          >
+          <div className="auth-success-box" style={{ padding: "1rem 1.2rem" }}>
             <p
-              style={{
-                fontSize: "0.88rem",
-                color: t.green,
-                margin: 0,
-                fontWeight: 600,
-                marginBottom: "0.3rem",
-              }}
+              className="auth-success-box__title"
+              style={{ fontSize: "0.88rem", fontWeight: 600 }}
             >
               Password updated
             </p>
-            <p
-              style={{
-                fontSize: "0.82rem",
-                color: t.ink50,
-                margin: 0,
-                lineHeight: 1.5,
-              }}
-            >
+            <p className="auth-success-box__text">
               Redirecting you to the dashboard…
             </p>
           </div>
         ) : !session ? (
-          <div
-            style={{
-              padding: "1rem 1.2rem",
-              borderRadius: 8,
-              background: `${t.red}08`,
-              border: `1px solid ${t.red}20`,
-            }}
-          >
-            <p
-              style={{
-                fontSize: "0.88rem",
-                color: t.red,
-                margin: 0,
-                fontWeight: 500,
-                marginBottom: "0.3rem",
-              }}
-            >
-              Invalid or expired link
-            </p>
-            <p
-              style={{
-                fontSize: "0.82rem",
-                color: t.ink50,
-                margin: 0,
-                lineHeight: 1.5,
-              }}
-            >
+          <div className="auth-error-box">
+            <p className="auth-error-box__title">Invalid or expired link</p>
+            <p className="auth-error-box__text">
               This reset link may have expired.{" "}
               <Link
                 to="/login"
-                style={{
-                  color: t.accent,
-                  textDecoration: "none",
-                  fontWeight: 600,
-                }}
+                className="auth-accent-link"
+                style={{ fontSize: "0.82rem" }}
               >
                 Request a new one
               </Link>
             </p>
           </div>
         ) : (
-          <form
-            onSubmit={handleSubmit}
-            style={{ display: "flex", flexDirection: "column", gap: "0.8rem" }}
-          >
+          <form onSubmit={handleSubmit} className="auth-form">
             <div>
-              <label
-                htmlFor="reset-pw"
-                style={{
-                  display: "block",
-                  fontSize: "0.78rem",
-                  fontWeight: 500,
-                  color: t.ink,
-                  marginBottom: "0.35rem",
-                }}
-              >
+              <label htmlFor="reset-pw" className="auth-label">
                 New password
               </label>
               <input
@@ -198,23 +89,12 @@ export default function ResetPasswordPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="At least 8 characters"
-                style={inp}
+                className="auth-input"
                 autoFocus
-                onFocus={(e) => (e.target.style.borderColor = t.accent)}
-                onBlur={(e) => (e.target.style.borderColor = t.ink20)}
               />
             </div>
             <div>
-              <label
-                htmlFor="reset-pw-confirm"
-                style={{
-                  display: "block",
-                  fontSize: "0.78rem",
-                  fontWeight: 500,
-                  color: t.ink,
-                  marginBottom: "0.35rem",
-                }}
-              >
+              <label htmlFor="reset-pw-confirm" className="auth-label">
                 Confirm password
               </label>
               <input
@@ -224,56 +104,18 @@ export default function ResetPasswordPage() {
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 placeholder="Re-enter your password"
-                style={inp}
-                onFocus={(e) => (e.target.style.borderColor = t.accent)}
-                onBlur={(e) => (e.target.style.borderColor = t.ink20)}
+                className="auth-input"
               />
             </div>
-            {error && (
-              <p style={{ color: t.red, fontSize: "0.82rem", margin: 0 }}>
-                {error}
-              </p>
-            )}
-            <button
-              type="submit"
-              disabled={loading}
-              style={{
-                marginTop: "0.4rem",
-                padding: "0.7rem",
-                borderRadius: 8,
-                border: "none",
-                background: t.accent,
-                color: "white",
-                fontFamily: "var(--body)",
-                fontSize: "0.9rem",
-                fontWeight: 600,
-                cursor: loading ? "not-allowed" : "pointer",
-                opacity: loading ? 0.6 : 1,
-              }}
-            >
+            {error && <p className="auth-error">{error}</p>}
+            <button type="submit" disabled={loading} className="auth-submit">
               {loading ? "Updating…" : "Update password"}
             </button>
           </form>
         )}
 
-        <p
-          style={{
-            marginTop: "1.5rem",
-            fontSize: "0.85rem",
-            color: t.ink50,
-            textAlign: "center",
-          }}
-        >
-          <Link
-            to="/login"
-            style={{
-              color: t.accent,
-              textDecoration: "none",
-              fontWeight: 600,
-            }}
-          >
-            Back to sign in
-          </Link>
+        <p className="auth-footer">
+          <Link to="/login">Back to sign in</Link>
         </p>
       </div>
     </div>

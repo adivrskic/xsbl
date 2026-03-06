@@ -4,6 +4,7 @@ import { useAuth } from "../../context/AuthContext";
 import { useTheme } from "../../context/ThemeContext";
 import XsblBull from "../../components/landing/XsblBull";
 import { Sun, Moon } from "lucide-react";
+import "../../styles/auth.css";
 
 export default function SignupPage() {
   const { t, dark, toggle } = useTheme();
@@ -46,78 +47,13 @@ export default function SignupPage() {
     if (err) setError(err.message);
   };
 
-  const inp = {
-    width: "100%",
-    padding: "0.6rem 0.9rem",
-    borderRadius: 8,
-    border: `1.5px solid ${t.ink20}`,
-    background: t.cardBg,
-    color: t.ink,
-    fontFamily: "var(--body)",
-    fontSize: "0.88rem",
-    outline: "none",
-    transition: "border-color 0.2s",
-    boxSizing: "border-box",
-  };
-
-  const oauth = {
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: "0.6rem",
-    padding: "0.65rem 1rem",
-    borderRadius: 8,
-    border: `1.5px solid ${t.ink20}`,
-    background: "none",
-    color: t.ink,
-    fontFamily: "var(--body)",
-    fontSize: "0.88rem",
-    fontWeight: 500,
-    cursor: "pointer",
-    transition: "all 0.2s",
-  };
-
-  const hov = (e, on) => {
-    e.currentTarget.style.borderColor = on ? t.ink : t.ink20;
-    e.currentTarget.style.background = on ? t.ink04 : "none";
-  };
-
   if (confirmSent) {
     return (
-      <div
-        style={{
-          minHeight: "100vh",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          background: t.paper,
-          padding: "2rem",
-          position: "relative",
-        }}
-      >
+      <div className="auth-page">
         <button
           onClick={toggle}
           title="Toggle theme"
-          style={{
-            position: "absolute",
-            top: "1.5rem",
-            right: "1.5rem",
-            background: t.ink08,
-            border: "none",
-            borderRadius: 8,
-            padding: "0.45rem 0.55rem",
-            cursor: "pointer",
-            color: t.ink,
-            transition: "background 0.2s",
-            display: "flex",
-            alignItems: "center",
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.background = t.ink20;
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.background = t.ink08;
-          }}
+          className="theme-toggle auth-theme-toggle"
         >
           {dark ? (
             <Sun size={16} strokeWidth={2} />
@@ -125,54 +61,17 @@ export default function SignupPage() {
             <Moon size={16} strokeWidth={2} />
           )}
         </button>
-        <div style={{ width: "100%", maxWidth: 400, textAlign: "center" }}>
-          <div
-            style={{
-              width: 56,
-              height: 56,
-              borderRadius: 14,
-              background: t.accentBg,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              margin: "0 auto 1.5rem",
-              fontSize: "1.5rem",
-            }}
-          >
-            ✉
-          </div>
-          <h1
-            style={{
-              fontFamily: "var(--serif)",
-              fontSize: "1.5rem",
-              fontWeight: 700,
-              color: t.ink,
-              marginBottom: "0.75rem",
-            }}
-          >
+        <div className="auth-card auth-card--center">
+          <div className="auth-icon-box auth-icon-box--accent">✉</div>
+          <h1 className="auth-title" style={{ fontSize: "1.5rem" }}>
             Check your email
           </h1>
-          <p
-            style={{
-              color: t.ink50,
-              fontSize: "0.92rem",
-              lineHeight: 1.6,
-              marginBottom: "2rem",
-            }}
-          >
+          <p className="auth-subtitle" style={{ lineHeight: 1.6 }}>
             We sent a confirmation link to{" "}
-            <strong style={{ color: t.ink }}>{email}</strong>. Click it to
-            activate your account.
+            <strong style={{ color: "var(--ink)" }}>{email}</strong>. Click it
+            to activate your account.
           </p>
-          <Link
-            to="/login"
-            style={{
-              color: t.accent,
-              fontSize: "0.88rem",
-              fontWeight: 600,
-              textDecoration: "none",
-            }}
-          >
+          <Link to="/login" className="auth-accent-link">
             ← Back to login
           </Link>
         </div>
@@ -181,40 +80,11 @@ export default function SignupPage() {
   }
 
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        background: t.paper,
-        padding: "2rem",
-        position: "relative",
-      }}
-    >
+    <div className="auth-page">
       <button
         onClick={toggle}
         title="Toggle theme"
-        style={{
-          position: "absolute",
-          top: "1.5rem",
-          right: "1.5rem",
-          background: t.ink08,
-          border: "none",
-          borderRadius: 8,
-          padding: "0.45rem 0.55rem",
-          cursor: "pointer",
-          color: t.ink,
-          transition: "background 0.2s",
-          display: "flex",
-          alignItems: "center",
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.background = t.ink20;
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.background = t.ink08;
-        }}
+        className="theme-toggle auth-theme-toggle"
       >
         {dark ? (
           <Sun size={16} strokeWidth={2} />
@@ -222,55 +92,21 @@ export default function SignupPage() {
           <Moon size={16} strokeWidth={2} />
         )}
       </button>
-      <div style={{ width: "100%", maxWidth: 400 }}>
-        <Link
-          to="/"
-          style={{
-            fontFamily: "var(--mono)",
-            fontWeight: 600,
-            fontSize: "1.5rem",
-            color: t.ink,
-            textDecoration: "none",
-            marginBottom: "2.5rem",
-            display: "flex",
-            alignItems: "center",
-            gap: "4px",
-          }}
-        >
+      <div className="auth-card">
+        <Link to="/" className="auth-logo">
           <XsblBull />
-          xsbl<span style={{ color: t.accent }}>.</span>
+          xsbl<span className="auth-logo__dot">.</span>
         </Link>
 
-        <h1
-          style={{
-            fontFamily: "var(--serif)",
-            fontSize: "1.8rem",
-            fontWeight: 700,
-            color: t.ink,
-            marginBottom: "0.5rem",
-          }}
-        >
-          Create your account
-        </h1>
-        <p
-          style={{ color: t.ink50, fontSize: "0.92rem", marginBottom: "2rem" }}
-        >
+        <h1 className="auth-title">Create your account</h1>
+        <p className="auth-subtitle">
           Start scanning your sites for accessibility issues.
         </p>
 
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: "0.6rem",
-            marginBottom: "1.5rem",
-          }}
-        >
+        <div className="auth-oauth-group">
           <button
             onClick={() => handleOAuth("github")}
-            style={oauth}
-            onMouseEnter={(e) => hov(e, true)}
-            onMouseLeave={(e) => hov(e, false)}
+            className="auth-oauth-btn"
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill={t.ink}>
               <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z" />
@@ -279,9 +115,7 @@ export default function SignupPage() {
           </button>
           <button
             onClick={() => handleOAuth("google")}
-            style={oauth}
-            onMouseEnter={(e) => hov(e, true)}
-            onMouseLeave={(e) => hov(e, false)}
+            className="auth-oauth-btn"
           >
             <svg width="18" height="18" viewBox="0 0 24 24">
               <path
@@ -305,44 +139,15 @@ export default function SignupPage() {
           </button>
         </div>
 
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "1rem",
-            marginBottom: "1.5rem",
-          }}
-        >
-          <div style={{ flex: 1, height: 1, background: t.ink08 }} />
-          <span
-            style={{
-              fontFamily: "var(--mono)",
-              fontSize: "0.68rem",
-              color: t.ink50,
-              textTransform: "uppercase",
-              letterSpacing: "0.08em",
-            }}
-          >
-            or
-          </span>
-          <div style={{ flex: 1, height: 1, background: t.ink08 }} />
+        <div className="auth-divider">
+          <div className="auth-divider__line" />
+          <span className="auth-divider__text">or</span>
+          <div className="auth-divider__line" />
         </div>
 
-        <form
-          onSubmit={handleSubmit}
-          style={{ display: "flex", flexDirection: "column", gap: "0.8rem" }}
-        >
+        <form onSubmit={handleSubmit} className="auth-form">
           <div>
-            <label
-              htmlFor="signup-name"
-              style={{
-                display: "block",
-                fontSize: "0.78rem",
-                fontWeight: 500,
-                color: t.ink,
-                marginBottom: "0.35rem",
-              }}
-            >
+            <label htmlFor="signup-name" className="auth-label">
               Full name
             </label>
             <input
@@ -352,22 +157,11 @@ export default function SignupPage() {
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
               placeholder="Jane Smith"
-              style={inp}
-              onFocus={(e) => (e.target.style.borderColor = t.accent)}
-              onBlur={(e) => (e.target.style.borderColor = t.ink20)}
+              className="auth-input"
             />
           </div>
           <div>
-            <label
-              htmlFor="signup-email"
-              style={{
-                display: "block",
-                fontSize: "0.78rem",
-                fontWeight: 500,
-                color: t.ink,
-                marginBottom: "0.35rem",
-              }}
-            >
+            <label htmlFor="signup-email" className="auth-label">
               Email
             </label>
             <input
@@ -377,22 +171,11 @@ export default function SignupPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="you@company.com"
-              style={inp}
-              onFocus={(e) => (e.target.style.borderColor = t.accent)}
-              onBlur={(e) => (e.target.style.borderColor = t.ink20)}
+              className="auth-input"
             />
           </div>
           <div>
-            <label
-              htmlFor="signup-pw"
-              style={{
-                display: "block",
-                fontSize: "0.78rem",
-                fontWeight: 500,
-                color: t.ink,
-                marginBottom: "0.35rem",
-              }}
-            >
+            <label htmlFor="signup-pw" className="auth-label">
               Password
             </label>
             <input
@@ -402,52 +185,17 @@ export default function SignupPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="At least 8 characters"
-              style={inp}
-              onFocus={(e) => (e.target.style.borderColor = t.accent)}
-              onBlur={(e) => (e.target.style.borderColor = t.ink20)}
+              className="auth-input"
             />
           </div>
-          {error && (
-            <p style={{ color: t.red, fontSize: "0.82rem", margin: 0 }}>
-              {error}
-            </p>
-          )}
-          <button
-            type="submit"
-            disabled={loading}
-            style={{
-              marginTop: "0.4rem",
-              padding: "0.7rem",
-              borderRadius: 8,
-              border: "none",
-              background: t.accent,
-              color: "white",
-              fontFamily: "var(--body)",
-              fontSize: "0.9rem",
-              fontWeight: 600,
-              cursor: loading ? "not-allowed" : "pointer",
-              opacity: loading ? 0.6 : 1,
-            }}
-          >
+          {error && <p className="auth-error">{error}</p>}
+          <button type="submit" disabled={loading} className="auth-submit">
             {loading ? "Creating account\u2026" : "Create account"}
           </button>
         </form>
 
-        <p
-          style={{
-            marginTop: "1.5rem",
-            fontSize: "0.85rem",
-            color: t.ink50,
-            textAlign: "center",
-          }}
-        >
-          Already have an account?{" "}
-          <Link
-            to="/login"
-            style={{ color: t.accent, textDecoration: "none", fontWeight: 600 }}
-          >
-            Sign in
-          </Link>
+        <p className="auth-footer">
+          Already have an account? <Link to="/login">Sign in</Link>
         </p>
       </div>
     </div>

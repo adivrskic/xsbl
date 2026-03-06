@@ -1,10 +1,10 @@
 import { useState } from "react";
-import { useTheme } from "../../context/ThemeContext";
 import { supabase } from "../../lib/supabase";
 import { useToast } from "../ui/Toast";
 import { Check, Loader2, ExternalLink, Unlink } from "lucide-react";
+import "../../styles/dashboard.css";
+import "../../styles/dashboard-modals.css";
 
-// GitHub SVG icon (lucide doesn't have brand icons)
 function GitHubIcon({ size = 16 }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
@@ -14,7 +14,6 @@ function GitHubIcon({ size = 16 }) {
 }
 
 export default function GitHubConnect({ site, onUpdate }) {
-  const { t } = useTheme();
   const toast = useToast();
   const [repo, setRepo] = useState(site.github_repo || "");
   const [ghToken, setGhToken] = useState(site.github_token ? "••••••••" : "");
@@ -30,17 +29,13 @@ export default function GitHubConnect({ site, onUpdate }) {
       toast.error("Both repo and token are required");
       return;
     }
-
-    // Don't save the masked token
     var tokenToSave = ghToken === "••••••••" ? undefined : ghToken.trim();
-
     setSaving(true);
     var updateData = {
       github_repo: repo.trim(),
       github_default_branch: branch.trim() || "main",
     };
     if (tokenToSave) updateData.github_token = tokenToSave;
-
     var { error } = await supabase
       .from("sites")
       .update(updateData)
@@ -106,13 +101,8 @@ export default function GitHubConnect({ site, onUpdate }) {
 
   return (
     <div
-      style={{
-        padding: "1.3rem",
-        borderRadius: 10,
-        border: `1px solid ${t.ink08}`,
-        background: t.cardBg,
-        marginBottom: "1rem",
-      }}
+      className="dash-card"
+      style={{ marginBottom: "1rem", padding: "1.3rem" }}
     >
       <div
         style={{
@@ -124,136 +114,60 @@ export default function GitHubConnect({ site, onUpdate }) {
       >
         <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
           <GitHubIcon size={17} />
-          <span style={{ fontSize: "0.88rem", fontWeight: 600, color: t.ink }}>
+          <span
+            style={{
+              fontSize: "0.88rem",
+              fontWeight: 600,
+              color: "var(--ink)",
+            }}
+          >
             GitHub Integration
           </span>
         </div>
         {connected && (
-          <span
-            style={{
-              fontFamily: "var(--mono)",
-              fontSize: "0.58rem",
-              fontWeight: 600,
-              padding: "0.15rem 0.4rem",
-              borderRadius: 3,
-              textTransform: "uppercase",
-              background: `${t.green}12`,
-              color: t.green,
-              display: "flex",
-              alignItems: "center",
-              gap: "0.2rem",
-            }}
-          >
+          <span className="dash-connected-badge">
             <Check size={10} /> Connected
           </span>
         )}
       </div>
 
       <p
-        style={{
-          fontSize: "0.78rem",
-          color: t.ink50,
-          lineHeight: 1.6,
-          marginBottom: "1rem",
-        }}
+        className="dash-config-hint"
+        style={{ marginBottom: "1rem", lineHeight: 1.6, fontSize: "0.78rem" }}
       >
         Connect a GitHub repo to create pull requests that fix accessibility
         issues directly in your code.
       </p>
 
-      {/* Repo input */}
       <div style={{ marginBottom: "0.6rem" }}>
-        <label
-          style={{
-            display: "block",
-            fontFamily: "var(--mono)",
-            fontSize: "0.6rem",
-            color: t.ink50,
-            textTransform: "uppercase",
-            letterSpacing: "0.06em",
-            marginBottom: "0.25rem",
-          }}
-        >
-          Repository (owner/repo)
-        </label>
+        <label className="dash-config-label">Repository (owner/repo)</label>
         <input
           value={repo}
           onChange={(e) => setRepo(e.target.value)}
           placeholder="acme/website"
-          style={{
-            width: "100%",
-            padding: "0.45rem 0.7rem",
-            borderRadius: 6,
-            border: `1.5px solid ${t.ink20}`,
-            background: t.paper,
-            color: t.ink,
-            fontFamily: "var(--mono)",
-            fontSize: "0.8rem",
-            outline: "none",
-            boxSizing: "border-box",
-          }}
-          onFocus={(e) => (e.target.style.borderColor = t.accent)}
-          onBlur={(e) => (e.target.style.borderColor = t.ink20)}
+          className="dash-config-input"
         />
       </div>
 
-      {/* Token input */}
       <div style={{ marginBottom: "0.6rem" }}>
-        <label
-          style={{
-            display: "block",
-            fontFamily: "var(--mono)",
-            fontSize: "0.6rem",
-            color: t.ink50,
-            textTransform: "uppercase",
-            letterSpacing: "0.06em",
-            marginBottom: "0.25rem",
-          }}
-        >
-          Personal Access Token
-        </label>
+        <label className="dash-config-label">Personal Access Token</label>
         <input
           type="password"
           value={ghToken}
           onChange={(e) => setGhToken(e.target.value)}
           onFocus={(e) => {
-            if (ghToken === "••••••••") {
-              e.target.style.borderColor = t.accent;
-              setGhToken("");
-            }
+            if (ghToken === "••••••••") setGhToken("");
           }}
           placeholder="ghp_xxxxxxxxxxxxxxxxxxxx"
-          style={{
-            width: "100%",
-            padding: "0.45rem 0.7rem",
-            borderRadius: 6,
-            border: `1.5px solid ${t.ink20}`,
-            background: t.paper,
-            color: t.ink,
-            fontFamily: "var(--mono)",
-            fontSize: "0.8rem",
-            outline: "none",
-            boxSizing: "border-box",
-          }}
-          onBlur={(e) => (e.target.style.borderColor = t.ink20)}
+          className="dash-config-input"
         />
-        <p style={{ fontSize: "0.68rem", color: t.ink50, marginTop: "0.2rem" }}>
-          Needs{" "}
-          <code
-            style={{
-              fontFamily: "var(--mono)",
-              fontSize: "0.62rem",
-              color: t.accent,
-            }}
-          >
-            repo
-          </code>{" "}
-          scope.{" "}
+        <p className="dash-config-hint">
+          Needs <code className="dash-code-accent">repo</code> scope.{" "}
           <a
             href="https://github.com/settings/tokens/new?scopes=repo&description=xsbl-a11y-fixes"
             target="_blank"
             rel="noopener noreferrer"
-            style={{ color: t.accent, textDecoration: "none" }}
+            className="dash-accent-link"
           >
             Create one{" "}
             <ExternalLink size={10} style={{ verticalAlign: "middle" }} />
@@ -261,60 +175,22 @@ export default function GitHubConnect({ site, onUpdate }) {
         </p>
       </div>
 
-      {/* Branch */}
       <div style={{ marginBottom: "1rem" }}>
-        <label
-          style={{
-            display: "block",
-            fontFamily: "var(--mono)",
-            fontSize: "0.6rem",
-            color: t.ink50,
-            textTransform: "uppercase",
-            letterSpacing: "0.06em",
-            marginBottom: "0.25rem",
-          }}
-        >
-          Default branch
-        </label>
+        <label className="dash-config-label">Default branch</label>
         <input
           value={branch}
           onChange={(e) => setBranch(e.target.value)}
           placeholder="main"
-          style={{
-            width: 120,
-            padding: "0.45rem 0.7rem",
-            borderRadius: 6,
-            border: `1.5px solid ${t.ink20}`,
-            background: t.paper,
-            color: t.ink,
-            fontFamily: "var(--mono)",
-            fontSize: "0.8rem",
-            outline: "none",
-            boxSizing: "border-box",
-          }}
+          className="dash-config-input"
+          style={{ width: 120 }}
         />
       </div>
 
-      {/* Actions */}
       <div style={{ display: "flex", gap: "0.4rem", flexWrap: "wrap" }}>
         <button
           onClick={handleTest}
           disabled={!repo.trim() || testing}
-          style={{
-            padding: "0.4rem 0.8rem",
-            borderRadius: 6,
-            border: `1.5px solid ${t.ink20}`,
-            background: "none",
-            color: t.ink,
-            fontFamily: "var(--body)",
-            fontSize: "0.78rem",
-            fontWeight: 500,
-            cursor: "pointer",
-            opacity: !repo.trim() || testing ? 0.5 : 1,
-            display: "flex",
-            alignItems: "center",
-            gap: "0.3rem",
-          }}
+          className="dash-btn-sm dash-btn-sm--outline"
         >
           {testing ? <Loader2 size={13} className="xsbl-spin" /> : null}
           Test connection
@@ -322,21 +198,7 @@ export default function GitHubConnect({ site, onUpdate }) {
         <button
           onClick={handleSave}
           disabled={saving || !repo.trim()}
-          style={{
-            padding: "0.4rem 0.8rem",
-            borderRadius: 6,
-            border: "none",
-            background: t.accent,
-            color: "white",
-            fontFamily: "var(--body)",
-            fontSize: "0.78rem",
-            fontWeight: 600,
-            cursor: "pointer",
-            opacity: saving || !repo.trim() ? 0.5 : 1,
-            display: "flex",
-            alignItems: "center",
-            gap: "0.3rem",
-          }}
+          className="dash-btn-sm dash-btn-sm--accent"
         >
           {saving ? (
             <Loader2 size={13} className="xsbl-spin" />
@@ -348,27 +210,12 @@ export default function GitHubConnect({ site, onUpdate }) {
         {connected && (
           <button
             onClick={handleDisconnect}
-            style={{
-              padding: "0.4rem 0.8rem",
-              borderRadius: 6,
-              border: `1.5px solid ${t.red}40`,
-              background: "none",
-              color: t.red,
-              fontFamily: "var(--body)",
-              fontSize: "0.78rem",
-              fontWeight: 500,
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              gap: "0.3rem",
-            }}
+            className="dash-btn-sm dash-btn-sm--red"
           >
             <Unlink size={13} /> Disconnect
           </button>
         )}
       </div>
-
-      <style>{`.xsbl-spin { animation: xsbl-spin 0.6s linear infinite; } @keyframes xsbl-spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   );
 }

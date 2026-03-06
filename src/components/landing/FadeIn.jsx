@@ -1,4 +1,5 @@
 import { useInView } from "../../hooks/useInView";
+import "./FadeIn.css";
 
 export default function FadeIn({
   children,
@@ -11,11 +12,13 @@ export default function FadeIn({
   return (
     <div
       ref={ref}
-      className={className}
+      className={
+        "fade-in" +
+        (visible ? " fade-in--visible" : "") +
+        (className ? " " + className : "")
+      }
       style={{
         ...style,
-        opacity: visible ? 1 : 0,
-        transform: visible ? "translateY(0)" : "translateY(22px)",
         transition: `opacity 0.55s ease ${delay}s, transform 0.55s ease ${delay}s`,
       }}
     >

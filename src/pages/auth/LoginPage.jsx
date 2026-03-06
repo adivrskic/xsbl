@@ -3,6 +3,8 @@ import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { useTheme } from "../../context/ThemeContext";
 import XsblBull from "../../components/landing/XsblBull";
+import "../../styles/auth.css";
+
 function GitHubIcon({ fill }) {
   return (
     <svg
@@ -89,153 +91,44 @@ export default function LoginPage() {
     if (err) setError(err.message);
   };
 
-  const inp = {
-    width: "100%",
-    padding: "0.6rem 0.9rem",
-    borderRadius: 8,
-    border: `1.5px solid ${t.ink20}`,
-    background: t.cardBg,
-    color: t.ink,
-    fontFamily: "var(--body)",
-    fontSize: "0.88rem",
-    outline: "none",
-    transition: "border-color 0.2s",
-    boxSizing: "border-box",
-  };
-
-  const oauth = {
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: "0.6rem",
-    padding: "0.65rem 1rem",
-    borderRadius: 8,
-    border: `1.5px solid ${t.ink20}`,
-    background: "none",
-    color: t.ink,
-    fontFamily: "var(--body)",
-    fontSize: "0.88rem",
-    fontWeight: 500,
-    cursor: "pointer",
-    transition: "all 0.2s",
-  };
-
-  const hov = (e, on) => {
-    e.currentTarget.style.borderColor = on ? t.ink : t.ink20;
-    e.currentTarget.style.background = on ? t.ink04 : "none";
-  };
-
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        background: t.paper,
-        padding: "2rem",
-      }}
-    >
-      <div style={{ width: "100%", maxWidth: 400 }}>
-        <Link
-          to="/"
-          style={{
-            fontFamily: "var(--mono)",
-            fontWeight: 600,
-            fontSize: "1.5rem",
-            color: t.ink,
-            textDecoration: "none",
-            marginBottom: "2.5rem",
-            display: "flex",
-            alignItems: "center",
-            gap: "4px",
-          }}
-        >
+    <div className="auth-page">
+      <div className="auth-card">
+        <Link to="/" className="auth-logo">
           <XsblBull />
-          xsbl<span style={{ color: t.accent }}>.</span>
+          xsbl<span className="auth-logo__dot">.</span>
         </Link>
 
-        <h1
-          style={{
-            fontFamily: "var(--serif)",
-            fontSize: "1.8rem",
-            fontWeight: 700,
-            color: t.ink,
-            marginBottom: "0.5rem",
-          }}
-        >
-          Welcome back
-        </h1>
-        <p
-          style={{ color: t.ink50, fontSize: "0.92rem", marginBottom: "2rem" }}
-        >
-          Sign in to your xsbl dashboard.
-        </p>
+        <h1 className="auth-title">Welcome back</h1>
+        <p className="auth-subtitle">Sign in to your xsbl dashboard.</p>
 
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: "0.6rem",
-            marginBottom: "1.5rem",
-          }}
-        >
+        <div className="auth-oauth-group">
           <button
             onClick={() => handleOAuth("github")}
-            style={oauth}
-            onMouseEnter={(e) => hov(e, true)}
-            onMouseLeave={(e) => hov(e, false)}
+            className="auth-oauth-btn"
           >
             <GitHubIcon fill={t.ink} /> Continue with GitHub
           </button>
           <button
             onClick={() => handleOAuth("google")}
-            style={oauth}
-            onMouseEnter={(e) => hov(e, true)}
-            onMouseLeave={(e) => hov(e, false)}
+            className="auth-oauth-btn"
           >
             <GoogleIcon /> Continue with Google
           </button>
         </div>
 
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "1rem",
-            marginBottom: "1.5rem",
-          }}
-        >
-          <div style={{ flex: 1, height: 1, background: t.ink08 }} />
-          <span
-            style={{
-              fontFamily: "var(--mono)",
-              fontSize: "0.68rem",
-              color: t.ink50,
-              textTransform: "uppercase",
-              letterSpacing: "0.08em",
-            }}
-          >
-            or
-          </span>
-          <div style={{ flex: 1, height: 1, background: t.ink08 }} />
+        <div className="auth-divider">
+          <div className="auth-divider__line" />
+          <span className="auth-divider__text">or</span>
+          <div className="auth-divider__line" />
         </div>
 
         <form
           onSubmit={forgotMode ? handleForgotSubmit : handleSubmit}
-          style={{ display: "flex", flexDirection: "column", gap: "0.8rem" }}
+          className="auth-form"
         >
           <div>
-            <label
-              htmlFor="login-email"
-              style={{
-                display: "block",
-                fontSize: "0.78rem",
-                fontWeight: 500,
-                color: t.ink,
-                marginBottom: "0.35rem",
-              }}
-            >
+            <label htmlFor="login-email" className="auth-label">
               Email
             </label>
             <input
@@ -245,28 +138,16 @@ export default function LoginPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="you@company.com"
-              style={inp}
-              onFocus={(e) => (e.target.style.borderColor = t.accent)}
-              onBlur={(e) => (e.target.style.borderColor = t.ink20)}
+              className="auth-input"
             />
           </div>
           {!forgotMode && (
             <div>
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "baseline",
-                  marginBottom: "0.35rem",
-                }}
-              >
+              <div className="auth-pw-row">
                 <label
                   htmlFor="login-pw"
-                  style={{
-                    fontSize: "0.78rem",
-                    fontWeight: 500,
-                    color: t.ink,
-                  }}
+                  className="auth-label"
+                  style={{ marginBottom: 0 }}
                 >
                   Password
                 </label>
@@ -277,16 +158,7 @@ export default function LoginPage() {
                     setError(null);
                     setResetSent(false);
                   }}
-                  style={{
-                    background: "none",
-                    border: "none",
-                    color: t.accent,
-                    fontSize: "0.74rem",
-                    fontWeight: 500,
-                    cursor: "pointer",
-                    padding: 0,
-                    fontFamily: "var(--body)",
-                  }}
+                  className="auth-link-btn"
                 >
                   Forgot password?
                 </button>
@@ -298,69 +170,23 @@ export default function LoginPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Your password"
-                style={inp}
-                onFocus={(e) => (e.target.style.borderColor = t.accent)}
-                onBlur={(e) => (e.target.style.borderColor = t.ink20)}
+                className="auth-input"
               />
             </div>
           )}
           {forgotMode && resetSent && (
-            <div
-              style={{
-                padding: "0.8rem 1rem",
-                borderRadius: 8,
-                background: `${t.green}10`,
-                border: `1px solid ${t.green}30`,
-              }}
-            >
-              <p
-                style={{
-                  fontSize: "0.84rem",
-                  color: t.green,
-                  margin: 0,
-                  fontWeight: 500,
-                  marginBottom: "0.3rem",
-                }}
-              >
-                Check your inbox
-              </p>
-              <p
-                style={{
-                  fontSize: "0.78rem",
-                  color: t.ink50,
-                  margin: 0,
-                  lineHeight: 1.5,
-                }}
-              >
+            <div className="auth-success-box">
+              <p className="auth-success-box__title">Check your inbox</p>
+              <p className="auth-success-box__text">
                 We sent a password reset link to{" "}
-                <strong style={{ color: t.ink }}>{email}</strong>. Click the
-                link in the email to set a new password.
+                <strong style={{ color: "var(--ink)" }}>{email}</strong>. Click
+                the link in the email to set a new password.
               </p>
             </div>
           )}
-          {error && (
-            <p style={{ color: t.red, fontSize: "0.82rem", margin: 0 }}>
-              {error}
-            </p>
-          )}
+          {error && <p className="auth-error">{error}</p>}
           {!(forgotMode && resetSent) && (
-            <button
-              type="submit"
-              disabled={loading}
-              style={{
-                marginTop: "0.4rem",
-                padding: "0.7rem",
-                borderRadius: 8,
-                border: "none",
-                background: t.accent,
-                color: "white",
-                fontFamily: "var(--body)",
-                fontSize: "0.9rem",
-                fontWeight: 600,
-                cursor: loading ? "not-allowed" : "pointer",
-                opacity: loading ? 0.6 : 1,
-              }}
-            >
+            <button type="submit" disabled={loading} className="auth-submit">
               {loading
                 ? forgotMode
                   ? "Sending…"
@@ -372,14 +198,7 @@ export default function LoginPage() {
           )}
         </form>
 
-        <p
-          style={{
-            marginTop: "1.5rem",
-            fontSize: "0.85rem",
-            color: t.ink50,
-            textAlign: "center",
-          }}
-        >
+        <p className="auth-footer">
           {forgotMode ? (
             <>
               Remember your password?{" "}
@@ -389,34 +208,13 @@ export default function LoginPage() {
                   setError(null);
                   setResetSent(false);
                 }}
-                style={{
-                  background: "none",
-                  border: "none",
-                  color: t.accent,
-                  textDecoration: "none",
-                  fontWeight: 600,
-                  cursor: "pointer",
-                  padding: 0,
-                  fontSize: "0.85rem",
-                  fontFamily: "var(--body)",
-                }}
               >
                 Back to sign in
               </button>
             </>
           ) : (
             <>
-              Don't have an account?{" "}
-              <Link
-                to="/signup"
-                style={{
-                  color: t.accent,
-                  textDecoration: "none",
-                  fontWeight: 600,
-                }}
-              >
-                Sign up
-              </Link>
+              Don't have an account? <Link to="/signup">Sign up</Link>
             </>
           )}
         </p>

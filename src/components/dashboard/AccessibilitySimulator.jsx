@@ -1,5 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import { useTheme } from "../../context/ThemeContext";
+import "../../styles/dashboard.css";
+import "../../styles/dashboard-pages.css";
+import "../../styles/dashboard-modals.css";
 import { supabase } from "../../lib/supabase";
 import {
   X,
@@ -139,8 +142,12 @@ export default function AccessibilitySimulator({ site, issues, onClose }) {
   const [splitView, setSplitView] = useState(false);
   const [splitPos, setSplitPos] = useState(50);
   const [expandedCat, setExpandedCat] = useState("colorblind");
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const containerRef = useRef(null);
   const isDragging = useRef(false);
+
+  // Detect mobile
+  const isMobile = typeof window !== "undefined" && window.innerWidth <= 768;
 
   var currentMode =
     VISION_MODES.find(function (m) {
@@ -212,20 +219,31 @@ export default function AccessibilitySimulator({ site, issues, onClose }) {
     >
       {/* ── Top Bar ── */}
       <div
+        className="xsbl-sim-topbar"
         style={{
-          height: 52,
-          padding: "0 1rem",
+          padding: "0 0.7rem",
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
           borderBottom: "1px solid " + t.ink08,
           background: t.cardBg,
           flexShrink: 0,
+          flexWrap: "wrap",
+          gap: "0.3rem",
+          minHeight: 48,
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: "0.8rem" }}>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "0.6rem",
+            padding: "0.4rem 0",
+          }}
+        >
           <button
             onClick={onClose}
+            aria-label="Close simulator"
             style={{
               background: t.ink04,
               border: "none",
@@ -238,7 +256,7 @@ export default function AccessibilitySimulator({ site, issues, onClose }) {
           >
             <X size={18} />
           </button>
-          <div>
+          <div className="xsbl-sim-title">
             <div
               style={{
                 fontFamily: "var(--mono)",
@@ -250,6 +268,7 @@ export default function AccessibilitySimulator({ site, issues, onClose }) {
               Accessibility Simulator
             </div>
             <div
+              className="hide-mobile"
               style={{
                 fontFamily: "var(--mono)",
                 fontSize: "0.58rem",
@@ -261,7 +280,15 @@ export default function AccessibilitySimulator({ site, issues, onClose }) {
           </div>
         </div>
 
-        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "0.4rem",
+            flexWrap: "wrap",
+            padding: "0.3rem 0",
+          }}
+        >
           {/* Viewport toggle */}
           <div
             style={{
@@ -275,6 +302,7 @@ export default function AccessibilitySimulator({ site, issues, onClose }) {
               onClick={function () {
                 setViewport("desktop");
               }}
+              aria-label="Desktop view"
               style={{
                 padding: "0.25rem 0.5rem",
                 borderRadius: 5,
@@ -296,6 +324,7 @@ export default function AccessibilitySimulator({ site, issues, onClose }) {
               onClick={function () {
                 setViewport("mobile");
               }}
+              aria-label="Mobile view"
               style={{
                 padding: "0.25rem 0.5rem",
                 borderRadius: 5,
@@ -319,6 +348,7 @@ export default function AccessibilitySimulator({ site, issues, onClose }) {
               onClick={function () {
                 setZoom(Math.max(0.25, zoom - 0.25));
               }}
+              aria-label="Zoom out"
               style={{
                 background: "none",
                 border: "none",
@@ -345,6 +375,7 @@ export default function AccessibilitySimulator({ site, issues, onClose }) {
               onClick={function () {
                 setZoom(Math.min(3, zoom + 0.25));
               }}
+              aria-label="Zoom in"
               style={{
                 background: "none",
                 border: "none",
@@ -358,8 +389,9 @@ export default function AccessibilitySimulator({ site, issues, onClose }) {
             </button>
           </div>
 
-          {/* Split view */}
+          {/* Split view — hide on mobile */}
           <button
+            className="hide-mobile"
             onClick={function () {
               setSplitView(!splitView);
             }}
@@ -401,15 +433,63 @@ export default function AccessibilitySimulator({ site, issues, onClose }) {
               gap: "0.3rem",
             }}
           >
-            <AlertTriangle size={13} /> {pageIssues.length} issues
+            <AlertTriangle size={13} /> {pageIssues.length}
+          </button>
+
+          {/* Vision mode toggle — mobile only */}
+          <button
+            className="show-mobile-only"
+            onClick={function () {
+              setSidebarOpen(!sidebarOpen);
+            }}
+            style={{
+              padding: "0.3rem 0.6rem",
+              borderRadius: 5,
+              border: "1px solid " + (mode !== "normal" ? t.accent : t.ink08),
+              background: mode !== "normal" ? t.accentBg : "none",
+              color: mode !== "normal" ? t.accent : t.ink50,
+              fontFamily: "var(--mono)",
+              fontSize: "0.6rem",
+              fontWeight: 600,
+              cursor: "pointer",
+              display: "none",
+              alignItems: "center",
+              gap: "0.3rem",
+            }}
+          >
+            <Eye size={13} /> {mode === "normal" ? "Vision" : currentMode.name}
           </button>
         </div>
       </div>
 
       {/* ── Main Area ── */}
-      <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
+      <div
+        style={{
+          display: "flex",
+          flex: 1,
+          overflow: "hidden",
+          position: "relative",
+        }}
+      >
         {/* ── Left Sidebar — Vision Controls ── */}
+        {/* Mobile overlay backdrop */}
+        {sidebarOpen && (
+          <div
+            className="show-mobile-only"
+            onClick={function () {
+              setSidebarOpen(false);
+            }}
+            style={{
+              position: "absolute",
+              inset: 0,
+              background: "rgba(0,0,0,0.4)",
+              zIndex: 20,
+              display: "none",
+            }}
+          />
+        )}
         <div
+          className="xsbl-sim-sidebar"
           style={{
             width: 260,
             flexShrink: 0,
@@ -417,6 +497,7 @@ export default function AccessibilitySimulator({ site, issues, onClose }) {
             background: t.cardBg,
             overflowY: "auto",
             padding: "0.8rem 0",
+            zIndex: 25,
           }}
         >
           {/* Current mode indicator */}
@@ -515,6 +596,7 @@ export default function AccessibilitySimulator({ site, issues, onClose }) {
                           key={m.id}
                           onClick={function () {
                             setMode(m.id);
+                            if (isMobile) setSidebarOpen(false);
                           }}
                           style={{
                             width: "100%",
@@ -527,7 +609,7 @@ export default function AccessibilitySimulator({ site, issues, onClose }) {
                             cursor: "pointer",
                             transition: "background 0.15s",
                             borderLeft: isActive
-                              ? "3px solid " + t.accent
+                              ? `3px solid ${t.accent}`
                               : "3px solid transparent",
                           }}
                           onMouseEnter={function (e) {
@@ -1096,6 +1178,23 @@ export default function AccessibilitySimulator({ site, issues, onClose }) {
         @keyframes issuePulse {
           0%, 100% { transform: scale(1); opacity: 0.5; }
           50% { transform: scale(1.8); opacity: 0; }
+        }
+        .show-mobile-only { display: none !important; }
+        @media (max-width: 768px) {
+          .hide-mobile { display: none !important; }
+          .show-mobile-only { display: flex !important; }
+          .xsbl-sim-sidebar {
+            position: absolute !important;
+            top: 0 !important;
+            left: 0 !important;
+            bottom: 0 !important;
+            width: 280px !important;
+            transform: translateX(${sidebarOpen ? "0" : "-100%"});
+            transition: transform 0.25s ease !important;
+            box-shadow: ${
+              sidebarOpen ? "4px 0 24px rgba(0,0,0,0.15)" : "none"
+            } !important;
+          }
         }
       `}</style>
     </div>

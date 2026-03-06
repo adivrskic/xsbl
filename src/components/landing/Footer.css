@@ -1,0 +1,19 @@
+/* Footer.css */
+.footer {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2.5rem clamp(1.5rem, 3vw, 3rem);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+  font-size: 0.78rem;
+  color: var(--ink50);
+  border-top: 1px solid var(--ink08);
+}
+
+.footer__links {
+  display: flex;
+  gap: 2rem;
+}
