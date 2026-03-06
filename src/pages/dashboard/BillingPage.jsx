@@ -12,9 +12,6 @@ import {
   Building2,
   ArrowUpRight,
 } from "lucide-react";
-import "../../styles/dashboard.css";
-import "../../styles/dashboard-pages.css";
-import "../../styles/BillingPage.css";
 
 const plans = [
   {
@@ -71,6 +68,13 @@ const plans = [
   },
 ];
 
+const PLAN_LIMITS = {
+  free: { sites: 1, scans: 3 },
+  starter: { sites: 1, scans: 10 },
+  pro: { sites: 999, scans: 100 },
+  agency: { sites: 999, scans: 999 },
+};
+
 export default function BillingPage() {
   const { t } = useTheme();
   const { org, refreshOrg } = useAuth();
@@ -79,6 +83,7 @@ export default function BillingPage() {
   const [loadingPlan, setLoadingPlan] = useState(null);
   const [portalLoading, setPortalLoading] = useState(false);
   const [message, setMessage] = useState(null);
+  const [downgradeBlock, setDowngradeBlock] = useState(null);
 
   // Check for Stripe redirect
   useEffect(() => {
@@ -153,27 +158,119 @@ export default function BillingPage() {
 
   return (
     <div>
-      <h1 className="dash-page-title">Billing</h1>
-      <p className="dash-page-subtitle" style={{ marginBottom: "2rem" }}>
+      <h1
+        style={{
+          fontFamily: "var(--serif)",
+          fontSize: "1.6rem",
+          fontWeight: 700,
+          color: t.ink,
+          marginBottom: "0.3rem",
+        }}
+      >
+        Billing
+      </h1>
+      <p style={{ color: t.ink50, fontSize: "0.88rem", marginBottom: "2rem" }}>
         Manage your subscription and usage.
       </p>
 
+      {/* Status message */}
       {message && (
-        <div className={"billing-message billing-message--" + message.type}>
+        <div
+          style={{
+            padding: "0.8rem 1rem",
+            borderRadius: 8,
+            marginBottom: "1.5rem",
+            background:
+              message.type === "success"
+                ? t.greenBg
+                : message.type === "error"
+                ? `${t.red}08`
+                : t.accentBg,
+            border: `1px solid ${
+              message.type === "success"
+                ? `${t.green}20`
+                : message.type === "error"
+                ? `${t.red}20`
+                : `${t.accent}20`
+            }`,
+            color:
+              message.type === "success"
+                ? t.green
+                : message.type === "error"
+                ? t.red
+                : t.accent,
+            fontSize: "0.84rem",
+            display: "flex",
+            alignItems: "center",
+            gap: "0.5rem",
+          }}
+        >
           {message.type === "success" && <Check size={15} />}
           {message.text}
         </div>
       )}
 
-      <div className="billing-summary">
-        <div className="billing-plan-card">
-          <div className="billing-plan-card__label">Current plan</div>
-          <div className="billing-plan-card__name">{currentPlan}</div>
+      {/* Current plan + usage */}
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "1fr 1fr",
+          gap: "0.8rem",
+          marginBottom: "2rem",
+        }}
+      >
+        <div
+          style={{
+            padding: "1.4rem",
+            borderRadius: 12,
+            border: `1px solid ${t.accent}25`,
+            background: t.accentBg,
+          }}
+        >
+          <div
+            style={{
+              fontFamily: "var(--mono)",
+              fontSize: "0.62rem",
+              color: t.accent,
+              textTransform: "uppercase",
+              letterSpacing: "0.08em",
+              fontWeight: 600,
+              marginBottom: "0.3rem",
+            }}
+          >
+            Current plan
+          </div>
+          <div
+            style={{
+              fontFamily: "var(--serif)",
+              fontSize: "1.4rem",
+              fontWeight: 700,
+              color: t.ink,
+              textTransform: "capitalize",
+              marginBottom: "0.5rem",
+            }}
+          >
+            {currentPlan}
+          </div>
           {currentPlan !== "free" && (
             <button
               onClick={handlePortal}
               disabled={portalLoading}
-              className="billing-portal-btn"
+              style={{
+                background: "none",
+                border: `1px solid ${t.accent}`,
+                borderRadius: 6,
+                padding: "0.35rem 0.75rem",
+                color: t.accent,
+                fontFamily: "var(--body)",
+                fontSize: "0.76rem",
+                fontWeight: 600,
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                gap: "0.3rem",
+                opacity: portalLoading ? 0.6 : 1,
+              }}
             >
               <CreditCard size={13} /> Manage subscription{" "}
               <ExternalLink size={11} />
@@ -182,10 +279,24 @@ export default function BillingPage() {
         </div>
 
         {usage && (
-          <div className="billing-usage-card">
+          <div
+            style={{
+              padding: "1.4rem",
+              borderRadius: 12,
+              border: `1px solid ${t.ink08}`,
+              background: t.cardBg,
+            }}
+          >
             <div
-              className="dash-card__label"
-              style={{ marginBottom: "0.5rem" }}
+              style={{
+                fontFamily: "var(--mono)",
+                fontSize: "0.62rem",
+                color: t.ink50,
+                textTransform: "uppercase",
+                letterSpacing: "0.08em",
+                fontWeight: 600,
+                marginBottom: "0.5rem",
+              }}
             >
               This month
             </div>
@@ -197,49 +308,73 @@ export default function BillingPage() {
               }}
             >
               <div>
-                <div className="billing-usage__row">
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    fontSize: "0.78rem",
+                    color: t.ink,
+                    marginBottom: "0.2rem",
+                  }}
+                >
                   <span>Scans</span>
-                  <span className="billing-usage__count">
+                  <span style={{ fontFamily: "var(--mono)", fontWeight: 600 }}>
                     {usage.scans_used} /{" "}
                     {usage.scans_limit === 999 ? "∞" : usage.scans_limit}
                   </span>
                 </div>
-                <div className="billing-usage__bar">
+                <div
+                  style={{ height: 4, borderRadius: 2, background: t.ink08 }}
+                >
                   <div
-                    className="billing-usage__fill"
                     style={{
+                      height: "100%",
+                      borderRadius: 2,
                       width: `${Math.min(
                         100,
                         (usage.scans_used / usage.scans_limit) * 100
                       )}%`,
                       background:
                         usage.scans_used >= usage.scans_limit
-                          ? "var(--red)"
-                          : "var(--accent)",
+                          ? t.red
+                          : t.accent,
+                      transition: "width 0.3s",
                     }}
                   />
                 </div>
               </div>
               <div>
-                <div className="billing-usage__row">
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    fontSize: "0.78rem",
+                    color: t.ink,
+                    marginBottom: "0.2rem",
+                  }}
+                >
                   <span>Sites</span>
-                  <span className="billing-usage__count">
+                  <span style={{ fontFamily: "var(--mono)", fontWeight: 600 }}>
                     {usage.sites_used} /{" "}
                     {usage.sites_limit === 999 ? "∞" : usage.sites_limit}
                   </span>
                 </div>
-                <div className="billing-usage__bar">
+                <div
+                  style={{ height: 4, borderRadius: 2, background: t.ink08 }}
+                >
                   <div
-                    className="billing-usage__fill"
                     style={{
+                      height: "100%",
+                      borderRadius: 2,
                       width: `${Math.min(
                         100,
                         (usage.sites_used / usage.sites_limit) * 100
                       )}%`,
                       background:
                         usage.sites_used >= usage.sites_limit
-                          ? "var(--red)"
-                          : "var(--accent)",
+                          ? t.red
+                          : t.accent,
+                      transition: "width 0.3s",
                     }}
                   />
                 </div>
@@ -249,8 +384,25 @@ export default function BillingPage() {
         )}
       </div>
 
-      <h2 className="dash-section-title">Plans</h2>
-      <div className="billing-plans-grid">
+      {/* Plan cards */}
+      <h2
+        style={{
+          fontFamily: "var(--serif)",
+          fontSize: "1.1rem",
+          fontWeight: 700,
+          color: t.ink,
+          marginBottom: "1rem",
+        }}
+      >
+        Plans
+      </h2>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+          gap: "0.8rem",
+        }}
+      >
         {plans.map((p) => {
           const isCurrent = currentPlan === p.key;
           const isDowngrade =
@@ -261,29 +413,102 @@ export default function BillingPage() {
           return (
             <div
               key={p.key}
-              className={
-                "billing-plan" + (isCurrent ? " billing-plan--current" : "")
-              }
+              style={{
+                padding: "1.4rem 1.2rem",
+                borderRadius: 12,
+                position: "relative",
+                border: `1px solid ${isCurrent ? t.accent : t.ink08}`,
+                background: isCurrent ? t.accentBg : t.cardBg,
+                display: "flex",
+                flexDirection: "column",
+              }}
             >
               {p.popular && (
-                <span className="billing-plan__popular">Popular</span>
+                <span
+                  style={{
+                    position: "absolute",
+                    top: -8,
+                    right: 12,
+                    fontFamily: "var(--mono)",
+                    fontSize: "0.56rem",
+                    fontWeight: 600,
+                    textTransform: "uppercase",
+                    letterSpacing: "0.06em",
+                    color: "white",
+                    background: t.accent,
+                    padding: "0.12rem 0.45rem",
+                    borderRadius: 3,
+                  }}
+                >
+                  Popular
+                </span>
               )}
 
-              <div className="billing-plan__header">
-                <Icon size={15} color="var(--accent)" strokeWidth={1.8} />
-                <div className="billing-plan__tier">{p.name}</div>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.4rem",
+                  marginBottom: "0.4rem",
+                }}
+              >
+                <Icon size={15} color={t.accent} strokeWidth={1.8} />
+                <div
+                  style={{
+                    fontFamily: "var(--mono)",
+                    fontSize: "0.7rem",
+                    color: t.ink50,
+                    textTransform: "uppercase",
+                    letterSpacing: "0.06em",
+                  }}
+                >
+                  {p.name}
+                </div>
               </div>
 
-              <div className="billing-plan__price">
+              <div
+                style={{
+                  fontFamily: "var(--serif)",
+                  fontSize: "1.6rem",
+                  fontWeight: 700,
+                  color: t.ink,
+                  marginBottom: "0.7rem",
+                }}
+              >
                 ${p.price}
-                <span className="billing-plan__period">/mo</span>
+                <span
+                  style={{
+                    fontSize: "0.75rem",
+                    fontWeight: 400,
+                    color: t.ink50,
+                    fontFamily: "var(--body)",
+                  }}
+                >
+                  /mo
+                </span>
               </div>
 
-              <div className="billing-plan__features">
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "0.25rem",
+                  marginBottom: "1.2rem",
+                  flex: 1,
+                }}
+              >
                 {p.features.map((f, i) => (
-                  <div key={i} className="billing-plan__feature">
-                    <Check size={12} color="var(--green)" strokeWidth={2.5} />{" "}
-                    {f}
+                  <div
+                    key={i}
+                    style={{
+                      fontSize: "0.76rem",
+                      color: t.ink50,
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "0.35rem",
+                    }}
+                  >
+                    <Check size={12} color={t.green} strokeWidth={2.5} /> {f}
                   </div>
                 ))}
               </div>
@@ -291,8 +516,39 @@ export default function BillingPage() {
               <button
                 onClick={() => {
                   if (isCurrent) return;
-                  if (isDowngrade) handlePortal();
-                  else if (p.key !== "free") handleUpgrade(p.key);
+                  if (isDowngrade) {
+                    // Check if user's current usage exceeds target plan limits
+                    var targetLimits = PLAN_LIMITS[p.key] || PLAN_LIMITS.free;
+                    var blockers = [];
+                    if (usage && usage.sites_used > targetLimits.sites) {
+                      var excess = usage.sites_used - targetLimits.sites;
+                      blockers.push({
+                        type: "sites",
+                        current: usage.sites_used,
+                        allowed: targetLimits.sites,
+                        action:
+                          "Remove " +
+                          excess +
+                          " site" +
+                          (excess > 1 ? "s" : "") +
+                          " to fit the " +
+                          p.name +
+                          " plan limit of " +
+                          (targetLimits.sites === 999
+                            ? "unlimited"
+                            : targetLimits.sites) +
+                          " site" +
+                          (targetLimits.sites !== 1 ? "s" : ""),
+                      });
+                    }
+                    if (blockers.length > 0) {
+                      setDowngradeBlock({ plan: p.name, blockers: blockers });
+                    } else {
+                      handlePortal();
+                    }
+                  } else if (p.key !== "free") {
+                    handleUpgrade(p.key);
+                  }
                 }}
                 disabled={
                   isCurrent ||
@@ -300,7 +556,30 @@ export default function BillingPage() {
                   loadingPlan === p.key ||
                   (isDowngrade && portalLoading)
                 }
-                className="billing-plan__cta"
+                style={{
+                  width: "100%",
+                  padding: "0.5rem",
+                  borderRadius: 7,
+                  border: isCurrent ? "none" : `1.5px solid ${t.ink20}`,
+                  background: isCurrent ? t.accent : "none",
+                  color: isCurrent ? "white" : t.ink,
+                  fontFamily: "var(--body)",
+                  fontSize: "0.8rem",
+                  fontWeight: 600,
+                  cursor:
+                    isCurrent || (p.key === "free" && currentPlan === "free")
+                      ? "default"
+                      : "pointer",
+                  opacity: isCurrent
+                    ? 0.7
+                    : loadingPlan === p.key || (isDowngrade && portalLoading)
+                    ? 0.5
+                    : 1,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: "0.3rem",
+                }}
               >
                 {isCurrent ? (
                   "Current plan"
@@ -308,9 +587,7 @@ export default function BillingPage() {
                   portalLoading ? (
                     "Redirecting…"
                   ) : (
-                    <>
-                      <ExternalLink size={12} /> Downgrade via portal
-                    </>
+                    "Downgrade"
                   )
                 ) : p.key === "free" ? (
                   "Free"
@@ -326,6 +603,149 @@ export default function BillingPage() {
           );
         })}
       </div>
+
+      {/* Downgrade blocker modal */}
+      {downgradeBlock && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: "rgba(0,0,0,0.5)",
+            backdropFilter: "blur(4px)",
+            zIndex: 1000,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "1rem",
+          }}
+          onClick={() => setDowngradeBlock(null)}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: t.paper,
+              borderRadius: 16,
+              border: "1px solid " + t.ink08,
+              padding: "2rem",
+              maxWidth: 420,
+              width: "100%",
+              boxShadow: "0 20px 60px rgba(0,0,0,0.15)",
+            }}
+          >
+            <div
+              style={{
+                fontFamily: "var(--serif)",
+                fontSize: "1.2rem",
+                fontWeight: 700,
+                color: t.ink,
+                marginBottom: "0.5rem",
+              }}
+            >
+              Can't downgrade to {downgradeBlock.plan} yet
+            </div>
+            <p
+              style={{
+                fontSize: "0.86rem",
+                color: t.ink50,
+                lineHeight: 1.6,
+                marginBottom: "1.2rem",
+              }}
+            >
+              Your current usage exceeds the {downgradeBlock.plan} plan limits.
+              Please make the following changes first:
+            </p>
+
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: "0.6rem",
+                marginBottom: "1.5rem",
+              }}
+            >
+              {downgradeBlock.blockers.map(function (b, i) {
+                return (
+                  <div
+                    key={i}
+                    style={{
+                      padding: "0.8rem 1rem",
+                      borderRadius: 10,
+                      background: t.red + "08",
+                      border: "1px solid " + t.red + "18",
+                    }}
+                  >
+                    <div
+                      style={{
+                        fontFamily: "var(--mono)",
+                        fontSize: "0.64rem",
+                        fontWeight: 600,
+                        textTransform: "uppercase",
+                        letterSpacing: "0.06em",
+                        color: t.red,
+                        marginBottom: "0.25rem",
+                      }}
+                    >
+                      {b.type} — {b.current} /{" "}
+                      {b.allowed === 999 ? "∞" : b.allowed}
+                    </div>
+                    <div
+                      style={{
+                        fontSize: "0.82rem",
+                        color: t.ink,
+                        lineHeight: 1.5,
+                      }}
+                    >
+                      {b.action}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div style={{ display: "flex", gap: "0.5rem" }}>
+              <button
+                onClick={() => setDowngradeBlock(null)}
+                style={{
+                  flex: 1,
+                  padding: "0.55rem 1rem",
+                  borderRadius: 8,
+                  border: "1.5px solid " + t.ink20,
+                  background: "none",
+                  color: t.ink,
+                  fontFamily: "var(--body)",
+                  fontSize: "0.82rem",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                }}
+              >
+                Got it
+              </button>
+              <a
+                href="/dashboard/sites"
+                style={{
+                  flex: 1,
+                  padding: "0.55rem 1rem",
+                  borderRadius: 8,
+                  border: "none",
+                  background: t.accent,
+                  color: "white",
+                  fontFamily: "var(--body)",
+                  fontSize: "0.82rem",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  textDecoration: "none",
+                  textAlign: "center",
+                }}
+              >
+                Manage sites
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
