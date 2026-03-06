@@ -95,32 +95,10 @@ function AddSiteModal({ onClose, onAdded }) {
     }
   };
 
-  const inp = {
-    width: "100%",
-    padding: "0.6rem 0.9rem",
-    borderRadius: 8,
-    border: `1.5px solid ${t.ink20}`,
-    background: t.cardBg,
-    color: t.ink,
-    fontFamily: "var(--body)",
-    fontSize: "0.88rem",
-    outline: "none",
-    boxSizing: "border-box",
-  };
-
   return (
     <div
-      style={{
-        position: "fixed",
-        inset: 0,
-        zIndex: 100,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        background: "rgba(0,0,0,0.5)",
-        backdropFilter: "blur(4px)",
-        padding: "1rem",
-      }}
+      className="dash-modal"
+      style={{ zIndex: 100 }}
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
       <div
@@ -128,52 +106,22 @@ function AddSiteModal({ onClose, onAdded }) {
         role="dialog"
         aria-modal="true"
         aria-labelledby="add-site-title"
-        style={{
-          background: t.cardBg,
-          borderRadius: 14,
-          padding: "2rem",
-          width: "100%",
-          maxWidth: 440,
-          border: `1px solid ${t.ink08}`,
-          boxShadow: "0 16px 48px rgba(0,0,0,0.15)",
-        }}
+        className="dash-modal__dialog"
+        style={{ maxWidth: 440, padding: "2rem" }}
       >
         <h2
           id="add-site-title"
-          style={{
-            fontFamily: "var(--serif)",
-            fontSize: "1.3rem",
-            fontWeight: 700,
-            color: t.ink,
-            marginBottom: "0.4rem",
-          }}
+          className="dash-modal__title"
+          style={{ fontSize: "1.3rem", marginBottom: "0.4rem" }}
         >
           Add a site
         </h2>
-        <p
-          style={{
-            color: t.ink50,
-            fontSize: "0.85rem",
-            marginBottom: "1.5rem",
-          }}
-        >
+        <p className="dash-modal__desc" style={{ fontSize: "0.85rem" }}>
           Enter the domain to monitor.
         </p>
-        <form
-          onSubmit={handleAdd}
-          style={{ display: "flex", flexDirection: "column", gap: "0.8rem" }}
-        >
+        <form onSubmit={handleAdd} className="auth-form">
           <div>
-            <label
-              htmlFor="add-site-domain"
-              style={{
-                display: "block",
-                fontSize: "0.78rem",
-                fontWeight: 500,
-                color: t.ink,
-                marginBottom: "0.35rem",
-              }}
-            >
+            <label htmlFor="add-site-domain" className="auth-label">
               Domain
             </label>
             <input
@@ -182,23 +130,14 @@ function AddSiteModal({ onClose, onAdded }) {
               value={domain}
               onChange={(e) => setDomain(e.target.value)}
               placeholder="example.com"
-              style={inp}
+              className="auth-input"
               autoFocus
             />
           </div>
           <div>
-            <label
-              htmlFor="add-site-name"
-              style={{
-                display: "block",
-                fontSize: "0.78rem",
-                fontWeight: 500,
-                color: t.ink,
-                marginBottom: "0.35rem",
-              }}
-            >
+            <label htmlFor="add-site-name" className="auth-label">
               Display name{" "}
-              <span style={{ color: t.ink50, fontWeight: 400 }}>
+              <span style={{ color: "var(--ink50)", fontWeight: 400 }}>
                 (optional)
               </span>
             </label>
@@ -207,49 +146,24 @@ function AddSiteModal({ onClose, onAdded }) {
               type="text"
               onChange={(e) => setDisplayName(e.target.value)}
               placeholder="My Website"
-              style={inp}
+              className="auth-input"
             />
           </div>
-          {error && (
-            <p style={{ color: t.red, fontSize: "0.82rem", margin: 0 }}>
-              {error}
-            </p>
-          )}
+          {error && <p className="auth-error">{error}</p>}
           <div style={{ display: "flex", gap: "0.6rem", marginTop: "0.5rem" }}>
             <button
               type="button"
               onClick={onClose}
-              style={{
-                flex: 1,
-                padding: "0.65rem",
-                borderRadius: 8,
-                border: `1.5px solid ${t.ink20}`,
-                background: "none",
-                color: t.ink,
-                fontFamily: "var(--body)",
-                fontSize: "0.85rem",
-                fontWeight: 500,
-                cursor: "pointer",
-              }}
+              className="btn-outline"
+              style={{ flex: 1, padding: "0.65rem", fontSize: "0.85rem" }}
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={loading}
-              style={{
-                flex: 1,
-                padding: "0.65rem",
-                borderRadius: 8,
-                border: "none",
-                background: t.accent,
-                color: "white",
-                fontFamily: "var(--body)",
-                fontSize: "0.85rem",
-                fontWeight: 600,
-                cursor: loading ? "not-allowed" : "pointer",
-                opacity: loading ? 0.6 : 1,
-              }}
+              className="auth-submit"
+              style={{ flex: 1 }}
             >
               {loading ? "Adding\u2026" : "Add site"}
             </button>
@@ -455,7 +369,6 @@ export default function SitesPage() {
               </div>
             );
           })}
-          <style>{`@keyframes skeletonPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }`}</style>
         </div>
       ) : sites.length === 0 ? (
         <div

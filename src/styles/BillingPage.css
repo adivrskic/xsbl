@@ -1,0 +1,227 @@
+/* BillingPage.css */
+
+.billing-summary {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.8rem;
+  margin-bottom: 2rem;
+}
+
+.billing-plan-card {
+  padding: 1.4rem;
+  border-radius: 12px;
+  border: 1px solid color-mix(in srgb, var(--accent) 15%, transparent);
+  background: var(--accent-bg);
+}
+
+.billing-plan-card__label {
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 600;
+  margin-bottom: 0.3rem;
+}
+
+.billing-plan-card__name {
+  font-family: var(--serif);
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--ink);
+  text-transform: capitalize;
+  margin-bottom: 0.5rem;
+}
+
+.billing-portal-btn {
+  background: none;
+  border: 1px solid var(--accent);
+  border-radius: 6px;
+  padding: 0.35rem 0.75rem;
+  color: var(--accent);
+  font-family: var(--body);
+  font-size: 0.76rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.billing-portal-btn:disabled {
+  opacity: 0.6;
+}
+
+/* Usage card */
+.billing-usage-card {
+  padding: 1.4rem;
+  border-radius: 12px;
+  border: 1px solid var(--ink08);
+  background: var(--card-bg);
+}
+
+.billing-usage__row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.78rem;
+  color: var(--ink);
+  margin-bottom: 0.2rem;
+}
+
+.billing-usage__count {
+  font-family: var(--mono);
+  font-weight: 600;
+}
+
+.billing-usage__bar {
+  height: 4px;
+  border-radius: 2px;
+  background: var(--ink08);
+}
+
+.billing-usage__fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.3s;
+}
+
+/* Plan grid */
+.billing-plans-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 0.8rem;
+}
+
+.billing-plan {
+  padding: 1.4rem 1.2rem;
+  border-radius: 12px;
+  position: relative;
+  border: 1px solid var(--ink08);
+  background: var(--card-bg);
+  display: flex;
+  flex-direction: column;
+}
+
+.billing-plan--current {
+  border-color: var(--accent);
+  background: var(--accent-bg);
+}
+
+.billing-plan__popular {
+  position: absolute;
+  top: -8px;
+  right: 12px;
+  font-family: var(--mono);
+  font-size: 0.56rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: white;
+  background: var(--accent);
+  padding: 0.12rem 0.45rem;
+  border-radius: 3px;
+}
+
+.billing-plan__header {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: 0.4rem;
+}
+
+.billing-plan__tier {
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  color: var(--ink50);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.billing-plan__price {
+  font-family: var(--serif);
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--ink);
+  margin-bottom: 0.7rem;
+}
+
+.billing-plan__period {
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: var(--ink50);
+  font-family: var(--body);
+}
+
+.billing-plan__features {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin-bottom: 1.2rem;
+  flex: 1;
+}
+
+.billing-plan__feature {
+  font-size: 0.76rem;
+  color: var(--ink50);
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.billing-plan__cta {
+  width: 100%;
+  padding: 0.5rem;
+  border-radius: 7px;
+  border: 1.5px solid var(--ink20);
+  background: none;
+  color: var(--ink);
+  font-family: var(--body);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+}
+
+.billing-plan__cta:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.billing-plan--current .billing-plan__cta {
+  border: none;
+  background: var(--accent);
+  color: white;
+  opacity: 0.7;
+}
+
+/* Message bar */
+.billing-message {
+  padding: 0.8rem 1rem;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+  font-size: 0.84rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.billing-message--success {
+  background: var(--green-bg);
+  border: 1px solid color-mix(in srgb, var(--green) 12.5%, transparent);
+  color: var(--green);
+}
+
+.billing-message--error {
+  background: color-mix(in srgb, var(--red) 3%, transparent);
+  border: 1px solid color-mix(in srgb, var(--red) 12.5%, transparent);
+  color: var(--red);
+}
+
+.billing-message--info {
+  background: var(--accent-bg);
+  border: 1px solid color-mix(in srgb, var(--accent) 12.5%, transparent);
+  color: var(--accent);
+}

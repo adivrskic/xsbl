@@ -40,6 +40,18 @@ import BillingPage from "./pages/dashboard/BillingPage";
 import OnboardingPage from "./pages/dashboard/OnboardingPage";
 
 function LandingPage() {
+  const location = useLocation();
+
+  useEffect(() => {
+    if (location.hash) {
+      var id = location.hash.replace("#", "");
+      // Small delay to let sections render
+      setTimeout(function () {
+        document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
+      }, 100);
+    }
+  }, [location]);
+
   return (
     <>
       <a href="#main-content" className="skip-to-content">

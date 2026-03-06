@@ -100,11 +100,11 @@ export default function ContactPage() {
                 <div>
                   <div className="contact-info__label">Email us directly</div>
                   <a
-                    href="mailto:hello@xsbl.dev"
+                    href="mailto:hello@xsbl.io"
                     className="dash-accent-link"
                     style={{ fontFamily: "var(--mono)", fontSize: "0.78rem" }}
                   >
-                    hello@xsbl.dev
+                    hello@xsbl.io
                   </a>
                 </div>
               </div>

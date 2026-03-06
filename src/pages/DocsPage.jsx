@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useTheme } from "../context/ThemeContext";
 import {
   Book,
@@ -14,9 +14,9 @@ import {
   Terminal,
 } from "lucide-react";
 import { Link } from "react-router-dom";
-import "../styles/docs.css";
 
 function CodeBlock({ code, lang }) {
+  const { t } = useTheme();
   const [copied, setCopied] = useState(false);
   var handleCopy = function () {
     navigator.clipboard.writeText(code);
@@ -26,20 +26,62 @@ function CodeBlock({ code, lang }) {
     }, 2000);
   };
   return (
-    <div className="docs-code-block">
-      <div className="docs-code-block__bar">
-        <span className="docs-code-block__lang">{lang}</span>
+    <div
+      style={{
+        position: "relative",
+        borderRadius: 10,
+        overflow: "hidden",
+        marginBottom: "1.2rem",
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          padding: "0.5rem 1rem",
+          background: "rgba(255,255,255,0.03)",
+          borderBottom: "1px solid rgba(255,255,255,0.05)",
+        }}
+      >
+        <span
+          style={{
+            fontFamily: "var(--mono)",
+            fontSize: "0.62rem",
+            color: "rgba(255,255,255,0.3)",
+          }}
+        >
+          {lang}
+        </span>
         <button
           onClick={handleCopy}
-          className={
-            "docs-code-block__copy" +
-            (copied ? " docs-code-block__copy--copied" : "")
-          }
+          style={{
+            background: "none",
+            border: "none",
+            fontFamily: "var(--mono)",
+            fontSize: "0.6rem",
+            color: copied ? "#34d399" : "rgba(255,255,255,0.3)",
+            cursor: "pointer",
+          }}
         >
           {copied ? "copied!" : "copy"}
         </button>
       </div>
-      <pre>{code}</pre>
+      <pre
+        style={{
+          padding: "1rem 1.2rem",
+          background: t.codeBg,
+          fontFamily: "var(--mono)",
+          fontSize: "0.74rem",
+          color: "#a3a3a3",
+          overflowX: "auto",
+          margin: 0,
+          lineHeight: 1.8,
+          whiteSpace: "pre-wrap",
+          wordBreak: "break-all",
+        }}
+      >
+        {code}
+      </pre>
     </div>
   );
 }
@@ -47,27 +89,79 @@ function CodeBlock({ code, lang }) {
 function Sec({ id, icon: Icon, title, children }) {
   const { t } = useTheme();
   return (
-    <section id={id} className="docs-section">
-      <div className="docs-section__header">
+    <section
+      id={id}
+      style={{ marginBottom: "3.5rem", scrollMarginTop: "100px" }}
+    >
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: "0.5rem",
+          marginBottom: "1rem",
+        }}
+      >
         <Icon size={20} color={t.accent} strokeWidth={1.8} />
-        <h2 className="docs-section__title">{title}</h2>
+        <h2
+          style={{
+            fontFamily: "var(--serif)",
+            fontSize: "1.5rem",
+            fontWeight: 700,
+            color: t.ink,
+            margin: 0,
+          }}
+        >
+          {title}
+        </h2>
       </div>
-      <div className="docs-section__body">{children}</div>
+      <div style={{ fontSize: "0.92rem", color: t.ink50, lineHeight: 1.8 }}>
+        {children}
+      </div>
     </section>
   );
 }
 
 function P({ children }) {
-  return <p>{children}</p>;
+  return <p style={{ marginBottom: "0.8rem" }}>{children}</p>;
 }
 function B({ children }) {
-  return <strong>{children}</strong>;
+  var { t } = useTheme();
+  return <strong style={{ color: t.ink }}>{children}</strong>;
 }
 function Note({ children }) {
-  return <div className="docs-note">{children}</div>;
+  var { t } = useTheme();
+  return (
+    <div
+      style={{
+        padding: "0.7rem 1rem",
+        borderRadius: 8,
+        background: t.accentBg,
+        border: "1px solid " + t.accent + "20",
+        fontSize: "0.84rem",
+        color: t.ink,
+        marginBottom: "1rem",
+        lineHeight: 1.6,
+      }}
+    >
+      {children}
+    </div>
+  );
 }
 function Mono({ children }) {
-  return <code className="docs-mono">{children}</code>;
+  var { t } = useTheme();
+  return (
+    <code
+      style={{
+        fontFamily: "var(--mono)",
+        background: t.ink04,
+        padding: "0.1rem 0.4rem",
+        borderRadius: 3,
+        fontSize: "0.84rem",
+      }}
+    >
+      {children}
+    </code>
+  );
 }
 
 var sidebar = [
@@ -94,12 +188,57 @@ var sidebar = [
 export default function DocsPage() {
   const { t } = useTheme();
   const [activeSection, setActiveSection] = useState("getting-started");
+  const activeSectionRef = useRef(activeSection);
+  const isClickScrolling = useRef(false);
+
+  // Scroll spy using IntersectionObserver
+  useEffect(function () {
+    var sectionIds = sidebar.map(function (s) {
+      return s.id;
+    });
+    var visibleSections = {};
+
+    var observer = new IntersectionObserver(
+      function (entries) {
+        if (isClickScrolling.current) return;
+        entries.forEach(function (entry) {
+          visibleSections[entry.target.id] = entry.isIntersecting;
+        });
+        // Pick the first visible section in document order
+        for (var i = 0; i < sectionIds.length; i++) {
+          if (visibleSections[sectionIds[i]]) {
+            if (activeSectionRef.current !== sectionIds[i]) {
+              activeSectionRef.current = sectionIds[i];
+              setActiveSection(sectionIds[i]);
+            }
+            return;
+          }
+        }
+      },
+      { rootMargin: "-100px 0px -60% 0px", threshold: 0 }
+    );
+
+    sectionIds.forEach(function (id) {
+      var el = document.getElementById(id);
+      if (el) observer.observe(el);
+    });
+
+    return function () {
+      observer.disconnect();
+    };
+  }, []);
 
   var scrollTo = function (id) {
+    isClickScrolling.current = true;
+    activeSectionRef.current = id;
+    setActiveSection(id);
     document
       .getElementById(id)
       ?.scrollIntoView({ behavior: "smooth", block: "start" });
-    setActiveSection(id);
+    // Re-enable observer after scroll settles
+    setTimeout(function () {
+      isClickScrolling.current = false;
+    }, 800);
   };
 
   var groups = [];
@@ -116,13 +255,49 @@ export default function DocsPage() {
 
   return (
     <div>
-      <div className="docs-page">
-        <aside className="hide-mobile docs-sidebar">
+      <div
+        style={{
+          maxWidth: 1100,
+          margin: "0 auto",
+          padding: "6rem clamp(1.5rem, 3vw, 3rem) 4rem",
+          display: "flex",
+          gap: "3rem",
+        }}
+      >
+        <aside
+          className="hide-mobile"
+          style={{
+            width: 200,
+            flexShrink: 0,
+            position: "sticky",
+            top: 80,
+            alignSelf: "flex-start",
+          }}
+        >
           {groups.map(function (g) {
             return (
-              <div key={g.name} className="docs-sidebar__group">
-                <div className="docs-sidebar__group-label">{g.name}</div>
-                <div className="docs-sidebar__links">
+              <div key={g.name} style={{ marginBottom: "1rem" }}>
+                <div
+                  style={{
+                    fontFamily: "var(--mono)",
+                    fontSize: "0.58rem",
+                    color: t.ink50,
+                    textTransform: "uppercase",
+                    letterSpacing: "0.08em",
+                    marginBottom: "0.4rem",
+                    fontWeight: 600,
+                    padding: "0 0.6rem",
+                  }}
+                >
+                  {g.name}
+                </div>
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "0.1rem",
+                  }}
+                >
                   {g.items.map(function (item) {
                     return (
                       <button
@@ -130,12 +305,19 @@ export default function DocsPage() {
                         onClick={function () {
                           scrollTo(item.id);
                         }}
-                        className={
-                          "docs-sidebar__link" +
-                          (activeSection === item.id
-                            ? " docs-sidebar__link--active"
-                            : "")
-                        }
+                        style={{
+                          background:
+                            activeSection === item.id ? t.accentBg : "none",
+                          border: "none",
+                          padding: "0.35rem 0.6rem",
+                          borderRadius: 5,
+                          cursor: "pointer",
+                          fontFamily: "var(--body)",
+                          fontSize: "0.78rem",
+                          fontWeight: 500,
+                          color: activeSection === item.id ? t.accent : t.ink50,
+                          textAlign: "left",
+                        }}
                       >
                         {item.label}
                       </button>
@@ -147,12 +329,37 @@ export default function DocsPage() {
           })}
         </aside>
 
-        <main className="docs-main">
-          <div className="docs-header">
-            <div className="eyebrow">
-              <span className="eyebrow-line" /> Documentation
+        <main style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ marginBottom: "2.5rem" }}>
+            <div
+              style={{
+                fontFamily: "var(--mono)",
+                fontSize: "0.68rem",
+                color: t.accent,
+                textTransform: "uppercase",
+                letterSpacing: "0.1em",
+                fontWeight: 600,
+                marginBottom: "0.5rem",
+                display: "flex",
+                alignItems: "center",
+                gap: "0.4rem",
+              }}
+            >
+              <span style={{ width: 20, height: 1.5, background: t.accent }} />{" "}
+              Documentation
             </div>
-            <h1 className="blog-header__title">xsbl Docs</h1>
+            <h1
+              style={{
+                fontFamily: "var(--serif)",
+                fontSize: "clamp(2rem, 3.5vw, 2.6rem)",
+                fontWeight: 700,
+                color: t.ink,
+                lineHeight: 1.15,
+                marginBottom: "0.8rem",
+              }}
+            >
+              xsbl Docs
+            </h1>
             <P>
               Guides, API reference, and integration setup for xsbl
               accessibility scanning.
@@ -169,7 +376,7 @@ export default function DocsPage() {
             <P>
               <B>1. Dashboard</B> — add sites, run scans, view issues, and
               generate reports at{" "}
-              <Link to="/dashboard" className="dash-accent-link">
+              <Link to="/dashboard" style={{ color: t.accent }}>
                 xsbl.dev/dashboard
               </Link>
               .
@@ -209,7 +416,7 @@ export default function DocsPage() {
                 href="https://github.com/settings/tokens/new?scopes=repo&description=xsbl-fixes"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="dash-accent-link"
+                style={{ color: t.accent }}
               >
                 github.com/settings/tokens
               </a>{" "}
@@ -252,11 +459,11 @@ export default function DocsPage() {
               }}
             >
               <div>
-                <span className="dash-accent-link">XSBL_API_KEY</span> — your
-                API key
+                <span style={{ color: t.accent }}>XSBL_API_KEY</span> — your API
+                key
               </div>
               <div>
-                <span className="dash-accent-link">XSBL_SITE_ID</span> — your
+                <span style={{ color: t.accent }}>XSBL_SITE_ID</span> — your
                 site UUID (from the URL in the dashboard)
               </div>
             </div>
@@ -313,7 +520,7 @@ jobs:
                 href="https://api.slack.com/messaging/webhooks"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="dash-accent-link"
+                style={{ color: t.accent }}
               >
                 api.slack.com/messaging/webhooks
               </a>
@@ -502,15 +709,15 @@ jobs:
               }}
             >
               <div>
-                <span className="dash-accent-link">domain</span> — required
+                <span style={{ color: t.accent }}>domain</span> — required
               </div>
               <div>
-                <span className="dash-accent-link">style</span> —{" "}
+                <span style={{ color: t.accent }}>style</span> —{" "}
                 <Mono>flat</Mono> (default), <Mono>plastic</Mono>,{" "}
                 <Mono>minimal</Mono>
               </div>
               <div>
-                <span className="dash-accent-link">label</span> — left-side text
+                <span style={{ color: t.accent }}>label</span> — left-side text
                 (default: "accessibility")
               </div>
             </div>
