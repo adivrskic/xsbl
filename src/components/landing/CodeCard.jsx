@@ -22,8 +22,8 @@ export default function CodeCard() {
     <div
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
+      aria-hidden="true"
       style={{
-        background: t.codeBg,
         borderRadius: 14,
         overflow: "hidden",
         position: "relative",
@@ -85,7 +85,7 @@ export default function CodeCard() {
             textAlign: "center",
             fontFamily: "var(--mono)",
             fontSize: "0.7rem",
-            color: "rgba(255,255,255,0.25)",
+            color: `${t.ink}`,
           }}
         >
           ProductCard.jsx — 4 fixes suggested

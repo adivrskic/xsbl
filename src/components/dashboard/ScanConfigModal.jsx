@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useTheme } from "../../context/ThemeContext";
 import { X, Play, Globe, FileText, List, Loader2 } from "lucide-react";
 
@@ -12,6 +12,43 @@ export default function ScanConfigModal({
   const { t } = useTheme();
   const [mode, setMode] = useState("auto");
   const [manualUrls, setManualUrls] = useState("");
+  const dialogRef = useRef(null);
+  const previousFocus = useRef(null);
+
+  useEffect(() => {
+    previousFocus.current = document.activeElement;
+    const dialog = dialogRef.current;
+    if (dialog) {
+      const close = dialog.querySelector("button");
+      if (close) close.focus();
+    }
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape") {
+        onClose();
+        return;
+      }
+      if (e.key === "Tab" && dialog) {
+        const focusable = dialog.querySelectorAll(
+          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+        );
+        if (focusable.length === 0) return;
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (e.shiftKey && document.activeElement === first) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+      if (previousFocus.current) previousFocus.current.focus();
+    };
+  }, [onClose]);
 
   const PAGE_LIMITS = { free: 5, starter: 10, pro: 25, agency: 50 };
   const maxPages = PAGE_LIMITS[plan] || PAGE_LIMITS.free;
@@ -60,6 +97,10 @@ export default function ScanConfigModal({
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
       <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="scan-config-title"
         style={{
           background: t.cardBg,
           borderRadius: 14,
@@ -80,6 +121,7 @@ export default function ScanConfigModal({
           }}
         >
           <h3
+            id="scan-config-title"
             style={{
               fontFamily: "var(--serif)",
               fontSize: "1.1rem",
@@ -92,6 +134,7 @@ export default function ScanConfigModal({
           </h3>
           <button
             onClick={onClose}
+            aria-label="Close dialog"
             style={{
               background: t.ink04,
               border: "none",

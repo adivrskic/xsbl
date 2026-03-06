@@ -26,6 +26,39 @@ function AddSiteModal({ onClose, onAdded }) {
   const [displayName, setDisplayName] = useState("");
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
+  const dialogRef = useRef(null);
+  const previousFocus = useRef(null);
+
+  useEffect(() => {
+    previousFocus.current = document.activeElement;
+    const handleKeyDown = (e) => {
+      const dialog = dialogRef.current;
+      if (e.key === "Escape") {
+        onClose();
+        return;
+      }
+      if (e.key === "Tab" && dialog) {
+        const focusable = dialog.querySelectorAll(
+          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+        );
+        if (focusable.length === 0) return;
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (e.shiftKey && document.activeElement === first) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+      if (previousFocus.current) previousFocus.current.focus();
+    };
+  }, [onClose]);
 
   const handleAdd = async (e) => {
     e.preventDefault();
@@ -88,6 +121,10 @@ function AddSiteModal({ onClose, onAdded }) {
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
       <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="add-site-title"
         style={{
           background: t.cardBg,
           borderRadius: 14,
@@ -99,6 +136,7 @@ function AddSiteModal({ onClose, onAdded }) {
         }}
       >
         <h2
+          id="add-site-title"
           style={{
             fontFamily: "var(--serif)",
             fontSize: "1.3rem",
@@ -124,6 +162,7 @@ function AddSiteModal({ onClose, onAdded }) {
         >
           <div>
             <label
+              htmlFor="add-site-domain"
               style={{
                 display: "block",
                 fontSize: "0.78rem",
@@ -135,8 +174,8 @@ function AddSiteModal({ onClose, onAdded }) {
               Domain
             </label>
             <input
+              id="add-site-domain"
               type="text"
-              required
               value={domain}
               onChange={(e) => setDomain(e.target.value)}
               placeholder="example.com"
@@ -146,6 +185,7 @@ function AddSiteModal({ onClose, onAdded }) {
           </div>
           <div>
             <label
+              htmlFor="add-site-name"
               style={{
                 display: "block",
                 fontSize: "0.78rem",
@@ -160,8 +200,8 @@ function AddSiteModal({ onClose, onAdded }) {
               </span>
             </label>
             <input
+              id="add-site-name"
               type="text"
-              value={displayName}
               onChange={(e) => setDisplayName(e.target.value)}
               placeholder="My Website"
               style={inp}

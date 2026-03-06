@@ -1,7 +1,7 @@
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useTheme } from "../../context/ThemeContext";
 import { useAuth } from "../../context/AuthContext";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   LayoutDashboard,
   Globe,
@@ -32,10 +32,22 @@ export default function DashboardLayout() {
     navigate("/");
   };
 
+  // Close mobile sidebar on Escape
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape" && mobileOpen) setMobileOpen(false);
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [mobileOpen]);
+
   const SW = 240;
 
   return (
     <div style={{ display: "flex", minHeight: "100vh", background: t.paper }}>
+      <a href="#main-content" className="skip-to-content">
+        Skip to main content
+      </a>
       {/* Sidebar */}
       <aside
         className="xsbl-sidebar"
@@ -83,7 +95,7 @@ export default function DashboardLayout() {
           </NavLink>
           <button
             onClick={toggle}
-            title="Toggle theme"
+            aria-label={dark ? "Switch to light theme" : "Switch to dark theme"}
             style={{
               background: t.ink08,
               border: "none",
@@ -142,7 +154,10 @@ export default function DashboardLayout() {
         )}
 
         {/* Nav links */}
-        <nav style={{ flex: 1, padding: "0.6rem" }}>
+        <nav
+          aria-label="Dashboard navigation"
+          style={{ flex: 1, padding: "0.6rem" }}
+        >
           {navItems.map(({ label, path, icon: Icon, end }) => (
             <NavLink
               key={path}
@@ -211,7 +226,7 @@ export default function DashboardLayout() {
       </aside>
 
       {/* Main content */}
-      <main style={{ flex: 1, marginLeft: SW, minWidth: 0 }}>
+      <main id="main-content" style={{ flex: 1, marginLeft: SW, minWidth: 0 }}>
         {/* Mobile top bar */}
         <div
           className="xsbl-mobile-bar"
@@ -225,6 +240,10 @@ export default function DashboardLayout() {
         >
           <button
             onClick={() => setMobileOpen(!mobileOpen)}
+            aria-label={
+              mobileOpen ? "Close navigation menu" : "Open navigation menu"
+            }
+            aria-expanded={mobileOpen}
             style={{
               background: "none",
               border: "none",

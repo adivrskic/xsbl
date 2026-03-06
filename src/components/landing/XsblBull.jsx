@@ -121,23 +121,23 @@ export default function XsblBull({ size = 36, style = {} }) {
         cx="60"
         cy="72"
         r={eyeR}
-        fill={t.ink}
+        fill={t.ink50}
         style={{ transition: "r 0.1s ease" }}
       />
       <circle
         cx="90"
         cy="72"
         r={eyeR}
-        fill={t.ink}
+        fill={t.ink50}
         style={{ transition: "r 0.1s ease" }}
       />
 
       {/* EYE SHINE */}
       {!blink && (
-        <circle cx="62" cy="69" r="5" fill={t.cardBg} opacity="0.85" />
+        <circle cx="62" cy="73" r="4.5" fill={t.cardBg} opacity="0.85" />
       )}
       {!blink && (
-        <circle cx="92" cy="69" r="6" fill={t.cardBg} opacity="0.85" />
+        <circle cx="88" cy="73" r="4.5" fill={t.cardBg} opacity="0.85" />
       )}
 
       {/* NOSTRILS */}

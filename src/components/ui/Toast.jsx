@@ -51,6 +51,7 @@ function Toast({ id, type, message, onDismiss }) {
       </span>
       <button
         onClick={() => onDismiss(id)}
+        aria-label="Dismiss notification"
         style={{
           background: "none",
           border: "none",
@@ -97,6 +98,9 @@ export function ToastProvider({ children }) {
       {children}
       {/* Toast container */}
       <div
+        role="status"
+        aria-live="polite"
+        aria-atomic="false"
         style={{
           position: "fixed",
           bottom: 20,

@@ -364,8 +364,11 @@ export default function ContactPage() {
                   }}
                 >
                   <div>
-                    <label style={labelStyle}>Name</label>
+                    <label htmlFor="contact-name" style={labelStyle}>
+                      Name
+                    </label>
                     <input
+                      id="contact-name"
                       value={form.name}
                       onChange={handleChange("name")}
                       placeholder="Jane Smith"
@@ -379,8 +382,11 @@ export default function ContactPage() {
                     />
                   </div>
                   <div>
-                    <label style={labelStyle}>Email *</label>
+                    <label htmlFor="contact-email" style={labelStyle}>
+                      Email *
+                    </label>
                     <input
+                      id="contact-email"
                       type="email"
                       value={form.email}
                       onChange={handleChange("email")}
@@ -405,8 +411,11 @@ export default function ContactPage() {
                   }}
                 >
                   <div>
-                    <label style={labelStyle}>Company</label>
+                    <label htmlFor="contact-company" style={labelStyle}>
+                      Company
+                    </label>
                     <input
+                      id="contact-company"
                       value={form.company}
                       onChange={handleChange("company")}
                       placeholder="Acme Inc"
@@ -420,8 +429,11 @@ export default function ContactPage() {
                     />
                   </div>
                   <div>
-                    <label style={labelStyle}>Subject</label>
+                    <label htmlFor="contact-subject" style={labelStyle}>
+                      Subject
+                    </label>
                     <select
+                      id="contact-subject"
                       value={form.subject}
                       onChange={handleChange("subject")}
                       style={{
@@ -447,8 +459,11 @@ export default function ContactPage() {
                 </div>
 
                 <div style={{ marginBottom: "1rem" }}>
-                  <label style={labelStyle}>Message *</label>
+                  <label htmlFor="contact-message" style={labelStyle}>
+                    Message *
+                  </label>
                   <textarea
+                    id="contact-message"
                     value={form.message}
                     onChange={handleChange("message")}
                     placeholder="Tell us what's on your mind..."

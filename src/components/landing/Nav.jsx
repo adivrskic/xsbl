@@ -2,9 +2,10 @@ import { useTheme } from "../../context/ThemeContext";
 import { useScrolled } from "../../hooks/useScrolled";
 import { Sun, Moon } from "lucide-react";
 import XsblBull from "./XsblBull";
+
 var landingLinks = [
   { label: "How it works", id: "how" },
-  { label: "Features", id: "features" },
+  { label: "Features", id: "agent" },
   { label: "GitHub PRs", id: "github" },
   { label: "Pricing", id: "pricing" },
   // { label: "Docs", href: "/docs" },
@@ -34,6 +35,7 @@ export default function Nav() {
 
   return (
     <nav
+      aria-label="Main navigation"
       style={{
         position: "fixed",
         top: 0,
@@ -55,14 +57,14 @@ export default function Nav() {
       <a
         href="/"
         style={{
+          display: "flex",
+          gap: "4px",
           fontFamily: "var(--mono)",
           fontWeight: 600,
           fontSize: "1.3rem",
           letterSpacing: "-0.04em",
           color: t.ink,
           textDecoration: "none",
-          display: "flex",
-          gap: "4px",
         }}
       >
         <XsblBull />
@@ -118,7 +120,7 @@ export default function Nav() {
       <div style={{ display: "flex", gap: "0.6rem", alignItems: "center" }}>
         <button
           onClick={toggle}
-          title="Toggle theme"
+          aria-label={dark ? "Switch to light theme" : "Switch to dark theme"}
           style={{
             background: t.ink08,
             border: "none",
@@ -178,9 +180,11 @@ export default function Nav() {
           }}
           onMouseEnter={function (e) {
             e.currentTarget.style.background = t.accent;
+            e.currentTarget.style.transform = "translateY(-1px)";
           }}
           onMouseLeave={function (e) {
             e.currentTarget.style.background = t.ink;
+            e.currentTarget.style.transform = "translateY(0)";
           }}
         >
           Get started

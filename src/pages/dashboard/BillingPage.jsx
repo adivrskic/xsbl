@@ -506,11 +506,19 @@ export default function BillingPage() {
               </div>
 
               <button
-                onClick={() =>
-                  !isCurrent && !isDowngrade && handleUpgrade(p.key)
-                }
+                onClick={() => {
+                  if (isCurrent) return;
+                  if (isDowngrade) {
+                    handlePortal();
+                  } else if (p.key !== "free") {
+                    handleUpgrade(p.key);
+                  }
+                }}
                 disabled={
-                  isCurrent || p.key === "free" || loadingPlan === p.key
+                  isCurrent ||
+                  (p.key === "free" && currentPlan === "free") ||
+                  loadingPlan === p.key ||
+                  (isDowngrade && portalLoading)
                 }
                 style={{
                   width: "100%",
@@ -522,8 +530,15 @@ export default function BillingPage() {
                   fontFamily: "var(--body)",
                   fontSize: "0.8rem",
                   fontWeight: 600,
-                  cursor: isCurrent || p.key === "free" ? "default" : "pointer",
-                  opacity: isCurrent ? 0.7 : loadingPlan === p.key ? 0.5 : 1,
+                  cursor:
+                    isCurrent || (p.key === "free" && currentPlan === "free")
+                      ? "default"
+                      : "pointer",
+                  opacity: isCurrent
+                    ? 0.7
+                    : loadingPlan === p.key || (isDowngrade && portalLoading)
+                    ? 0.5
+                    : 1,
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
@@ -533,7 +548,13 @@ export default function BillingPage() {
                 {isCurrent ? (
                   "Current plan"
                 ) : isDowngrade ? (
-                  "Downgrade via portal"
+                  portalLoading ? (
+                    "Redirecting…"
+                  ) : (
+                    <>
+                      Downgrade via portal <ExternalLink size={12} />
+                    </>
+                  )
                 ) : p.key === "free" ? (
                   "Free"
                 ) : loadingPlan === p.key ? (

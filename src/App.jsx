@@ -1,4 +1,5 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
+import { useEffect } from "react";
 import { useTheme } from "./context/ThemeContext";
 
 // Providers
@@ -9,7 +10,6 @@ import { ConfirmProvider } from "./components/ui/ConfirmModal";
 import AuthGuard from "./components/auth/AuthGuard";
 import LoginPage from "./pages/auth/LoginPage";
 import SignupPage from "./pages/auth/SignupPage";
-import ResetPasswordPage from "./pages/auth/ResetPasswordPage";
 
 // Landing page
 import Nav from "./components/landing/Nav";
@@ -42,16 +42,21 @@ import OnboardingPage from "./pages/dashboard/OnboardingPage";
 function LandingPage() {
   return (
     <>
+      <a href="#main-content" className="skip-to-content">
+        Skip to main content
+      </a>
       <Nav />
-      <Hero />
-      <Marquee />
-      <VsSection />
-      <HowSection />
-      <AgentSection />
-      <GitHubSection />
-      <ComplianceSection />
-      <PricingSection />
-      <CtaSection />
+      <main id="main-content">
+        <Hero />
+        <Marquee />
+        <VsSection />
+        <HowSection />
+        <AgentSection />
+        <GitHubSection />
+        <ComplianceSection />
+        <PricingSection />
+        <CtaSection />
+      </main>
       <Footer />
     </>
   );
@@ -60,11 +65,46 @@ function LandingPage() {
 function PublicLayout({ children }) {
   return (
     <>
+      <a href="#main-content" className="skip-to-content">
+        Skip to main content
+      </a>
       <Nav />
-      <div style={{ minHeight: "calc(100vh - 64px)" }}>{children}</div>
+      <main id="main-content" style={{ minHeight: "calc(100vh - 64px)" }}>
+        {children}
+      </main>
       <Footer />
     </>
   );
+}
+
+const PAGE_TITLES = {
+  "/": "xsbl — make your web accessible",
+  "/login": "Sign in — xsbl",
+  "/signup": "Sign up — xsbl",
+  "/reset-password": "Reset password — xsbl",
+  "/docs": "Documentation — xsbl",
+  "/blog": "Blog — xsbl",
+  "/contact": "Contact — xsbl",
+  "/dashboard": "Dashboard — xsbl",
+  "/dashboard/sites": "Sites — xsbl",
+  "/dashboard/settings": "Settings — xsbl",
+  "/dashboard/billing": "Billing — xsbl",
+  "/dashboard/onboarding": "Get started — xsbl",
+};
+
+function PageTitle() {
+  const location = useLocation();
+  useEffect(() => {
+    const path = location.pathname;
+    document.title =
+      PAGE_TITLES[path] ||
+      (path.startsWith("/dashboard/sites/")
+        ? "Site details — xsbl"
+        : path.startsWith("/blog/")
+        ? "Blog — xsbl"
+        : "xsbl — make your web accessible");
+  }, [location.pathname]);
+  return null;
 }
 
 export default function App() {
@@ -80,6 +120,7 @@ export default function App() {
       }}
     >
       <BrowserRouter>
+        <PageTitle />
         <ToastProvider>
           <ConfirmProvider>
             <Routes>
@@ -87,7 +128,6 @@ export default function App() {
               <Route path="/" element={<LandingPage />} />
               <Route path="/login" element={<LoginPage />} />
               <Route path="/signup" element={<SignupPage />} />
-              <Route path="/reset-password" element={<ResetPasswordPage />} />
               <Route
                 path="/docs"
                 element={

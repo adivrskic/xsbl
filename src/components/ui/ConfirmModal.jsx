@@ -1,4 +1,11 @@
-import { useState, createContext, useContext, useCallback } from "react";
+import {
+  useState,
+  createContext,
+  useContext,
+  useCallback,
+  useEffect,
+  useRef,
+} from "react";
 import { useTheme } from "../../context/ThemeContext";
 import { AlertTriangle } from "lucide-react";
 
@@ -13,6 +20,45 @@ function ConfirmDialog({
   onCancel,
 }) {
   const { t } = useTheme();
+  const dialogRef = useRef(null);
+  const previousFocus = useRef(null);
+
+  useEffect(() => {
+    previousFocus.current = document.activeElement;
+    const dialog = dialogRef.current;
+    if (dialog) {
+      const focusable = dialog.querySelectorAll(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+      );
+      if (focusable.length) focusable[focusable.length - 1].focus();
+    }
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape") {
+        onCancel();
+        return;
+      }
+      if (e.key === "Tab" && dialog) {
+        const focusable = dialog.querySelectorAll(
+          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+        );
+        if (focusable.length === 0) return;
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (e.shiftKey && document.activeElement === first) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+      if (previousFocus.current) previousFocus.current.focus();
+    };
+  }, [onCancel]);
 
   return (
     <div
@@ -30,6 +76,10 @@ function ConfirmDialog({
       onClick={(e) => e.target === e.currentTarget && onCancel()}
     >
       <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="confirm-dialog-title"
         style={{
           background: t.cardBg,
           borderRadius: 14,
@@ -51,6 +101,7 @@ function ConfirmDialog({
         >
           {danger && <AlertTriangle size={18} color={t.red} strokeWidth={2} />}
           <h3
+            id="confirm-dialog-title"
             style={{
               fontFamily: "var(--serif)",
               fontSize: "1.05rem",

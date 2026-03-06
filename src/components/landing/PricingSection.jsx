@@ -30,7 +30,13 @@ function PriceCard({ tier, price, blurb, features, popular, cta, delay }) {
       <div
         onMouseEnter={() => setHov(true)}
         onMouseLeave={() => setHov(false)}
-        style={{ position: "absolute", inset: 0, borderRadius: 14 }}
+        aria-hidden="true"
+        style={{
+          position: "absolute",
+          inset: 0,
+          borderRadius: 14,
+          pointerEvents: "auto",
+        }}
       />
 
       {popular && (

@@ -111,7 +111,17 @@ export default function ScoreChart({ scans }) {
         </div>
       </div>
 
-      <svg width="100%" viewBox={`0 0 ${W} ${H}`} style={{ display: "block" }}>
+      <svg
+        width="100%"
+        viewBox={`0 0 ${W} ${H}`}
+        style={{ display: "block" }}
+        role="img"
+        aria-label={`Score trend chart from ${Math.round(
+          firstScore
+        )} to ${Math.round(lastScore)}, ${
+          trend >= 0 ? "up" : "down"
+        } ${Math.abs(Math.round(trend))} points`}
+      >
         {/* Grid lines */}
         {[0, 25, 50, 75, 100]
           .filter((v) => v >= minScore - 5 && v <= maxScore + 5)

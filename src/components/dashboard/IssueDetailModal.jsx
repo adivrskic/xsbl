@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useTheme } from "../../context/ThemeContext";
 import { supabase } from "../../lib/supabase";
 import {
@@ -30,6 +30,43 @@ export default function IssueDetailModal({ issue, site, onClose, onUpdate }) {
   const [showHtml, setShowHtml] = useState(false);
   const [status, setStatus] = useState(issue.status);
   const [statusSaving, setStatusSaving] = useState(false);
+  const dialogRef = useRef(null);
+  const previousFocus = useRef(null);
+
+  useEffect(() => {
+    previousFocus.current = document.activeElement;
+    const dialog = dialogRef.current;
+    if (dialog) {
+      const close = dialog.querySelector("button");
+      if (close) close.focus();
+    }
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape") {
+        onClose();
+        return;
+      }
+      if (e.key === "Tab" && dialog) {
+        const focusable = dialog.querySelectorAll(
+          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+        );
+        if (focusable.length === 0) return;
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (e.shiftKey && document.activeElement === first) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+      if (previousFocus.current) previousFocus.current.focus();
+    };
+  }, [onClose]);
 
   const handleCopy = (text) => {
     navigator.clipboard.writeText(text);
@@ -100,6 +137,10 @@ export default function IssueDetailModal({ issue, site, onClose, onUpdate }) {
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
       <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="issue-detail-title"
         style={{
           background: t.cardBg,
           borderRadius: 16,
@@ -160,6 +201,7 @@ export default function IssueDetailModal({ issue, site, onClose, onUpdate }) {
               </span>
             </div>
             <h3
+              id="issue-detail-title"
               style={{
                 fontFamily: "var(--serif)",
                 fontSize: "1.1rem",
@@ -174,6 +216,7 @@ export default function IssueDetailModal({ issue, site, onClose, onUpdate }) {
           </div>
           <button
             onClick={onClose}
+            aria-label="Close dialog"
             style={{
               background: t.ink04,
               border: "none",
