@@ -13,6 +13,8 @@ import {
 } from "lucide-react";
 import CreatePRButton from "./CreatePRButton";
 import AltTextGenerator from "./AltTextGenerator";
+import PlanGate from "../ui/PlanGate";
+import { useAuth } from "../../context/AuthContext";
 import "../../styles/dashboard.css";
 import "../../styles/dashboard-modals.css";
 
@@ -25,6 +27,8 @@ const STATUS_OPTIONS = [
 
 export default function IssueDetailModal({ issue, site, onClose, onUpdate }) {
   const { t } = useTheme();
+  const { org } = useAuth();
+  var plan = org?.plan || "free";
   const [copied, setCopied] = useState(false);
   const [aiFix, setAiFix] = useState(null);
   const [aiLoading, setAiLoading] = useState(false);
@@ -581,7 +585,13 @@ export default function IssueDetailModal({ issue, site, onClose, onUpdate }) {
           </div>
 
           {/* AI alt text for image issues */}
-          <AltTextGenerator issue={issue} />
+          <PlanGate
+            currentPlan={plan}
+            requiredPlan="pro"
+            feature="AI alt text generation"
+          >
+            <AltTextGenerator issue={issue} />
+          </PlanGate>
 
           {/* GitHub PR button — only shows when site has GitHub connected */}
           <CreatePRButton issue={issue} site={site} />

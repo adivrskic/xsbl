@@ -18,6 +18,8 @@ export default function BulkFixBar({
   site,
   onClear,
   onFixed,
+  maxPerPr,
+  plan,
 }) {
   const { t } = useTheme();
   const toast = useToast();
@@ -27,6 +29,7 @@ export default function BulkFixBar({
   var hasGitHub = site && site.github_repo && site.github_token;
   var count = selectedIds.length;
   if (count === 0) return null;
+  var limit = maxPerPr || 999;
 
   // Count by impact
   var selectedIssues = issues.filter(function (iss) {
@@ -53,7 +56,15 @@ export default function BulkFixBar({
         headers: { Authorization: "Bearer " + (session?.access_token || "") },
       });
       if (error) throw new Error(error.message);
-      if (data?.error) throw new Error(data.error);
+      if (data?.error) {
+        if (data.message && data.message.indexOf("limit") !== -1) {
+          toast.warning(data.message);
+        } else {
+          throw new Error(data.error);
+        }
+        setLoading(false);
+        return;
+      }
       setResult(data);
       toast.success(
         "PR #" +
@@ -96,10 +107,19 @@ export default function BulkFixBar({
             fontFamily: "var(--serif)",
             fontSize: "1.1rem",
             fontWeight: 700,
-            color: t.ink,
+            color: count >= limit ? t.accent : t.ink,
           }}
         >
           {count}
+        </span>
+        <span
+          style={{
+            fontFamily: "var(--mono)",
+            fontSize: "0.62rem",
+            color: t.ink50,
+          }}
+        >
+          / {limit}
         </span>
         <span style={{ fontSize: "0.78rem", color: t.ink50 }}>selected</span>
         {impacts.critical > 0 && (
@@ -184,7 +204,11 @@ export default function BulkFixBar({
           {loading
             ? "Creating PR..."
             : hasGitHub
-            ? "Create fix PR"
+            ? "Create fix PR (" +
+              count +
+              " issue" +
+              (count !== 1 ? "s" : "") +
+              ")"
             : "Connect GitHub first"}
           {!loading && hasGitHub && (
             <span

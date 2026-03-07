@@ -473,83 +473,77 @@ export default function BillingPage() {
             </div>
             <div
               style={{
-                display: "flex",
-                flexDirection: "column",
-                gap: "0.6rem",
+                display: "grid",
+                gridTemplateColumns: "1fr 1fr",
+                gap: "0.8rem",
               }}
             >
-              <div>
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    fontSize: "0.78rem",
-                    color: t.ink,
-                    marginBottom: "0.2rem",
-                  }}
-                >
-                  <span>Scans</span>
-                  <span style={{ fontFamily: "var(--mono)", fontWeight: 600 }}>
-                    {usage.scans_used} /{" "}
-                    {usage.scans_limit === 999 ? "\u221E" : usage.scans_limit}
-                  </span>
-                </div>
-                <div
-                  style={{ height: 4, borderRadius: 2, background: t.ink08 }}
-                >
-                  <div
-                    style={{
-                      height: "100%",
-                      borderRadius: 2,
-                      width: `${Math.min(
-                        100,
-                        (usage.scans_used / usage.scans_limit) * 100
-                      )}%`,
-                      background:
-                        usage.scans_used >= usage.scans_limit
-                          ? t.red
-                          : t.accent,
-                      transition: "width 0.3s",
-                    }}
-                  />
-                </div>
-              </div>
-              <div>
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    fontSize: "0.78rem",
-                    color: t.ink,
-                    marginBottom: "0.2rem",
-                  }}
-                >
-                  <span>Sites</span>
-                  <span style={{ fontFamily: "var(--mono)", fontWeight: 600 }}>
-                    {usage.sites_used} /{" "}
-                    {usage.sites_limit === 999 ? "\u221E" : usage.sites_limit}
-                  </span>
-                </div>
-                <div
-                  style={{ height: 4, borderRadius: 2, background: t.ink08 }}
-                >
-                  <div
-                    style={{
-                      height: "100%",
-                      borderRadius: 2,
-                      width: `${Math.min(
-                        100,
-                        (usage.sites_used / usage.sites_limit) * 100
-                      )}%`,
-                      background:
-                        usage.sites_used >= usage.sites_limit
-                          ? t.red
-                          : t.accent,
-                      transition: "width 0.3s",
-                    }}
-                  />
-                </div>
-              </div>
+              {[
+                {
+                  label: "Scans",
+                  used: usage.scans_used,
+                  limit: usage.scans_limit,
+                },
+                {
+                  label: "Sites",
+                  used: usage.sites_used,
+                  limit: usage.sites_limit,
+                },
+                {
+                  label: "AI suggestions",
+                  used: usage.ai_suggestions_used || 0,
+                  limit: usage.ai_suggestions_limit || 10,
+                },
+                {
+                  label: "GitHub PRs",
+                  used: usage.github_prs_used || 0,
+                  limit: usage.github_prs_limit || 1,
+                },
+              ].map(function (item) {
+                var atLimit = item.used >= item.limit && item.limit !== 999;
+                return (
+                  <div key={item.label}>
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        fontSize: "0.78rem",
+                        color: t.ink,
+                        marginBottom: "0.2rem",
+                      }}
+                    >
+                      <span>{item.label}</span>
+                      <span
+                        style={{ fontFamily: "var(--mono)", fontWeight: 600 }}
+                      >
+                        {item.used} /{" "}
+                        {item.limit === 999 ? "\u221E" : item.limit}
+                      </span>
+                    </div>
+                    <div
+                      style={{
+                        height: 4,
+                        borderRadius: 2,
+                        background: t.ink08,
+                      }}
+                    >
+                      <div
+                        style={{
+                          height: "100%",
+                          borderRadius: 2,
+                          width:
+                            (item.limit === 999
+                              ? 5
+                              : Math.min(100, (item.used / item.limit) * 100)) +
+                            "%",
+                          background: atLimit ? t.red : t.accent,
+                          transition: "width 0.3s",
+                        }}
+                      />
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}

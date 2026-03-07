@@ -7,6 +7,7 @@ import { useAuth } from "../../context/AuthContext";
 import { supabase } from "../../lib/supabase";
 import { useToast } from "../../components/ui/Toast";
 import { useConfirm } from "../../components/ui/ConfirmModal";
+import PlanGate from "../../components/ui/PlanGate";
 import {
   User,
   Users,
@@ -22,6 +23,8 @@ import {
   Save,
   Lock,
   CircleAlert,
+  FileText,
+  Calendar,
 } from "lucide-react";
 
 /* ── Editable field ── */
@@ -439,6 +442,254 @@ function InviteForm({ orgId, onInvited }) {
         If they don't have an account yet, they'll be added automatically when
         they sign up.
       </p>
+    </div>
+  );
+}
+
+/* ── Scheduled Reports (Agency) ── */
+function ScheduledReports({ org }) {
+  const { t } = useTheme();
+  const [schedule, setSchedule] = useState(org?.report_schedule || "");
+  const [emails, setEmails] = useState((org?.report_emails || []).join(", "));
+  const [whiteLabel, setWhiteLabel] = useState(
+    org?.report_white_label || false
+  );
+  const [companyName, setCompanyName] = useState(
+    org?.report_company_name || org?.name || ""
+  );
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+
+  if (!org) return null;
+
+  var handleSave = async function () {
+    setSaving(true);
+    var emailList = emails
+      .split(",")
+      .map(function (e) {
+        return e.trim();
+      })
+      .filter(function (e) {
+        return e.indexOf("@") !== -1;
+      });
+    await supabase
+      .from("organizations")
+      .update({
+        report_schedule: schedule || null,
+        report_emails: emailList,
+        report_white_label: whiteLabel,
+        report_company_name: companyName.trim() || null,
+      })
+      .eq("id", org.id);
+    setSaving(false);
+    setSaved(true);
+    setTimeout(function () {
+      setSaved(false);
+    }, 2000);
+  };
+
+  return (
+    <div
+      style={{
+        padding: "1.5rem",
+        borderRadius: 12,
+        border: "1px solid " + t.ink08,
+        background: t.cardBg,
+        marginBottom: "1rem",
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: "0.5rem",
+          marginBottom: "0.6rem",
+        }}
+      >
+        <FileText size={17} color={t.accent} strokeWidth={1.8} />
+        <h3
+          style={{
+            fontSize: "0.95rem",
+            fontWeight: 600,
+            color: t.ink,
+            margin: 0,
+          }}
+        >
+          Scheduled Reports
+        </h3>
+      </div>
+      <p
+        style={{
+          fontSize: "0.76rem",
+          color: t.ink50,
+          marginBottom: "0.8rem",
+          lineHeight: 1.6,
+        }}
+      >
+        Automatically email accessibility reports to your clients on a schedule.
+        Reports include scores, issue breakdowns, and per-page results.
+      </p>
+
+      {/* Schedule */}
+      <div style={{ marginBottom: "0.8rem" }}>
+        <label
+          style={{
+            display: "block",
+            fontFamily: "var(--mono)",
+            fontSize: "0.62rem",
+            textTransform: "uppercase",
+            letterSpacing: "0.06em",
+            color: t.ink50,
+            marginBottom: "0.3rem",
+          }}
+        >
+          Frequency
+        </label>
+        <div style={{ display: "flex", gap: "0.3rem" }}>
+          {[
+            { value: "", label: "Off" },
+            { value: "weekly", label: "Weekly" },
+            { value: "monthly", label: "Monthly" },
+          ].map(function (opt) {
+            var isActive = schedule === opt.value;
+            return (
+              <button
+                key={opt.value}
+                onClick={function () {
+                  setSchedule(opt.value);
+                }}
+                style={{
+                  padding: "0.35rem 0.8rem",
+                  borderRadius: 6,
+                  border: "1.5px solid " + (isActive ? t.accent : t.ink20),
+                  background: isActive ? t.accentBg : "none",
+                  color: isActive ? t.accent : t.ink50,
+                  fontFamily: "var(--mono)",
+                  fontSize: "0.68rem",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.3rem",
+                }}
+              >
+                <Calendar size={11} />
+                {opt.label}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Recipient emails */}
+      <div style={{ marginBottom: "0.8rem" }}>
+        <label
+          style={{
+            display: "block",
+            fontFamily: "var(--mono)",
+            fontSize: "0.62rem",
+            textTransform: "uppercase",
+            letterSpacing: "0.06em",
+            color: t.ink50,
+            marginBottom: "0.25rem",
+          }}
+        >
+          Recipient emails (comma-separated)
+        </label>
+        <input
+          value={emails}
+          onChange={function (e) {
+            setEmails(e.target.value);
+          }}
+          placeholder="client@example.com, manager@example.com"
+          style={{
+            width: "100%",
+            padding: "0.45rem 0.7rem",
+            borderRadius: 6,
+            border: "1.5px solid " + t.ink20,
+            background: t.paper,
+            color: t.ink,
+            fontFamily: "var(--mono)",
+            fontSize: "0.74rem",
+            outline: "none",
+            boxSizing: "border-box",
+          }}
+        />
+      </div>
+
+      {/* White-label */}
+      <div style={{ marginBottom: "0.8rem" }}>
+        <label
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "0.5rem",
+            cursor: "pointer",
+          }}
+        >
+          <input
+            type="checkbox"
+            checked={whiteLabel}
+            onChange={function () {
+              setWhiteLabel(!whiteLabel);
+            }}
+            style={{ accentColor: t.accent }}
+          />
+          <span style={{ fontSize: "0.78rem", color: t.ink }}>
+            White-label reports
+          </span>
+        </label>
+        {whiteLabel && (
+          <input
+            value={companyName}
+            onChange={function (e) {
+              setCompanyName(e.target.value);
+            }}
+            placeholder="Your company name"
+            style={{
+              marginTop: "0.3rem",
+              width: "100%",
+              padding: "0.4rem 0.7rem",
+              borderRadius: 6,
+              border: "1.5px solid " + t.ink20,
+              background: t.paper,
+              color: t.ink,
+              fontFamily: "var(--mono)",
+              fontSize: "0.74rem",
+              outline: "none",
+              boxSizing: "border-box",
+            }}
+          />
+        )}
+      </div>
+
+      {/* Save */}
+      <button
+        onClick={handleSave}
+        disabled={saving}
+        style={{
+          padding: "0.45rem 0.9rem",
+          borderRadius: 6,
+          border: "none",
+          background: t.accent,
+          color: "white",
+          fontFamily: "var(--body)",
+          fontSize: "0.8rem",
+          fontWeight: 600,
+          cursor: saving ? "not-allowed" : "pointer",
+          opacity: saving ? 0.5 : 1,
+          display: "flex",
+          alignItems: "center",
+          gap: "0.3rem",
+        }}
+      >
+        {saving ? (
+          <Loader2 size={13} className="xsbl-spin" />
+        ) : (
+          <Save size={13} />
+        )}
+        {saved ? "Saved" : "Save report settings"}
+      </button>
     </div>
   );
 }
@@ -1411,7 +1662,22 @@ export default function SettingsPage() {
       </div>
 
       {/* Integrations — Slack + Email */}
-      <AlertIntegrations org={org} />
+      <PlanGate
+        currentPlan={org?.plan || "free"}
+        requiredPlan="pro"
+        feature="Slack & email alerts"
+      >
+        <AlertIntegrations org={org} />
+      </PlanGate>
+
+      {/* Scheduled Reports — Agency only */}
+      <PlanGate
+        currentPlan={org?.plan || "free"}
+        requiredPlan="agency"
+        feature="Scheduled PDF reports to clients"
+      >
+        <ScheduledReports org={org} />
+      </PlanGate>
 
       {/* Danger zone */}
       <div

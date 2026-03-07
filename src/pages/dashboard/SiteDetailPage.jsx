@@ -29,6 +29,8 @@ import ReportButton from "../../components/dashboard/ReportButton";
 import AccessibilitySimulator from "../../components/dashboard/AccessibilitySimulator";
 import GitHubConnect from "../../components/dashboard/GithubConnect";
 import SchedulePicker from "../../components/dashboard/SchedulePicker";
+import ScanProfileEditor from "../../components/dashboard/ScanProfileEditor";
+import PlanGate from "../../components/ui/PlanGate";
 
 /* ── GitHub icon (no lucide brand icons) ── */
 /* ── CSV Export ── */
@@ -1971,6 +1973,12 @@ export default function SiteDetailPage() {
     (i) => i.impact === "critical" && i.status === "open"
   ).length;
 
+  var plan = org?.plan || "free";
+
+  var ISSUES_PER_PR = { free: 1, starter: 5, pro: 10, agency: 20 };
+  var maxPerPr = ISSUES_PER_PR[plan] || 1;
+  var atSelectionCap = selectedForFix.length >= maxPerPr;
+
   return (
     <div>
       {/* Header */}
@@ -2193,39 +2201,53 @@ export default function SiteDetailPage() {
                   Configure scan
                 </button>
                 {scans.length > 0 && (
-                  <ReportButton site={site} scan={scans[0]} />
+                  <PlanGate
+                    currentPlan={plan}
+                    requiredPlan="pro"
+                    feature="PDF reports"
+                    compact
+                  >
+                    <ReportButton site={site} scan={scans[0]} />
+                  </PlanGate>
                 )}
                 {scans.length > 0 && (
-                  <button
-                    onClick={function () {
-                      setShowSimulator(true);
-                    }}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "0.4rem",
-                      padding: "0.5rem 1rem",
-                      borderRadius: 7,
-                      border: "1.5px solid " + t.accent + "40",
-                      background: "transparent",
-                      color: t.accent,
-                      fontFamily: "var(--body)",
-                      fontSize: "0.82rem",
-                      fontWeight: 600,
-                      cursor: "pointer",
-                      transition: "all 0.2s",
-                    }}
-                    onMouseEnter={function (e) {
-                      e.currentTarget.style.background = t.accent;
-                      e.currentTarget.style.color = "white";
-                    }}
-                    onMouseLeave={function (e) {
-                      e.currentTarget.style.background = "transparent";
-                      e.currentTarget.style.color = t.accent;
-                    }}
+                  <PlanGate
+                    currentPlan={plan}
+                    requiredPlan="starter"
+                    feature="Simulator"
+                    compact
                   >
-                    <Eye size={14} /> Simulate vision
-                  </button>
+                    <button
+                      onClick={function () {
+                        setShowSimulator(true);
+                      }}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "0.4rem",
+                        padding: "0.5rem 1rem",
+                        borderRadius: 7,
+                        border: "1.5px solid " + t.accent + "40",
+                        background: "transparent",
+                        color: t.accent,
+                        fontFamily: "var(--body)",
+                        fontSize: "0.82rem",
+                        fontWeight: 600,
+                        cursor: "pointer",
+                        transition: "all 0.2s",
+                      }}
+                      onMouseEnter={function (e) {
+                        e.currentTarget.style.background = t.accent;
+                        e.currentTarget.style.color = "white";
+                      }}
+                      onMouseLeave={function (e) {
+                        e.currentTarget.style.background = "transparent";
+                        e.currentTarget.style.color = t.accent;
+                      }}
+                    >
+                      <Eye size={14} /> Simulate vision
+                    </button>
+                  </PlanGate>
                 )}
               </div>
             </div>
@@ -2407,16 +2429,28 @@ export default function SiteDetailPage() {
 
           {/* Page breakdown from latest scan */}
           {scans.length > 0 && scans[0].summary_json?.pages?.length > 1 && (
-            <PageBreakdown
-              scan={scans[0]}
-              issues={issues}
-              onFilterByPage={handleFilterByPage}
-            />
+            <PlanGate
+              currentPlan={plan}
+              requiredPlan="pro"
+              feature="Per-page breakdown"
+            >
+              <PageBreakdown
+                scan={scans[0]}
+                issues={issues}
+                onFilterByPage={handleFilterByPage}
+              />
+            </PlanGate>
           )}
 
           {/* Score chart */}
           <div style={{ marginBottom: "1.5rem" }}>
-            <ScoreChart scans={scans} />
+            <PlanGate
+              currentPlan={plan}
+              requiredPlan="pro"
+              feature="Score trends"
+            >
+              <ScoreChart scans={scans} />
+            </PlanGate>
           </div>
 
           <style>{`@keyframes xsbl-spin { to { transform: rotate(360deg); } } .xsbl-spin { animation: xsbl-spin 0.6s linear infinite; }`}</style>
@@ -2541,6 +2575,19 @@ export default function SiteDetailPage() {
               >
                 Select:
               </span>
+              <span
+                style={{
+                  fontFamily: "var(--mono)",
+                  fontSize: "0.55rem",
+                  color: atSelectionCap ? t.red : t.ink50,
+                  fontWeight: 600,
+                  padding: "0.1rem 0.35rem",
+                  borderRadius: 3,
+                  background: atSelectionCap ? t.red + "12" : t.ink04,
+                }}
+              >
+                {selectedForFix.length}/{maxPerPr}
+              </span>
               <button
                 onClick={function () {
                   setSelectedForFix(
@@ -2551,6 +2598,7 @@ export default function SiteDetailPage() {
                       .map(function (i) {
                         return i.id;
                       })
+                      .slice(0, maxPerPr)
                   );
                 }}
                 style={{
@@ -2576,6 +2624,7 @@ export default function SiteDetailPage() {
                       .map(function (i) {
                         return i.id;
                       })
+                      .slice(0, maxPerPr)
                   );
                 }}
                 style={{
@@ -2601,6 +2650,7 @@ export default function SiteDetailPage() {
                       .map(function (i) {
                         return i.id;
                       })
+                      .slice(0, maxPerPr)
                   );
                 }}
                 style={{
@@ -2626,6 +2676,7 @@ export default function SiteDetailPage() {
                       .map(function (i) {
                         return i.id;
                       })
+                      .slice(0, maxPerPr)
                   );
                 }}
                 style={{
@@ -2698,7 +2749,7 @@ export default function SiteDetailPage() {
                 total)
                 {selectedForFix.length > 0 && (
                   <span style={{ color: t.accent, marginLeft: "0.5rem" }}>
-                    {selectedForFix.length} selected
+                    {selectedForFix.length}/{maxPerPr} selected
                   </span>
                 )}
               </div>
@@ -2751,7 +2802,11 @@ export default function SiteDetailPage() {
                               setSelectedForFix(function (p) {
                                 var n = p.slice();
                                 group.allIds.forEach(function (id) {
-                                  if (n.indexOf(id) === -1) n.push(id);
+                                  if (
+                                    n.indexOf(id) === -1 &&
+                                    n.length < maxPerPr
+                                  )
+                                    n.push(id);
                                 });
                                 return n;
                               });
@@ -2921,11 +2976,12 @@ export default function SiteDetailPage() {
                                   onClick={function (e) {
                                     e.stopPropagation();
                                     setSelectedForFix(function (p) {
-                                      return isSel
-                                        ? p.filter(function (id) {
-                                            return id !== inst.id;
-                                          })
-                                        : p.concat([inst.id]);
+                                      if (isSel)
+                                        return p.filter(function (id) {
+                                          return id !== inst.id;
+                                        });
+                                      if (p.length >= maxPerPr) return p;
+                                      return p.concat([inst.id]);
                                     });
                                   }}
                                   style={{
@@ -3041,7 +3097,7 @@ export default function SiteDetailPage() {
                 {sortedIssues.length} issues
                 {selectedForFix.length > 0 && (
                   <span style={{ color: t.accent, marginLeft: "0.5rem" }}>
-                    {selectedForFix.length} selected
+                    {selectedForFix.length}/{maxPerPr} selected
                   </span>
                 )}
               </div>
@@ -3076,11 +3132,12 @@ export default function SiteDetailPage() {
                         onClick={function (e) {
                           e.stopPropagation();
                           setSelectedForFix(function (p) {
-                            return isSelected
-                              ? p.filter(function (id) {
-                                  return id !== issue.id;
-                                })
-                              : p.concat([issue.id]);
+                            if (isSelected)
+                              return p.filter(function (id) {
+                                return id !== issue.id;
+                              });
+                            if (p.length >= maxPerPr) return p;
+                            return p.concat([issue.id]);
                           });
                         }}
                         style={{
@@ -3219,6 +3276,8 @@ export default function SiteDetailPage() {
             selectedIds={selectedForFix}
             issues={issues}
             site={site}
+            maxPerPr={maxPerPr}
+            plan={plan}
             onClear={function () {
               setSelectedForFix([]);
             }}
@@ -3349,6 +3408,15 @@ export default function SiteDetailPage() {
             onUpdate={(s) => setSite(s)}
           />
 
+          {/* Custom Scan Profile — Agency only */}
+          <PlanGate
+            currentPlan={plan}
+            requiredPlan="agency"
+            feature="Custom scan profiles"
+          >
+            <ScanProfileEditor site={site} onUpdate={(s) => setSite(s)} />
+          </PlanGate>
+
           {/* Verification Token — show/hide */}
           <VerificationTokenPanel site={site} />
 
@@ -3356,7 +3424,13 @@ export default function SiteDetailPage() {
           <GitHubConnect site={site} onUpdate={(s) => setSite(s)} />
 
           {/* Badge Embed */}
-          <BadgeEmbedPanel site={site} />
+          <PlanGate
+            currentPlan={plan}
+            requiredPlan="starter"
+            feature="Accessibility score badge"
+          >
+            <BadgeEmbedPanel site={site} />
+          </PlanGate>
 
           {/* Danger zone */}
           <DangerZonePanel site={site} />

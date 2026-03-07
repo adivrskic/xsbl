@@ -7,7 +7,7 @@ import XsblBull from "./XsblBull";
 var landingLinks = [
   { label: "How it works", id: "how" },
   { label: "Features", id: "features" },
-  { label: "GitHub PRs", id: "github" },
+  { label: "GitHub Workflows", id: "github" },
   { label: "Simulator", id: "simulator" },
   { label: "Pricing", id: "pricing" },
   // { label: "Docs", href: "/docs" },
