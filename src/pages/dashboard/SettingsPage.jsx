@@ -484,31 +484,15 @@ function AlertIntegrations({ org }) {
     setTesting(true);
     setTestResult(null);
     try {
-      var res = await fetch(slackUrl.trim(), {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          text: ":wave: xsbl test notification — Slack integration is working!",
-          blocks: [
-            {
-              type: "header",
-              text: {
-                type: "plain_text",
-                text: ":white_check_mark: xsbl Connected",
-                emoji: true,
-              },
-            },
-            {
-              type: "section",
-              text: {
-                type: "mrkdwn",
-                text: "Slack alerts are configured. You'll receive notifications when scans complete.",
-              },
-            },
-          ],
-        }),
+      var {
+        data: { session: s },
+      } = await supabase.auth.getSession();
+      var { data, error } = await supabase.functions.invoke("test-slack", {
+        body: { webhook_url: slackUrl.trim() },
+        headers: { Authorization: "Bearer " + s?.access_token },
       });
-      setTestResult(res.ok ? "success" : "error");
+      if (error) throw error;
+      setTestResult(data?.ok ? "success" : "error");
     } catch (e) {
       setTestResult("error");
     }

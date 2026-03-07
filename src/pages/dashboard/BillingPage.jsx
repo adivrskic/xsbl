@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, Link } from "react-router-dom";
 import { useTheme } from "../../context/ThemeContext";
 import { useAuth } from "../../context/AuthContext";
 import { supabase } from "../../lib/supabase";
@@ -11,7 +11,16 @@ import {
   Zap,
   Building2,
   ArrowUpRight,
+  AlertTriangle,
+  X,
 } from "lucide-react";
+
+var PLAN_SITE_LIMITS = {
+  free: 1,
+  starter: 1,
+  pro: 999,
+  agency: 999,
+};
 
 const plans = [
   {
@@ -80,6 +89,147 @@ const plans = [
   },
 ];
 
+/* ── Downgrade blocked modal ── */
+function DowngradeModal({ t, targetPlan, sitesUsed, siteLimit, onClose }) {
+  var excess = sitesUsed - siteLimit;
+
+  return (
+    <div
+      style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 200,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        background: "rgba(0,0,0,0.4)",
+        padding: "1rem",
+      }}
+      onClick={function (e) {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
+      <div
+        style={{
+          width: "100%",
+          maxWidth: 420,
+          borderRadius: 14,
+          background: t.cardBg,
+          border: "1px solid " + t.ink08,
+          boxShadow: "0 16px 48px rgba(0,0,0,0.15)",
+          overflow: "hidden",
+        }}
+      >
+        <div
+          style={{
+            padding: "1.2rem 1.4rem 0.8rem",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "0.5rem",
+            }}
+          >
+            <AlertTriangle size={18} color={t.amber} strokeWidth={2} />
+            <h3
+              style={{
+                fontFamily: "var(--serif)",
+                fontSize: "1rem",
+                fontWeight: 700,
+                color: t.ink,
+                margin: 0,
+              }}
+            >
+              Can't downgrade yet
+            </h3>
+          </div>
+          <button
+            onClick={onClose}
+            style={{
+              background: "none",
+              border: "none",
+              cursor: "pointer",
+              color: t.ink50,
+              padding: "0.2rem",
+              display: "flex",
+            }}
+          >
+            <X size={18} />
+          </button>
+        </div>
+
+        <div style={{ padding: "0 1.4rem 1.4rem" }}>
+          <p
+            style={{
+              fontSize: "0.88rem",
+              color: t.ink50,
+              lineHeight: 1.7,
+              margin: "0 0 1rem",
+            }}
+          >
+            You currently have{" "}
+            <strong style={{ color: t.ink }}>
+              {sitesUsed} site{sitesUsed !== 1 ? "s" : ""}
+            </strong>
+            , but the{" "}
+            <strong style={{ color: t.ink, textTransform: "capitalize" }}>
+              {targetPlan}
+            </strong>{" "}
+            plan only allows{" "}
+            <strong style={{ color: t.ink }}>{siteLimit}</strong>. Please remove{" "}
+            <strong style={{ color: t.red }}>{excess}</strong> site
+            {excess !== 1 ? "s" : ""} before downgrading.
+          </p>
+
+          <div style={{ display: "flex", gap: "0.5rem" }}>
+            <button
+              onClick={onClose}
+              style={{
+                flex: 1,
+                padding: "0.5rem",
+                borderRadius: 7,
+                border: "1.5px solid " + t.ink20,
+                background: "none",
+                color: t.ink,
+                fontFamily: "var(--body)",
+                fontSize: "0.82rem",
+                fontWeight: 600,
+                cursor: "pointer",
+              }}
+            >
+              Cancel
+            </button>
+            <Link
+              to="/dashboard/sites"
+              style={{
+                flex: 1,
+                padding: "0.5rem",
+                borderRadius: 7,
+                border: "none",
+                background: t.accent,
+                color: "white",
+                fontFamily: "var(--body)",
+                fontSize: "0.82rem",
+                fontWeight: 600,
+                cursor: "pointer",
+                textDecoration: "none",
+                textAlign: "center",
+              }}
+            >
+              Manage sites
+            </Link>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function BillingPage() {
   const { t } = useTheme();
   const { org, refreshOrg } = useAuth();
@@ -88,6 +238,7 @@ export default function BillingPage() {
   const [loadingPlan, setLoadingPlan] = useState(null);
   const [portalLoading, setPortalLoading] = useState(false);
   const [message, setMessage] = useState(null);
+  const [downgradeBlock, setDowngradeBlock] = useState(null);
 
   // Check for Stripe redirect
   useEffect(() => {
@@ -102,7 +253,7 @@ export default function BillingPage() {
     }
   }, [searchParams, refreshOrg]);
 
-  // Fetch usage — use cached from AuthContext
+  // Fetch usage
   const cachedUsage = useAuth().usage;
   const { fetchUsage } = useAuth();
   useEffect(() => {
@@ -156,6 +307,22 @@ export default function BillingPage() {
       setMessage({ type: "error", text: err.message });
     }
     setPortalLoading(false);
+  };
+
+  var handleDowngrade = function (targetKey) {
+    var targetLimit = PLAN_SITE_LIMITS[targetKey] || 1;
+    var sitesUsed = usage ? usage.sites_used : 0;
+
+    if (sitesUsed > targetLimit) {
+      setDowngradeBlock({
+        targetPlan: targetKey,
+        sitesUsed: sitesUsed,
+        siteLimit: targetLimit,
+      });
+      return;
+    }
+
+    handlePortal();
   };
 
   const currentPlan = org?.plan || "free";
@@ -265,29 +432,29 @@ export default function BillingPage() {
                 border: `1px solid ${t.accent}`,
                 borderRadius: 6,
                 padding: "0.35rem 0.75rem",
-                color: t.accent,
-                fontFamily: "var(--body)",
-                fontSize: "0.76rem",
+                fontFamily: "var(--mono)",
+                fontSize: "0.68rem",
                 fontWeight: 600,
+                color: t.accent,
                 cursor: "pointer",
                 display: "flex",
                 alignItems: "center",
                 gap: "0.3rem",
-                opacity: portalLoading ? 0.6 : 1,
               }}
             >
-              <CreditCard size={13} /> Manage subscription{" "}
-              <ExternalLink size={11} />
+              <CreditCard size={13} />
+              {portalLoading ? "Loading..." : "Manage subscription"}
             </button>
           )}
         </div>
 
+        {/* Usage */}
         {usage && (
           <div
             style={{
               padding: "1.4rem",
               borderRadius: 12,
-              border: `1px solid ${t.ink08}`,
+              border: "1px solid " + t.ink08,
               background: t.cardBg,
             }}
           >
@@ -299,7 +466,7 @@ export default function BillingPage() {
                 textTransform: "uppercase",
                 letterSpacing: "0.08em",
                 fontWeight: 600,
-                marginBottom: "0.5rem",
+                marginBottom: "0.8rem",
               }}
             >
               This month
@@ -308,7 +475,7 @@ export default function BillingPage() {
               style={{
                 display: "flex",
                 flexDirection: "column",
-                gap: "0.5rem",
+                gap: "0.6rem",
               }}
             >
               <div>
@@ -324,7 +491,7 @@ export default function BillingPage() {
                   <span>Scans</span>
                   <span style={{ fontFamily: "var(--mono)", fontWeight: 600 }}>
                     {usage.scans_used} /{" "}
-                    {usage.scans_limit === 999 ? "∞" : usage.scans_limit}
+                    {usage.scans_limit === 999 ? "\u221E" : usage.scans_limit}
                   </span>
                 </div>
                 <div
@@ -360,7 +527,7 @@ export default function BillingPage() {
                   <span>Sites</span>
                   <span style={{ fontFamily: "var(--mono)", fontWeight: 600 }}>
                     {usage.sites_used} /{" "}
-                    {usage.sites_limit === 999 ? "∞" : usage.sites_limit}
+                    {usage.sites_limit === 999 ? "\u221E" : usage.sites_limit}
                   </span>
                 </div>
                 <div
@@ -521,7 +688,7 @@ export default function BillingPage() {
                 onClick={() => {
                   if (isCurrent) return;
                   if (isDowngrade) {
-                    handlePortal();
+                    handleDowngrade(p.key);
                   } else if (p.key !== "free") {
                     handleUpgrade(p.key);
                   }
@@ -561,7 +728,7 @@ export default function BillingPage() {
                   "Current plan"
                 ) : isDowngrade ? (
                   portalLoading ? (
-                    "Redirecting…"
+                    "Redirecting\u2026"
                   ) : (
                     <>
                       Downgrade via portal <ExternalLink size={12} />
@@ -570,7 +737,7 @@ export default function BillingPage() {
                 ) : p.key === "free" ? (
                   "Free"
                 ) : loadingPlan === p.key ? (
-                  "Redirecting…"
+                  "Redirecting\u2026"
                 ) : (
                   <>
                     <ArrowUpRight size={14} /> Upgrade
@@ -581,6 +748,19 @@ export default function BillingPage() {
           );
         })}
       </div>
+
+      {/* Downgrade blocked modal */}
+      {downgradeBlock && (
+        <DowngradeModal
+          t={t}
+          targetPlan={downgradeBlock.targetPlan}
+          sitesUsed={downgradeBlock.sitesUsed}
+          siteLimit={downgradeBlock.siteLimit}
+          onClose={function () {
+            setDowngradeBlock(null);
+          }}
+        />
+      )}
     </div>
   );
 }

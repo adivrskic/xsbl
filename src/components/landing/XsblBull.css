@@ -1,0 +1,45 @@
+/* XsblBull.css — low-poly bull mascot fills + animation */
+
+/* ── shade fills (auto-adapt to light / dark via CSS vars) ── */
+.bull-s1 {
+  fill: color-mix(in srgb, var(--ink) 92%, var(--paper));
+}
+.bull-s2 {
+  fill: color-mix(in srgb, var(--ink) 72%, var(--paper));
+}
+.bull-s3 {
+  fill: color-mix(in srgb, var(--ink) 55%, var(--paper));
+}
+.bull-s4 {
+  fill: color-mix(in srgb, var(--ink) 42%, var(--paper));
+}
+.bull-s5 {
+  fill: color-mix(in srgb, var(--ink) 30%, var(--paper));
+}
+.bull-s6 {
+  fill: color-mix(in srgb, var(--ink) 18%, var(--paper));
+}
+
+/* ── horn accents ── */
+.bull-horn {
+  fill: var(--accent);
+}
+.bull-horn-light {
+  fill: var(--accent-light);
+}
+.bull-horn-dark {
+  fill: color-mix(in srgb, var(--accent) 65%, var(--ink));
+}
+
+/* ── eye + ring ── */
+.bull-eye {
+  fill: var(--ink);
+}
+.bull-eye-shine {
+  fill: var(--paper);
+  opacity: 0.9;
+}
+.bull-ring {
+  stroke: var(--accent);
+  fill: none;
+}

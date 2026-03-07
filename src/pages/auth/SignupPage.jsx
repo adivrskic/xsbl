@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { useTheme } from "../../context/ThemeContext";
 import XsblBull from "../../components/landing/XsblBull";
-import { Sun, Moon } from "lucide-react";
+import { Sun, Moon, Mail } from "lucide-react";
 import "../../styles/auth.css";
 
 export default function SignupPage() {
@@ -62,7 +62,9 @@ export default function SignupPage() {
           )}
         </button>
         <div className="auth-card auth-card--center">
-          <div className="auth-icon-box auth-icon-box--accent">✉</div>
+          <div className="auth-icon-box auth-icon-box--accent">
+            <Mail size={20} />
+          </div>
           <h1 className="auth-title" style={{ fontSize: "1.5rem" }}>
             Check your email
           </h1>

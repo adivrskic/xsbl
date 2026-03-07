@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { blogArticles } from "../../data/blogArticles";
 import { ArrowRight } from "lucide-react";
+import FadeIn from "../../components/landing/FadeIn";
 import "../../styles/blog.css";
 
 function CategoryPill({ label, active, onClick }) {
@@ -82,53 +83,63 @@ export default function BlogPage() {
   return (
     <div>
       <div className="blog-page">
-        <div className="blog-header">
-          <div className="blog-header__eyebrow">
-            <span className="blog-header__eyebrow-line" /> Blog
+        <FadeIn>
+          <div className="blog-header">
+            <div className="blog-header__eyebrow">
+              <span className="blog-header__eyebrow-line" /> Blog
+            </div>
+            <h1 className="blog-header__title">Accessibility insights</h1>
+            <p className="blog-header__desc">
+              Guides, industry news, and practical advice for building an
+              accessible web.
+            </p>
           </div>
-          <h1 className="blog-header__title">Accessibility insights</h1>
-          <p className="blog-header__desc">
-            Guides, industry news, and practical advice for building an
-            accessible web.
-          </p>
-        </div>
+        </FadeIn>
 
-        <div className="blog-categories">
-          {categories.map(function (cat) {
-            return (
-              <CategoryPill
-                key={cat}
-                label={cat}
-                active={category === cat}
-                onClick={function () {
-                  setCategory(cat);
-                }}
-              />
-            );
-          })}
-        </div>
-
-        {category === "All" && featured.length > 0 && (
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: featured.length > 1 ? "1fr 1fr" : "1fr",
-              gap: "1rem",
-              marginBottom: "2rem",
-            }}
-            className="grid-1-mobile"
-          >
-            {featured.map(function (a) {
-              return <FeaturedCard key={a.slug} article={a} />;
+        <FadeIn delay={0.05}>
+          <div className="blog-categories">
+            {categories.map(function (cat) {
+              return (
+                <CategoryPill
+                  key={cat}
+                  label={cat}
+                  active={category === cat}
+                  onClick={function () {
+                    setCategory(cat);
+                  }}
+                />
+              );
             })}
           </div>
+        </FadeIn>
+
+        {category === "All" && featured.length > 0 && (
+          <FadeIn delay={0.1}>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: featured.length > 1 ? "1fr 1fr" : "1fr",
+                gap: "1rem",
+                marginBottom: "2rem",
+              }}
+              className="grid-1-mobile"
+            >
+              {featured.map(function (a) {
+                return <FeaturedCard key={a.slug} article={a} />;
+              })}
+            </div>
+          </FadeIn>
         )}
 
         <div
           style={{ display: "flex", flexDirection: "column", gap: "0.4rem" }}
         >
-          {(category === "All" ? nonFeatured : filtered).map(function (a) {
-            return <ArticleRow key={a.slug} article={a} />;
+          {(category === "All" ? nonFeatured : filtered).map(function (a, i) {
+            return (
+              <FadeIn key={a.slug} delay={0.05 + i * 0.03}>
+                <ArticleRow article={a} />
+              </FadeIn>
+            );
           })}
         </div>
 

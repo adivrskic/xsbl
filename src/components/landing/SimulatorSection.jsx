@@ -1,38 +1,44 @@
 import { useState } from "react";
 import { useTheme } from "../../context/ThemeContext";
+import { useAuth } from "../../context/AuthContext";
 import FadeIn from "./FadeIn";
 import Section from "./Section";
 import { Eyebrow, H2, SubText, Italic } from "./Typography";
-import { Eye, Lock, ArrowRight } from "lucide-react";
+import { Eye, Lock, ArrowRight, Search, Circle, Minus } from "lucide-react";
 
 /* Static demo of vision modes — no real screenshot needed */
 var DEMO_MODES = [
-  { id: "normal", name: "Normal vision", icon: "👁", color: null },
+  { id: "normal", name: "Normal vision", icon: <Eye size={14} />, color: null },
   {
     id: "protanopia",
     name: "Protanopia",
-    icon: "🔴",
+    icon: <Circle size={12} fill="#ef4444" stroke="none" />,
     color: "grayscale(0.3) sepia(0.4) hue-rotate(-20deg) saturate(0.7)",
   },
   {
     id: "deuteranopia",
     name: "Deuteranopia",
-    icon: "🟢",
+    icon: <Circle size={12} fill="#22c55e" stroke="none" />,
     color: "grayscale(0.2) sepia(0.3) hue-rotate(-40deg) saturate(0.8)",
   },
   {
     id: "tritanopia",
     name: "Tritanopia",
-    icon: "🔵",
+    icon: <Circle size={12} fill="#3b82f6" stroke="none" />,
     color: "grayscale(0.2) sepia(0.5) hue-rotate(30deg) saturate(0.7)",
   },
   {
     id: "achromatopsia",
     name: "Achromatopsia",
-    icon: "⚫",
+    icon: <Circle size={12} fill="#374151" stroke="none" />,
     color: "grayscale(1)",
   },
-  { id: "blurred", name: "Low vision", icon: "🔍", color: "blur(2px)" },
+  {
+    id: "blurred",
+    name: "Low vision",
+    icon: <Search size={14} />,
+    color: "blur(2px)",
+  },
 ];
 
 /* A fake "website" card to apply filters to */
@@ -212,6 +218,7 @@ function DemoSite({ filter, t }) {
 
 export default function SimulatorSection() {
   const { t } = useTheme();
+  const { user } = useAuth();
   const [active, setActive] = useState("normal");
 
   var activeMode =
@@ -375,7 +382,7 @@ export default function SimulatorSection() {
                   }}
                 >
                   <a
-                    href="/signup"
+                    href={user ? "/dashboard/sites" : "/signup"}
                     style={{
                       display: "inline-flex",
                       alignItems: "center",
@@ -389,20 +396,23 @@ export default function SimulatorSection() {
                       textDecoration: "none",
                     }}
                   >
-                    Try the simulator <ArrowRight size={14} />
+                    {user ? "Open simulator" : "Try the simulator"}{" "}
+                    <ArrowRight size={14} />
                   </a>
-                  <span
-                    style={{
-                      fontFamily: "var(--mono)",
-                      fontSize: "0.6rem",
-                      color: t.ink50,
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "0.25rem",
-                    }}
-                  >
-                    <Lock size={10} /> Pro & Agency plans
-                  </span>
+                  {!user && (
+                    <span
+                      style={{
+                        fontFamily: "var(--mono)",
+                        fontSize: "0.6rem",
+                        color: t.ink50,
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "0.25rem",
+                      }}
+                    >
+                      <Lock size={10} /> Pro & Agency plans
+                    </span>
+                  )}
                 </div>
               </FadeIn>
             </div>
@@ -445,7 +455,11 @@ export default function SimulatorSection() {
                         transition: "all 0.2s",
                       }}
                     >
-                      <span style={{ fontSize: "0.7rem" }}>{mode.icon}</span>
+                      <span
+                        style={{ display: "inline-flex", alignItems: "center" }}
+                      >
+                        {mode.icon}
+                      </span>
                       {mode.name}
                     </button>
                   );

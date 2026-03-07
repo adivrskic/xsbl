@@ -12,7 +12,7 @@ export default function HowSection() {
       </FadeIn>
       <FadeIn delay={0.05}>
         <H2>
-          Three steps to <Italic>actually</Italic> accessible&nbsp;code
+          Three steps to <Italic>truly</Italic> accessible code
         </H2>
       </FadeIn>
       <FadeIn delay={0.1}>

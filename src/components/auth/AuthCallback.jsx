@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../../lib/supabase";
+import { X } from "lucide-react";
 import "../../styles/auth.css";
 
 export default function AuthCallback() {
@@ -60,7 +61,9 @@ export default function AuthCallback() {
     return (
       <div className="auth-page">
         <div className="auth-card auth-card--center">
-          <div className="auth-icon-box auth-icon-box--red">✕</div>
+          <div className="auth-icon-box auth-icon-box--red">
+            <X size={20} />
+          </div>
           <h1 className="auth-title" style={{ fontSize: "1.4rem" }}>
             Confirmation failed
           </h1>

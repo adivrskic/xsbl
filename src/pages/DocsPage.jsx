@@ -14,6 +14,7 @@ import {
   Terminal,
 } from "lucide-react";
 import { Link } from "react-router-dom";
+import FadeIn from "../components/landing/FadeIn";
 
 function CodeBlock({ code, lang }) {
   const { t } = useTheme();
@@ -89,35 +90,37 @@ function CodeBlock({ code, lang }) {
 function Sec({ id, icon: Icon, title, children }) {
   const { t } = useTheme();
   return (
-    <section
-      id={id}
-      style={{ marginBottom: "3.5rem", scrollMarginTop: "100px" }}
-    >
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: "0.5rem",
-          marginBottom: "1rem",
-        }}
+    <FadeIn>
+      <section
+        id={id}
+        style={{ marginBottom: "3.5rem", scrollMarginTop: "100px" }}
       >
-        <Icon size={20} color={t.accent} strokeWidth={1.8} />
-        <h2
+        <div
           style={{
-            fontFamily: "var(--serif)",
-            fontSize: "1.5rem",
-            fontWeight: 700,
-            color: t.ink,
-            margin: 0,
+            display: "flex",
+            alignItems: "center",
+            gap: "0.5rem",
+            marginBottom: "1rem",
           }}
         >
-          {title}
-        </h2>
-      </div>
-      <div style={{ fontSize: "0.92rem", color: t.ink50, lineHeight: 1.8 }}>
-        {children}
-      </div>
-    </section>
+          <Icon size={20} color={t.accent} strokeWidth={1.8} />
+          <h2
+            style={{
+              fontFamily: "var(--serif)",
+              fontSize: "1.5rem",
+              fontWeight: 700,
+              color: t.ink,
+              margin: 0,
+            }}
+          >
+            {title}
+          </h2>
+        </div>
+        <div style={{ fontSize: "0.92rem", color: t.ink50, lineHeight: 1.8 }}>
+          {children}
+        </div>
+      </section>
+    </FadeIn>
   );
 }
 
@@ -196,6 +199,7 @@ export default function DocsPage() {
     var sectionIds = sidebar.map(function (s) {
       return s.id;
     });
+    var lastId = sectionIds[sectionIds.length - 1];
     var visibleSections = {};
 
     var observer = new IntersectionObserver(
@@ -223,8 +227,22 @@ export default function DocsPage() {
       if (el) observer.observe(el);
     });
 
+    // When scrolled to the bottom, force-select the last section
+    var handleScroll = function () {
+      if (isClickScrolling.current) return;
+      var atBottom =
+        window.innerHeight + window.scrollY >=
+        document.documentElement.scrollHeight - 40;
+      if (atBottom && activeSectionRef.current !== lastId) {
+        activeSectionRef.current = lastId;
+        setActiveSection(lastId);
+      }
+    };
+    window.addEventListener("scroll", handleScroll, { passive: true });
+
     return function () {
       observer.disconnect();
+      window.removeEventListener("scroll", handleScroll);
     };
   }, []);
 
@@ -330,41 +348,45 @@ export default function DocsPage() {
         </aside>
 
         <main style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ marginBottom: "2.5rem" }}>
-            <div
-              style={{
-                fontFamily: "var(--mono)",
-                fontSize: "0.68rem",
-                color: t.accent,
-                textTransform: "uppercase",
-                letterSpacing: "0.1em",
-                fontWeight: 600,
-                marginBottom: "0.5rem",
-                display: "flex",
-                alignItems: "center",
-                gap: "0.4rem",
-              }}
-            >
-              <span style={{ width: 20, height: 1.5, background: t.accent }} />{" "}
-              Documentation
+          <FadeIn>
+            <div style={{ marginBottom: "2.5rem" }}>
+              <div
+                style={{
+                  fontFamily: "var(--mono)",
+                  fontSize: "0.68rem",
+                  color: t.accent,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.1em",
+                  fontWeight: 600,
+                  marginBottom: "0.5rem",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.4rem",
+                }}
+              >
+                <span
+                  style={{ width: 20, height: 1.5, background: t.accent }}
+                />{" "}
+                Documentation
+              </div>
+              <h1
+                style={{
+                  fontFamily: "var(--serif)",
+                  fontSize: "clamp(2rem, 3.5vw, 2.6rem)",
+                  fontWeight: 700,
+                  color: t.ink,
+                  lineHeight: 1.15,
+                  marginBottom: "0.8rem",
+                }}
+              >
+                xsbl Docs
+              </h1>
+              <P>
+                Guides, API reference, and integration setup for xsbl
+                accessibility scanning.
+              </P>
             </div>
-            <h1
-              style={{
-                fontFamily: "var(--serif)",
-                fontSize: "clamp(2rem, 3.5vw, 2.6rem)",
-                fontWeight: 700,
-                color: t.ink,
-                lineHeight: 1.15,
-                marginBottom: "0.8rem",
-              }}
-            >
-              xsbl Docs
-            </h1>
-            <P>
-              Guides, API reference, and integration setup for xsbl
-              accessibility scanning.
-            </P>
-          </div>
+          </FadeIn>
 
           {/* ═══ GUIDES ═══ */}
 
@@ -377,7 +399,7 @@ export default function DocsPage() {
               <B>1. Dashboard</B> — add sites, run scans, view issues, and
               generate reports at{" "}
               <Link to="/dashboard" style={{ color: t.accent }}>
-                xsbl.dev/dashboard
+                xsbl.io/dashboard
               </Link>
               .
             </P>

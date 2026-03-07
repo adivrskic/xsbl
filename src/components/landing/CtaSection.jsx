@@ -1,8 +1,11 @@
+import { useAuth } from "../../context/AuthContext";
 import FadeIn from "./FadeIn";
 import { Italic } from "./Typography";
 import "./CtaSection.css";
 
 export default function CtaSection() {
+  var { user } = useAuth();
+
   return (
     <section className="cta-section">
       <div className="cta-section__glow" />
@@ -10,7 +13,7 @@ export default function CtaSection() {
       <FadeIn>
         <div className="eyebrow">
           <span className="eyebrow-line" />
-          Get started
+          {user ? "Your dashboard" : "Get started"}
         </div>
       </FadeIn>
 
@@ -22,18 +25,32 @@ export default function CtaSection() {
 
       <FadeIn delay={0.1}>
         <p className="cta-section__sub">
-          Connect your repo. Scan your site. Merge the fix PR. Accessible in
-          minutes.
+          {user
+            ? "Check your latest scan results, fix issues, and keep your accessibility score high."
+            : "Connect your repo. Scan your site. Merge the fix PR. Accessible in minutes."}
         </p>
       </FadeIn>
 
       <FadeIn delay={0.15} className="cta-section__buttons">
-        <a href="/signup" className="cta-section__btn-primary">
-          Start scanning free
-        </a>
-        <a href="/login" className="cta-section__btn-secondary">
-          Log in to dashboard
-        </a>
+        {user ? (
+          <>
+            <a href="/dashboard" className="cta-section__btn-primary">
+              Go to dashboard
+            </a>
+            <a href="/dashboard/sites" className="cta-section__btn-secondary">
+              View sites
+            </a>
+          </>
+        ) : (
+          <>
+            <a href="/signup" className="cta-section__btn-primary">
+              Start scanning free
+            </a>
+            <a href="/login" className="cta-section__btn-secondary">
+              Log in to dashboard
+            </a>
+          </>
+        )}
       </FadeIn>
     </section>
   );

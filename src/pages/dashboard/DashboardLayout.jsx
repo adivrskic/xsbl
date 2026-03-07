@@ -18,6 +18,10 @@ import {
   MessageSquare,
   X,
   Send,
+  Bug,
+  Lightbulb,
+  Heart,
+  Sparkles,
 } from "lucide-react";
 import XsblBull from "../../components/landing/XsblBull";
 
@@ -46,6 +50,25 @@ function FeedbackModal({ onClose, t, user }) {
         message: message.trim(),
         page_url: window.location.href,
       });
+
+      /* Also email the feedback to the team inbox */
+      var supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      if (supabaseUrl) {
+        fetch(supabaseUrl + "/functions/v1/contact", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: user?.email || "Anonymous",
+            email: user?.email || "no-reply@xsbl.io",
+            subject: "Dashboard feedback: " + type,
+            message: message.trim(),
+            page_url: window.location.href,
+          }),
+        }).catch(function () {
+          /* email is best-effort — don't block the UI */
+        });
+      }
+
       setSent(true);
     } catch (e) {
       console.error("Feedback error:", e);
@@ -114,7 +137,9 @@ function FeedbackModal({ onClose, t, user }) {
 
         {sent ? (
           <div style={{ padding: "2rem 1.2rem", textAlign: "center" }}>
-            <div style={{ fontSize: "1.5rem", marginBottom: "0.5rem" }}>🎉</div>
+            <div style={{ fontSize: "1.5rem", marginBottom: "0.5rem" }}>
+              <Sparkles size={24} color={t.accent} />
+            </div>
             <div
               style={{
                 fontSize: "0.92rem",
@@ -153,10 +178,18 @@ function FeedbackModal({ onClose, t, user }) {
               style={{ display: "flex", gap: "0.3rem", marginBottom: "0.8rem" }}
             >
               {[
-                { id: "bug", label: "🐛 Bug" },
-                { id: "suggestion", label: "💡 Suggestion" },
-                { id: "praise", label: "❤️ Praise" },
-                { id: "other", label: "💬 Other" },
+                { id: "bug", label: "Bug", icon: <Bug size={13} /> },
+                {
+                  id: "suggestion",
+                  label: "Suggestion",
+                  icon: <Lightbulb size={13} />,
+                },
+                { id: "praise", label: "Praise", icon: <Heart size={13} /> },
+                {
+                  id: "other",
+                  label: "Other",
+                  icon: <MessageSquare size={13} />,
+                },
               ].map(function (opt) {
                 var active = type === opt.id;
                 return (
@@ -179,7 +212,15 @@ function FeedbackModal({ onClose, t, user }) {
                       transition: "all 0.15s",
                     }}
                   >
-                    {opt.label}
+                    <span
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "0.3rem",
+                      }}
+                    >
+                      {opt.icon} {opt.label}
+                    </span>
                   </button>
                 );
               })}

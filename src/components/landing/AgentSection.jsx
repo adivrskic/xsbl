@@ -53,7 +53,7 @@ export default function AgentSection() {
       </FadeIn>
       <FadeIn delay={0.05}>
         <H2>
-          Everything you need to <Italic>actually</Italic> fix accessibility
+          Everything you need to <Italic>fix accessibility</Italic>
         </H2>
       </FadeIn>
       <FadeIn delay={0.1}>

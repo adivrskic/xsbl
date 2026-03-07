@@ -26,15 +26,23 @@ function scrollTo(id) {
   document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
 }
 
+function getCurrentPath() {
+  if (typeof window === "undefined") return "/";
+  return window.location.pathname;
+}
+
 export default function Nav() {
   var { t, dark, toggle } = useTheme();
   var scrolled = useScrolled();
   var { user } = useAuth();
 
-  var isLanding =
-    typeof window !== "undefined" &&
-    (window.location.pathname === "/" || window.location.pathname === "");
-  var links = isLanding ? landingLinks : pageLinks;
+  var currentPath = getCurrentPath();
+  var isLanding = currentPath === "/" || currentPath === "";
+  var links = isLanding
+    ? landingLinks
+    : pageLinks.filter(function (link) {
+        return link.href !== currentPath;
+      });
 
   return (
     <nav

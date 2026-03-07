@@ -340,7 +340,7 @@ function CardSelect({ t }) {
             cursor: "default",
           }}
         >
-          Generate fix →
+          Generate fix
         </span>
       </div>
     </CardShell>
@@ -386,7 +386,7 @@ function CardGenerate({ t }) {
             fontWeight: 600,
           }}
         >
-          Claude is writing fixes…
+          Writing fixes…
         </span>
       </div>
       <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
@@ -530,7 +530,7 @@ function CardPR({ t }) {
             fontWeight: 600,
           }}
         >
-          fix(a11y): fix 7 critical issues
+          fix(a11y)-xsbl: fix 7 critical issues
         </span>
       </div>
 
@@ -666,7 +666,7 @@ function PRDemo() {
     {
       label: "AI generates fix",
       icon: <Sparkles size={20} color={t.accent} strokeWidth={1.8} />,
-      detail: "Claude reads your source code and writes the fix",
+      detail: "xsbl AI reads your source code and writes the fix",
     },
     {
       label: "PR created",
@@ -698,14 +698,14 @@ function PRDemo() {
       </div>
       <style>{`@keyframes bullFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }`}</style>
 
-      {/* Card area with crossfade */}
-      <div style={{ position: "relative", minHeight: 280 }}>
+      {/* Card area with crossfade — fixed height so toggling doesn't shift layout */}
+      <div style={{ position: "relative", height: 340 }}>
         {cards.map(function (card, i) {
           return (
             <div
               key={i}
               style={{
-                position: i === step ? "relative" : "absolute",
+                position: "absolute",
                 top: 0,
                 left: 0,
                 width: "100%",
@@ -826,7 +826,7 @@ export default function GitHubSection() {
               },
               {
                 title: "AI reads your actual code",
-                desc: "Not generic suggestions — Claude sees your source files and writes fixes that match your codebase.",
+                desc: "Not generic suggestions — we write fixes that match your codebase.",
                 icon: <Sparkles size={17} color={t.accent} strokeWidth={1.8} />,
               },
               {

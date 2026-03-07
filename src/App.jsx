@@ -109,6 +109,37 @@ function PageTitle() {
   return null;
 }
 
+/* Scroll to #hash after navigation (e.g. /blog → /#pricing) */
+function ScrollToHash() {
+  const location = useLocation();
+  useEffect(
+    function () {
+      if (!location.hash) return;
+      var id = location.hash.replace("#", "");
+      var attempts = 0;
+      var maxAttempts = 20;
+
+      /* Retry until the element exists (landing page may still be mounting) */
+      var interval = setInterval(function () {
+        var el = document.getElementById(id);
+        attempts++;
+        if (el) {
+          clearInterval(interval);
+          el.scrollIntoView({ behavior: "smooth" });
+        } else if (attempts >= maxAttempts) {
+          clearInterval(interval);
+        }
+      }, 100);
+
+      return function () {
+        clearInterval(interval);
+      };
+    },
+    [location.pathname, location.hash]
+  );
+  return null;
+}
+
 export default function App() {
   const { t } = useTheme();
 
@@ -123,6 +154,7 @@ export default function App() {
     >
       <BrowserRouter>
         <PageTitle />
+        <ScrollToHash />
         <ToastProvider>
           <ConfirmProvider>
             <Routes>

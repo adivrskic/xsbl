@@ -16,7 +16,17 @@ import {
   Layers,
   AlertTriangle,
   ChevronDown,
+  Circle,
+  Search,
+  Cloud,
+  Crosshair,
+  Contrast,
+  MoveHorizontal,
+  Volume2,
+  RefreshCw,
+  Scan,
 } from "lucide-react";
+import XsblBull from "../landing/XsblBull";
 
 // ═══════════════════════════════════════════════════════════════
 // SVG Color Blindness Matrices — Machado et al. (2009)
@@ -27,7 +37,7 @@ var VISION_MODES = [
   {
     id: "normal",
     name: "Normal vision",
-    icon: "👁",
+    icon: <Eye size={14} />,
     desc: "Full color vision (trichromacy)",
     category: "baseline",
     matrix: null,
@@ -35,7 +45,7 @@ var VISION_MODES = [
   {
     id: "protanopia",
     name: "Protanopia",
-    icon: "🔴",
+    icon: <Circle size={12} fill="#ef4444" stroke="none" />,
     desc: "No red cones — 1.3% of males",
     category: "colorblind",
     matrix:
@@ -44,7 +54,7 @@ var VISION_MODES = [
   {
     id: "deuteranopia",
     name: "Deuteranopia",
-    icon: "🟢",
+    icon: <Circle size={12} fill="#22c55e" stroke="none" />,
     desc: "No green cones — 1.2% of males",
     category: "colorblind",
     matrix:
@@ -53,7 +63,7 @@ var VISION_MODES = [
   {
     id: "tritanopia",
     name: "Tritanopia",
-    icon: "🔵",
+    icon: <Circle size={12} fill="#3b82f6" stroke="none" />,
     desc: "No blue cones — 0.001% of population",
     category: "colorblind",
     matrix:
@@ -62,7 +72,7 @@ var VISION_MODES = [
   {
     id: "achromatopsia",
     name: "Achromatopsia",
-    icon: "⚫",
+    icon: <Circle size={12} fill="#374151" stroke="none" />,
     desc: "Total color blindness — 0.003%",
     category: "colorblind",
     matrix:
@@ -71,7 +81,7 @@ var VISION_MODES = [
   {
     id: "protanomaly",
     name: "Protanomaly",
-    icon: "🟠",
+    icon: <Circle size={12} fill="#f97316" stroke="none" />,
     desc: "Reduced red sensitivity — 1.1% of males",
     category: "colorblind",
     matrix:
@@ -80,7 +90,7 @@ var VISION_MODES = [
   {
     id: "deuteranomaly",
     name: "Deuteranomaly",
-    icon: "🟡",
+    icon: <Circle size={12} fill="#eab308" stroke="none" />,
     desc: "Reduced green — 4.6% of males (most common)",
     category: "colorblind",
     matrix:
@@ -89,7 +99,7 @@ var VISION_MODES = [
   {
     id: "blurred",
     name: "Low vision (blur)",
-    icon: "🔍",
+    icon: <Search size={14} />,
     desc: "Simulates reduced visual acuity",
     category: "lowvision",
     filter: "blur(2.5px)",
@@ -98,7 +108,7 @@ var VISION_MODES = [
   {
     id: "lowcontrast",
     name: "Low contrast",
-    icon: "◐",
+    icon: <Contrast size={14} />,
     desc: "Reduced contrast sensitivity",
     category: "lowvision",
     filter: "contrast(0.4) brightness(1.1)",
@@ -107,7 +117,7 @@ var VISION_MODES = [
   {
     id: "cataracts",
     name: "Cataracts",
-    icon: "☁",
+    icon: <Cloud size={14} />,
     desc: "Yellowed, hazy vision — common in elderly",
     category: "lowvision",
     filter: "blur(1px) sepia(0.5) brightness(0.9) contrast(0.7)",
@@ -116,12 +126,32 @@ var VISION_MODES = [
   {
     id: "tunnel",
     name: "Tunnel vision",
-    icon: "⊚",
+    icon: <Crosshair size={14} />,
     desc: "Loss of peripheral vision (glaucoma)",
     category: "lowvision",
     filter: null,
     matrix: null,
     special: "tunnel",
+  },
+  {
+    id: "macular",
+    name: "Macular degeneration",
+    icon: <Circle size={12} fill="#555" stroke="none" />,
+    desc: "Central vision loss — leading cause of blindness in over-50s",
+    category: "lowvision",
+    filter: null,
+    matrix: null,
+    special: "macular",
+  },
+  {
+    id: "screenreader",
+    name: "Screen reader",
+    icon: <Volume2 size={14} />,
+    desc: "How assistive technology reads your page",
+    category: "assistive",
+    filter: null,
+    matrix: null,
+    special: "screenreader",
   },
 ];
 
@@ -129,6 +159,7 @@ var CATEGORIES = [
   { id: "baseline", name: "Baseline" },
   { id: "colorblind", name: "Color blindness" },
   { id: "lowvision", name: "Low vision" },
+  { id: "assistive", name: "Assistive tech" },
 ];
 
 export default function AccessibilitySimulator({ site, issues, onClose }) {
@@ -143,7 +174,10 @@ export default function AccessibilitySimulator({ site, issues, onClose }) {
   const [splitPos, setSplitPos] = useState(50);
   const [expandedCat, setExpandedCat] = useState("colorblind");
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [customUrl, setCustomUrl] = useState("");
+  const [activeUrl, setActiveUrl] = useState("");
   const containerRef = useRef(null);
+  const splitRef = useRef(null);
   const isDragging = useRef(false);
 
   // Detect mobile
@@ -153,19 +187,30 @@ export default function AccessibilitySimulator({ site, issues, onClose }) {
     VISION_MODES.find(function (m) {
       return m.id === mode;
     }) || VISION_MODES[0];
-  var url = site.domain.startsWith("http")
+  var baseUrl = site.domain.startsWith("http")
     ? site.domain
     : "https://" + site.domain;
+  var url = activeUrl || baseUrl;
+
+  var handleScanUrl = function () {
+    var target = customUrl.trim();
+    if (!target) return;
+    if (!target.startsWith("http")) target = "https://" + target;
+    setActiveUrl(target);
+    setCustomUrl("");
+  };
 
   // Load screenshot
   useEffect(
     function () {
       setLoading(true);
+      setScreenshot(null);
+      var targetUrl = activeUrl || baseUrl;
       supabase.auth.getSession().then(function (res) {
         var session = res.data.session;
         supabase.functions
           .invoke("screenshot-site", {
-            body: { url: url, viewport: viewport },
+            body: { url: targetUrl, viewport: viewport },
             headers: {
               Authorization: "Bearer " + (session ? session.access_token : ""),
             },
@@ -179,13 +224,15 @@ export default function AccessibilitySimulator({ site, issues, onClose }) {
           });
       });
     },
-    [url, viewport]
+    [activeUrl, baseUrl, viewport]
   );
 
-  // Split view drag
+  // Split view drag — use the image container, not the scroll area
   var handleSplitDrag = function (e) {
-    if (!isDragging.current || !containerRef.current) return;
-    var rect = containerRef.current.getBoundingClientRect();
+    if (!isDragging.current) return;
+    var el = splitRef.current || containerRef.current;
+    if (!el) return;
+    var rect = el.getBoundingClientRect();
     var pct = ((e.clientX - rect.left) / rect.width) * 100;
     setSplitPos(Math.max(10, Math.min(90, pct)));
   };
@@ -211,9 +258,13 @@ export default function AccessibilitySimulator({ site, issues, onClose }) {
         display: "flex",
         flexDirection: "column",
         overflow: "hidden",
+        userSelect: "none",
       }}
       onMouseMove={handleSplitDrag}
       onMouseUp={function () {
+        isDragging.current = false;
+      }}
+      onMouseLeave={function () {
         isDragging.current = false;
       }}
     >
@@ -256,6 +307,27 @@ export default function AccessibilitySimulator({ site, issues, onClose }) {
           >
             <X size={18} />
           </button>
+          <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+            <XsblBull size={22} />
+            <span
+              style={{
+                fontFamily: "var(--mono)",
+                fontWeight: 600,
+                fontSize: "0.9rem",
+                color: t.ink,
+              }}
+            >
+              xsbl<span style={{ color: t.accent }}>.</span>
+            </span>
+          </div>
+          <div
+            style={{
+              width: 1,
+              height: 20,
+              background: t.ink08,
+              flexShrink: 0,
+            }}
+          />
           <div className="xsbl-sim-title">
             <div
               style={{
@@ -265,18 +337,84 @@ export default function AccessibilitySimulator({ site, issues, onClose }) {
                 color: t.ink,
               }}
             >
-              Accessibility Simulator
+              Simulator
             </div>
-            <div
-              className="hide-mobile"
+          </div>
+
+          {/* URL input */}
+          <div
+            className="hide-mobile"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "0.3rem",
+              flex: 1,
+              maxWidth: 360,
+            }}
+          >
+            <input
+              value={customUrl}
+              onChange={function (e) {
+                setCustomUrl(e.target.value);
+              }}
+              onKeyDown={function (e) {
+                if (e.key === "Enter") handleScanUrl();
+              }}
+              placeholder={url}
               style={{
+                flex: 1,
+                padding: "0.3rem 0.6rem",
+                borderRadius: 5,
+                border: "1.5px solid " + t.ink08,
+                background: t.paper,
+                color: t.ink,
                 fontFamily: "var(--mono)",
-                fontSize: "0.58rem",
-                color: t.ink50,
+                fontSize: "0.65rem",
+                outline: "none",
+                minWidth: 0,
+              }}
+            />
+            <button
+              onClick={handleScanUrl}
+              disabled={!customUrl.trim()}
+              aria-label="Scan URL"
+              style={{
+                background: t.accent,
+                border: "none",
+                borderRadius: 5,
+                padding: "0.3rem 0.5rem",
+                cursor: customUrl.trim() ? "pointer" : "default",
+                opacity: customUrl.trim() ? 1 : 0.4,
+                color: "white",
+                display: "flex",
+                alignItems: "center",
+                gap: "0.25rem",
+                fontFamily: "var(--mono)",
+                fontSize: "0.6rem",
+                fontWeight: 600,
+                flexShrink: 0,
               }}
             >
-              {site.display_name || site.domain}
-            </div>
+              <Scan size={12} /> Go
+            </button>
+            {activeUrl && (
+              <button
+                onClick={function () {
+                  setActiveUrl("");
+                }}
+                aria-label="Reset to site URL"
+                style={{
+                  background: "none",
+                  border: "none",
+                  padding: "0.2rem",
+                  cursor: "pointer",
+                  color: t.ink50,
+                  display: "flex",
+                }}
+              >
+                <RefreshCw size={13} />
+              </button>
+            )}
           </div>
         </div>
 
@@ -835,7 +973,324 @@ export default function AccessibilitySimulator({ site, issues, onClose }) {
             </defs>
           </svg>
 
-          {loading ? (
+          {/* ── Screen Reader Simulation ── */}
+          {currentMode.special === "screenreader" ? (
+            <div
+              style={{
+                width: "100%",
+                maxWidth: 700,
+                background: t.cardBg,
+                borderRadius: 12,
+                border: "1px solid " + t.ink08,
+                overflow: "hidden",
+              }}
+            >
+              <div
+                style={{
+                  padding: "1rem 1.2rem",
+                  background: t.ink04,
+                  borderBottom: "1px solid " + t.ink08,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.5rem",
+                }}
+              >
+                <Volume2 size={16} color={t.accent} />
+                <span
+                  style={{
+                    fontFamily: "var(--mono)",
+                    fontSize: "0.72rem",
+                    fontWeight: 600,
+                    color: t.ink,
+                  }}
+                >
+                  Screen reader output
+                </span>
+                <span
+                  style={{
+                    fontFamily: "var(--mono)",
+                    fontSize: "0.6rem",
+                    color: t.ink50,
+                    marginLeft: "auto",
+                  }}
+                >
+                  Based on {pageIssues.length} open issue
+                  {pageIssues.length !== 1 ? "s" : ""}
+                </span>
+              </div>
+              <div
+                style={{
+                  padding: "1.2rem",
+                  maxHeight: "calc(100vh - 200px)",
+                  overflowY: "auto",
+                }}
+              >
+                {/* What a blind user would miss */}
+                {(function () {
+                  var missingAlt = pageIssues.filter(function (i) {
+                    return i.rule_id === "image-alt";
+                  });
+                  var missingLabels = pageIssues.filter(function (i) {
+                    return (
+                      i.rule_id === "label" || i.rule_id === "input-image-alt"
+                    );
+                  });
+                  var missingButtons = pageIssues.filter(function (i) {
+                    return i.rule_id === "button-name";
+                  });
+                  var missingLinks = pageIssues.filter(function (i) {
+                    return i.rule_id === "link-name";
+                  });
+                  var headingIssues = pageIssues.filter(function (i) {
+                    return (
+                      i.rule_id === "heading-order" ||
+                      i.rule_id === "empty-heading"
+                    );
+                  });
+                  var ariaIssues = pageIssues.filter(function (i) {
+                    return i.rule_id && i.rule_id.indexOf("aria") === 0;
+                  });
+                  var contrastIssues = pageIssues.filter(function (i) {
+                    return i.rule_id === "color-contrast";
+                  });
+
+                  var sections = [
+                    {
+                      title: "Images without alt text",
+                      icon: <EyeOff size={14} />,
+                      items: missingAlt,
+                      color: "#c0392b",
+                      note: "Screen readers announce these as 'image' with no description — the user has no idea what's shown.",
+                    },
+                    {
+                      title: "Buttons without labels",
+                      icon: <AlertTriangle size={14} />,
+                      items: missingButtons,
+                      color: "#c0392b",
+                      note: "Announced as 'button' — the user can't tell what it does.",
+                    },
+                    {
+                      title: "Links without text",
+                      icon: <AlertTriangle size={14} />,
+                      items: missingLinks,
+                      color: "#e67e22",
+                      note: "Read as 'link' with no destination — unusable for navigation.",
+                    },
+                    {
+                      title: "Form inputs without labels",
+                      icon: <AlertTriangle size={14} />,
+                      items: missingLabels,
+                      color: "#e67e22",
+                      note: "Announced as 'edit text' with no context — users can't fill in forms.",
+                    },
+                    {
+                      title: "Heading hierarchy issues",
+                      icon: <AlertTriangle size={14} />,
+                      items: headingIssues,
+                      color: "#b45309",
+                      note: "Screen reader users navigate by headings — broken hierarchy means broken navigation.",
+                    },
+                    {
+                      title: "ARIA issues",
+                      icon: <AlertTriangle size={14} />,
+                      items: ariaIssues,
+                      color: "#b45309",
+                      note: "Incorrect ARIA attributes cause screen readers to misrepresent elements.",
+                    },
+                    {
+                      title: "Color contrast (low vision)",
+                      icon: <Contrast size={14} />,
+                      items: contrastIssues,
+                      color: "#b45309",
+                      note: "Users with partial vision and screen magnifiers rely on sufficient contrast.",
+                    },
+                  ].filter(function (s) {
+                    return s.items.length > 0;
+                  });
+
+                  if (sections.length === 0) {
+                    return (
+                      <div
+                        style={{
+                          textAlign: "center",
+                          padding: "3rem 1rem",
+                          color: t.ink50,
+                        }}
+                      >
+                        <Eye
+                          size={32}
+                          style={{ marginBottom: "0.5rem", opacity: 0.4 }}
+                        />
+                        <div
+                          style={{
+                            fontSize: "0.92rem",
+                            fontWeight: 600,
+                            color: t.ink,
+                            marginBottom: "0.3rem",
+                          }}
+                        >
+                          No screen reader issues detected
+                        </div>
+                        <div style={{ fontSize: "0.78rem" }}>
+                          This page looks good for assistive technology users.
+                        </div>
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <div>
+                      <p
+                        style={{
+                          fontSize: "0.82rem",
+                          color: t.ink50,
+                          lineHeight: 1.7,
+                          marginBottom: "1.2rem",
+                        }}
+                      >
+                        This shows how a screen reader user experiences your
+                        page. Each section below represents content that is
+                        broken, missing, or confusing for assistive technology.
+                      </p>
+
+                      {sections.map(function (sec, si) {
+                        return (
+                          <div key={si} style={{ marginBottom: "1rem" }}>
+                            <div
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: "0.4rem",
+                                marginBottom: "0.5rem",
+                              }}
+                            >
+                              <span style={{ color: sec.color }}>
+                                {sec.icon}
+                              </span>
+                              <span
+                                style={{
+                                  fontSize: "0.82rem",
+                                  fontWeight: 700,
+                                  color: t.ink,
+                                }}
+                              >
+                                {sec.title}
+                              </span>
+                              <span
+                                style={{
+                                  fontFamily: "var(--mono)",
+                                  fontSize: "0.62rem",
+                                  fontWeight: 600,
+                                  padding: "0.08rem 0.35rem",
+                                  borderRadius: 3,
+                                  background: sec.color + "15",
+                                  color: sec.color,
+                                }}
+                              >
+                                {sec.items.length}
+                              </span>
+                            </div>
+                            <p
+                              style={{
+                                fontSize: "0.74rem",
+                                color: t.ink50,
+                                lineHeight: 1.5,
+                                margin: "0 0 0.5rem",
+                                fontStyle: "italic",
+                              }}
+                            >
+                              {sec.note}
+                            </p>
+                            <div
+                              style={{
+                                display: "flex",
+                                flexDirection: "column",
+                                gap: "0.3rem",
+                              }}
+                            >
+                              {sec.items.slice(0, 5).map(function (iss, ii) {
+                                return (
+                                  <div
+                                    key={ii}
+                                    style={{
+                                      padding: "0.5rem 0.7rem",
+                                      borderRadius: 6,
+                                      background: t.ink04,
+                                      border: "1px solid " + t.ink08,
+                                      fontFamily: "var(--mono)",
+                                      fontSize: "0.7rem",
+                                    }}
+                                  >
+                                    {/* What the screen reader says */}
+                                    <div
+                                      style={{
+                                        display: "flex",
+                                        alignItems: "flex-start",
+                                        gap: "0.5rem",
+                                        marginBottom: iss.element_selector
+                                          ? "0.3rem"
+                                          : 0,
+                                      }}
+                                    >
+                                      <Volume2
+                                        size={12}
+                                        color={t.accent}
+                                        style={{ marginTop: 2, flexShrink: 0 }}
+                                      />
+                                      <span style={{ color: t.ink }}>
+                                        {iss.rule_id === "image-alt"
+                                          ? '"image"'
+                                          : iss.rule_id === "button-name"
+                                          ? '"button"'
+                                          : iss.rule_id === "link-name"
+                                          ? '"link"'
+                                          : iss.rule_id === "label"
+                                          ? '"edit text"'
+                                          : '"' +
+                                            (iss.description || iss.rule_id) +
+                                            '"'}
+                                        <span style={{ color: t.ink50 }}>
+                                          {" "}
+                                          — no context provided
+                                        </span>
+                                      </span>
+                                    </div>
+                                    {iss.element_selector && (
+                                      <div
+                                        style={{
+                                          fontSize: "0.6rem",
+                                          color: t.ink50,
+                                          paddingLeft: "1.25rem",
+                                          wordBreak: "break-all",
+                                        }}
+                                      >
+                                        {iss.element_selector}
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                              {sec.items.length > 5 && (
+                                <div
+                                  style={{
+                                    fontSize: "0.68rem",
+                                    color: t.ink50,
+                                    paddingLeft: "0.5rem",
+                                  }}
+                                >
+                                  + {sec.items.length - 5} more
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                })()}
+              </div>
+            </div>
+          ) : loading ? (
             <div
               style={{
                 display: "flex",
@@ -874,6 +1329,7 @@ export default function AccessibilitySimulator({ site, issues, onClose }) {
           ) : splitView ? (
             /* ── Split View ── */
             <div
+              ref={splitRef}
               style={{
                 position: "relative",
                 width: "100%",
@@ -883,22 +1339,97 @@ export default function AccessibilitySimulator({ site, issues, onClose }) {
                 boxShadow: "0 4px 24px rgba(0,0,0,0.15)",
               }}
             >
-              {/* Normal (left) */}
+              {/* Filtered (right) — base layer, gives container its height */}
+              <img
+                src={screenshot.image}
+                alt="Simulated view"
+                draggable={false}
+                style={{
+                  width: screenshot.width * zoom,
+                  height: "auto",
+                  display: "block",
+                  filter: currentMode.matrix
+                    ? "url(#filter-" + mode + ")"
+                    : currentMode.filter || "none",
+                  pointerEvents: "none",
+                }}
+              />
+              {/* Tunnel vision on right side */}
+              {currentMode.special === "tunnel" && (
+                <div
+                  style={{
+                    position: "absolute",
+                    inset: 0,
+                    pointerEvents: "none",
+                    background:
+                      "radial-gradient(circle at center, transparent 20%, rgba(0,0,0,0.85) 50%)",
+                  }}
+                />
+              )}
+              {/* Macular degeneration on right side */}
+              {currentMode.special === "macular" && (
+                <div
+                  style={{
+                    position: "absolute",
+                    inset: 0,
+                    pointerEvents: "none",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <div
+                    style={{
+                      width: 280,
+                      height: 280,
+                      borderRadius: "50%",
+                      background:
+                        "radial-gradient(ellipse at center, rgba(0,0,0,0.92) 0%, rgba(0,0,0,0.7) 30%, rgba(0,0,0,0.2) 60%, transparent 80%)",
+                      boxShadow: "0 0 100px 60px rgba(0,0,0,0.12)",
+                      flexShrink: 0,
+                    }}
+                  />
+                </div>
+              )}
               <div
                 style={{
                   position: "absolute",
-                  inset: 0,
-                  overflow: "hidden",
+                  top: 12,
+                  right: 12,
+                  padding: "0.2rem 0.5rem",
+                  borderRadius: 4,
+                  background: "rgba(0,0,0,0.6)",
+                  color: "white",
+                  fontFamily: "var(--mono)",
+                  fontSize: "0.55rem",
+                  fontWeight: 600,
+                  zIndex: 1,
+                }}
+              >
+                {currentMode.name}
+              </div>
+
+              {/* Normal (left) — clipped overlay on top */}
+              <div
+                style={{
+                  position: "absolute",
+                  top: 0,
+                  left: 0,
+                  bottom: 0,
                   width: splitPos + "%",
+                  overflow: "hidden",
+                  zIndex: 2,
                 }}
               >
                 <img
                   src={screenshot.image}
                   alt="Normal view"
+                  draggable={false}
                   style={{
                     width: screenshot.width * zoom,
                     height: "auto",
                     display: "block",
+                    pointerEvents: "none",
                   }}
                 />
                 <div
@@ -919,37 +1450,7 @@ export default function AccessibilitySimulator({ site, issues, onClose }) {
                 </div>
               </div>
 
-              {/* Filtered (full, behind) */}
-              <img
-                src={screenshot.image}
-                alt="Simulated view"
-                style={{
-                  width: screenshot.width * zoom,
-                  height: "auto",
-                  display: "block",
-                  filter: currentMode.matrix
-                    ? "url(#filter-" + mode + ")"
-                    : currentMode.filter || "none",
-                }}
-              />
-              <div
-                style={{
-                  position: "absolute",
-                  top: 12,
-                  right: 12,
-                  padding: "0.2rem 0.5rem",
-                  borderRadius: 4,
-                  background: "rgba(0,0,0,0.6)",
-                  color: "white",
-                  fontFamily: "var(--mono)",
-                  fontSize: "0.55rem",
-                  fontWeight: 600,
-                }}
-              >
-                {currentMode.name}
-              </div>
-
-              {/* Slider handle */}
+              {/* Slider handle — wider hit area for easier grabbing */}
               <div
                 onMouseDown={function () {
                   isDragging.current = true;
@@ -958,34 +1459,46 @@ export default function AccessibilitySimulator({ site, issues, onClose }) {
                   position: "absolute",
                   top: 0,
                   bottom: 0,
-                  left: splitPos + "%",
-                  width: 3,
-                  background: "white",
+                  left: "calc(" + splitPos + "% - 12px)",
+                  width: 24,
                   cursor: "col-resize",
                   zIndex: 10,
-                  boxShadow: "0 0 8px rgba(0,0,0,0.3)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
                 }}
               >
+                {/* Visible line */}
                 <div
                   style={{
                     position: "absolute",
-                    top: "50%",
+                    top: 0,
+                    bottom: 0,
                     left: "50%",
-                    transform: "translate(-50%, -50%)",
-                    width: 28,
-                    height: 28,
-                    borderRadius: "50%",
+                    width: 2,
+                    marginLeft: -1,
                     background: "white",
-                    boxShadow: "0 2px 8px rgba(0,0,0,0.2)",
+                    boxShadow: "0 0 8px rgba(0,0,0,0.3)",
+                  }}
+                />
+                {/* Grab handle pill */}
+                <div
+                  style={{
+                    position: "fixed",
+                    top: "50%",
+                    width: 36,
+                    height: 48,
+                    borderRadius: 18,
+                    background: "white",
+                    boxShadow: "0 2px 12px rgba(0,0,0,0.25)",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
-                    fontFamily: "var(--mono)",
-                    fontSize: "0.55rem",
-                    color: "#666",
+                    flexDirection: "column",
+                    gap: 2,
                   }}
                 >
-                  ⇔
+                  <MoveHorizontal size={16} color="#666" />
                 </div>
               </div>
             </div>
@@ -1024,6 +1537,35 @@ export default function AccessibilitySimulator({ site, issues, onClose }) {
                       "radial-gradient(circle at center, transparent 20%, rgba(0,0,0,0.85) 50%)",
                   }}
                 />
+              )}
+
+              {/* Macular degeneration overlay — central scotoma, fixed to viewport center */}
+              {currentMode.special === "macular" && (
+                <div
+                  style={{
+                    position: "fixed",
+                    top: "50%",
+                    inset: 0,
+                    pointerEvents: "none",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <div
+                    style={{
+                      position: "sticky",
+                      top: "30%",
+                      width: 320,
+                      height: 320,
+                      borderRadius: "50%",
+                      background:
+                        "radial-gradient(ellipse at center, rgba(0,0,0,0.92) 0%, rgba(0,0,0,0.7) 30%, rgba(0,0,0,0.2) 60%, transparent 80%)",
+                      boxShadow: "0 0 120px 80px rgba(0,0,0,0.15)",
+                      flexShrink: 0,
+                    }}
+                  />
+                </div>
               )}
 
               {/* Issue markers overlay */}
