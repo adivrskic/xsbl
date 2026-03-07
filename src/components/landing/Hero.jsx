@@ -196,8 +196,6 @@ export default function Hero() {
         {!result && (
           <FadeIn delay={0.26}>
             <div className="hero__trust">
-              <span>No signup required</span>
-              <span className="hero__pipe" />
               <span>WCAG 2.2 AA + AAA</span>
               <span className="hero__pipe" />
               <span>Auto GitHub PRs</span>

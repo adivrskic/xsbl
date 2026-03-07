@@ -472,7 +472,7 @@ export default function IssueDetailModal({ issue, site, onClose, onUpdate }) {
                   gap: "0.4rem",
                 }}
               >
-                <Sparkles size={14} /> Generate fix with Claude
+                <Sparkles size={14} /> Generate fix
               </button>
             )}
 

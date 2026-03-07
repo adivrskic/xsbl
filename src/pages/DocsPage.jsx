@@ -446,8 +446,7 @@ export default function DocsPage() {
             </Note>
             <P>
               <B>Single fix:</B> Open any issue → click "Create fix PR" → xsbl
-              reads your source code, generates a fix with Claude, and opens a
-              PR.
+              reads your source code, generates a fix, and opens a PR.
             </P>
             <P>
               <B>Bulk fix:</B> On the Issues tab, check multiple issues (or use
@@ -458,7 +457,7 @@ export default function DocsPage() {
               <B>How file discovery works:</B> xsbl fetches your repo's file
               tree, scores files by relevance (matching page URLs to file names,
               component names, CSS selectors), fetches the top source files,
-              sends them to Claude along with the issues, and commits the fixed
+              sends them to the AI along with the issues, and commits the fixed
               files to a new branch.
             </P>
           </Sec>
@@ -677,9 +676,7 @@ jobs:
             icon={Eye}
             title="Alt text generation (authenticated)"
           >
-            <P>
-              Send an image URL and get AI-generated alt text via Claude Vision.
-            </P>
+            <P>Send an image URL and get Vision AI-generated alt text.</P>
             <CodeBlock
               lang="bash"
               code={`curl -X POST ${BASE}/functions/v1/generate-alt-text \\

@@ -188,7 +188,7 @@ export var blogArticles = [
       { type: "h2", text: "AI that reads your code" },
       {
         type: "p",
-        text: "Modern AI models can read your actual source code, understand its structure, and generate targeted fixes. When xsbl identifies a missing alt text violation, it doesn't just tell you about it — it fetches the relevant source file from your GitHub repo, identifies the exact image element, uses Claude's vision API to understand what the image shows, and generates a contextually accurate alt text attribute.",
+        text: "Modern AI models can read your actual source code, understand its structure, and generate targeted fixes. When xsbl identifies a missing alt text violation, it doesn't just tell you about it — it fetches the relevant source file from your GitHub repo, identifies the exact image element, uses AI vision API to understand what the image shows, and generates a contextually accurate alt text attribute.",
       },
       {
         type: "p",

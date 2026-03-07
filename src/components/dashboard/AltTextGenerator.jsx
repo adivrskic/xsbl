@@ -199,7 +199,7 @@ export default function AltTextGenerator({ issue }) {
             gap: "0.35rem",
           }}
         >
-          <Sparkles size={13} /> Generate alt text with Claude
+          <Sparkles size={13} /> Generate alt text
         </button>
       )}
 
