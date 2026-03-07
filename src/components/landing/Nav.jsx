@@ -1,13 +1,14 @@
 import { useTheme } from "../../context/ThemeContext";
 import { useScrolled } from "../../hooks/useScrolled";
-import { useNavigate } from "react-router-dom";
-import { Sun, Moon } from "lucide-react";
+import { useAuth } from "../../context/AuthContext";
+import { Sun, Moon, LayoutDashboard } from "lucide-react";
 import XsblBull from "./XsblBull";
 
 var landingLinks = [
   { label: "How it works", id: "how" },
   { label: "Features", id: "features" },
   { label: "GitHub PRs", id: "github" },
+  { label: "Simulator", id: "simulator" },
   { label: "Pricing", id: "pricing" },
   // { label: "Docs", href: "/docs" },
   // { label: "Blog", href: "/blog" },
@@ -28,7 +29,7 @@ function scrollTo(id) {
 export default function Nav() {
   var { t, dark, toggle } = useTheme();
   var scrolled = useScrolled();
-  var navigate = useNavigate();
+  var { user } = useAuth();
 
   var isLanding =
     typeof window !== "undefined" &&
@@ -86,18 +87,12 @@ export default function Nav() {
       >
         {links.map(function (link) {
           var isPageLink = !!link.href;
-          var isHashLink = isPageLink && link.href.indexOf("/#") === 0;
           return (
             <a
               key={link.label}
               href={isPageLink ? link.href : "#" + link.id}
               onClick={
-                isHashLink
-                  ? function (e) {
-                      e.preventDefault();
-                      navigate(link.href);
-                    }
-                  : !isPageLink
+                !isPageLink
                   ? function (e) {
                       e.preventDefault();
                       scrollTo(link.id);
@@ -153,50 +148,85 @@ export default function Nav() {
             <Moon size={16} strokeWidth={2} />
           )}
         </button>
-        <a
-          href="/login"
-          style={{
-            color: t.ink50,
-            textDecoration: "none",
-            fontSize: "0.85rem",
-            fontWeight: 500,
-            transition: "color 0.2s",
-          }}
-          onMouseEnter={function (e) {
-            e.target.style.color = t.ink;
-          }}
-          onMouseLeave={function (e) {
-            e.target.style.color = t.ink50;
-          }}
-        >
-          Log in
-        </a>
-        <a
-          href="/signup"
-          style={{
-            background: t.ink,
-            color: t.paper,
-            border: "none",
-            fontFamily: "var(--body)",
-            fontSize: "0.85rem",
-            fontWeight: 600,
-            padding: "0.55rem 1.3rem",
-            borderRadius: 8,
-            cursor: "pointer",
-            textDecoration: "none",
-            transition: "all 0.25s",
-          }}
-          onMouseEnter={function (e) {
-            e.currentTarget.style.background = t.accent;
-            e.currentTarget.style.transform = "translateY(-1px)";
-          }}
-          onMouseLeave={function (e) {
-            e.currentTarget.style.background = t.ink;
-            e.currentTarget.style.transform = "translateY(0)";
-          }}
-        >
-          Get started
-        </a>
+        {user ? (
+          <a
+            href="/dashboard"
+            style={{
+              background: t.ink,
+              color: t.paper,
+              border: "none",
+              fontFamily: "var(--body)",
+              fontSize: "0.85rem",
+              fontWeight: 600,
+              padding: "0.55rem 1.3rem",
+              borderRadius: 8,
+              cursor: "pointer",
+              textDecoration: "none",
+              transition: "all 0.25s",
+              display: "flex",
+              alignItems: "center",
+              gap: "0.4rem",
+            }}
+            onMouseEnter={function (e) {
+              e.currentTarget.style.background = t.accent;
+              e.currentTarget.style.transform = "translateY(-1px)";
+            }}
+            onMouseLeave={function (e) {
+              e.currentTarget.style.background = t.ink;
+              e.currentTarget.style.transform = "translateY(0)";
+            }}
+          >
+            <LayoutDashboard size={15} strokeWidth={2} />
+            Dashboard
+          </a>
+        ) : (
+          <>
+            <a
+              href="/login"
+              style={{
+                color: t.ink50,
+                textDecoration: "none",
+                fontSize: "0.85rem",
+                fontWeight: 500,
+                transition: "color 0.2s",
+              }}
+              onMouseEnter={function (e) {
+                e.target.style.color = t.ink;
+              }}
+              onMouseLeave={function (e) {
+                e.target.style.color = t.ink50;
+              }}
+            >
+              Log in
+            </a>
+            <a
+              href="/signup"
+              style={{
+                background: t.ink,
+                color: t.paper,
+                border: "none",
+                fontFamily: "var(--body)",
+                fontSize: "0.85rem",
+                fontWeight: 600,
+                padding: "0.55rem 1.3rem",
+                borderRadius: 8,
+                cursor: "pointer",
+                textDecoration: "none",
+                transition: "all 0.25s",
+              }}
+              onMouseEnter={function (e) {
+                e.currentTarget.style.background = t.accent;
+                e.currentTarget.style.transform = "translateY(-1px)";
+              }}
+              onMouseLeave={function (e) {
+                e.currentTarget.style.background = t.ink;
+                e.currentTarget.style.transform = "translateY(0)";
+              }}
+            >
+              Get started
+            </a>
+          </>
+        )}
       </div>
     </nav>
   );

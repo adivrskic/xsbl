@@ -1,11 +1,9 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { useTheme } from "../../context/ThemeContext";
-import "../../styles/dashboard.css";
-import "../../styles/dashboard-pages.css";
-import "../../styles/dashboard-modals.css";
 import { useAuth } from "../../context/AuthContext";
 import { supabase } from "../../lib/supabase";
+import { invalidateSitesCache } from "./SitesPage";
 import {
   AlertTriangle,
   Play,
@@ -249,7 +247,7 @@ function VerifyPanel({ site, onVerified }) {
       if (error) throw new Error(error.message);
       setResult(data);
       if (data?.verified) {
-        onVerified?.();
+        onVerified?.(data);
       }
     } catch (err) {
       setResult({ verified: false, error: err.message });
@@ -1472,7 +1470,25 @@ export default function SiteDetailPage() {
       </div>
 
       {!site.verified && tab === "overview" && (
-        <VerifyPanel site={site} onVerified={loadData} />
+        <VerifyPanel
+          site={site}
+          onVerified={function () {
+            /* Immediately update local state so UI reflects verified */
+            setSite(function (prev) {
+              return Object.assign({}, prev, { verified: true });
+            });
+            /* Also update the cache so navigating away and back stays correct */
+            if (cacheRef.current.site) {
+              cacheRef.current.site = Object.assign({}, cacheRef.current.site, {
+                verified: true,
+              });
+            }
+            /* Invalidate the sites list cache so SitesPage shows verified too */
+            invalidateSitesCache();
+            /* Force a background reload to sync everything from DB */
+            loadData(true);
+          }}
+        />
       )}
 
       {/* ── Overview ── */}

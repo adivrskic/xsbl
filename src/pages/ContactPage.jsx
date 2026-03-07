@@ -120,10 +120,6 @@ export default function ContactPage() {
                 </div>
               </div>
             </div>
-
-            <div style={{ opacity: 0.5 }}>
-              <XsblBull size={80} />
-            </div>
           </div>
 
           {/* Right — form */}

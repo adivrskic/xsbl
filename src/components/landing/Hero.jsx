@@ -3,6 +3,7 @@ import { useTheme } from "../../context/ThemeContext";
 import FadeIn from "./FadeIn";
 import CodeCard from "./CodeCard";
 import "./Hero.css";
+import XsblBull from "./XsblBull";
 
 export default function Hero() {
   const { t } = useTheme();
@@ -53,7 +54,11 @@ export default function Hero() {
 
         <FadeIn delay={0.07}>
           <h1 className="hero__title">
-            No Bull. Make it <span className="italic-accent">xsbl.</span>
+            No Bull. Make it{" "}
+            <span className="italic-accent">
+              xsbl.
+              <XsblBull size={84} />
+            </span>
           </h1>
         </FadeIn>
 

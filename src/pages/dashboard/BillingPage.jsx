@@ -18,7 +18,13 @@ const plans = [
     name: "Free",
     key: "free",
     price: 0,
-    features: ["1 site", "3 scans / month", "Basic issue list", "WCAG 2.2 AA"],
+    features: [
+      "1 site",
+      "3 scans / month",
+      "10 AI suggestions / mo",
+      "1 GitHub PR / mo",
+      "WCAG 2.2 AA",
+    ],
     icon: Zap,
   },
   {
@@ -28,9 +34,10 @@ const plans = [
     features: [
       "1 site",
       "10 scans / month",
-      "AI fix suggestions",
+      "50 AI suggestions / mo",
+      "5 GitHub PRs / mo",
       "Score badge",
-      "Email support",
+      "Simulator preview",
     ],
     icon: Sparkles,
   },
@@ -42,9 +49,11 @@ const plans = [
     features: [
       "Unlimited sites",
       "100 scans / month",
+      "200 AI suggestions / mo",
+      "25 GitHub PRs / mo",
+      "Accessibility simulator",
       "Scheduled scans",
-      "AI fixes + alt text",
-      "Score trends",
+      "AI alt text",
       "Slack + email alerts",
       "PDF reports",
       "WCAG 2.2 AA + AAA",
@@ -57,23 +66,19 @@ const plans = [
     price: 249,
     features: [
       "Everything in Pro",
+      "Unlimited AI + PRs",
+      "Accessibility simulator",
+      "Client read-only dashboards",
+      "Auto PDF reports to clients",
+      "Custom scan profiles",
       "Multi-org dashboard",
-      "White-label reports",
-      "VPAT generation",
-      "Audit log",
-      "API access",
+      "White-label reports + VPAT",
+      "Audit log + API access",
       "Dedicated support",
     ],
     icon: Building2,
   },
 ];
-
-const PLAN_LIMITS = {
-  free: { sites: 1, scans: 3 },
-  starter: { sites: 1, scans: 10 },
-  pro: { sites: 999, scans: 100 },
-  agency: { sites: 999, scans: 999 },
-};
 
 export default function BillingPage() {
   const { t } = useTheme();
@@ -83,7 +88,6 @@ export default function BillingPage() {
   const [loadingPlan, setLoadingPlan] = useState(null);
   const [portalLoading, setPortalLoading] = useState(false);
   const [message, setMessage] = useState(null);
-  const [downgradeBlock, setDowngradeBlock] = useState(null);
 
   // Check for Stripe redirect
   useEffect(() => {
@@ -517,35 +521,7 @@ export default function BillingPage() {
                 onClick={() => {
                   if (isCurrent) return;
                   if (isDowngrade) {
-                    // Check if user's current usage exceeds target plan limits
-                    var targetLimits = PLAN_LIMITS[p.key] || PLAN_LIMITS.free;
-                    var blockers = [];
-                    if (usage && usage.sites_used > targetLimits.sites) {
-                      var excess = usage.sites_used - targetLimits.sites;
-                      blockers.push({
-                        type: "sites",
-                        current: usage.sites_used,
-                        allowed: targetLimits.sites,
-                        action:
-                          "Remove " +
-                          excess +
-                          " site" +
-                          (excess > 1 ? "s" : "") +
-                          " to fit the " +
-                          p.name +
-                          " plan limit of " +
-                          (targetLimits.sites === 999
-                            ? "unlimited"
-                            : targetLimits.sites) +
-                          " site" +
-                          (targetLimits.sites !== 1 ? "s" : ""),
-                      });
-                    }
-                    if (blockers.length > 0) {
-                      setDowngradeBlock({ plan: p.name, blockers: blockers });
-                    } else {
-                      handlePortal();
-                    }
+                    handlePortal();
                   } else if (p.key !== "free") {
                     handleUpgrade(p.key);
                   }
@@ -587,7 +563,9 @@ export default function BillingPage() {
                   portalLoading ? (
                     "Redirecting…"
                   ) : (
-                    "Downgrade"
+                    <>
+                      Downgrade via portal <ExternalLink size={12} />
+                    </>
                   )
                 ) : p.key === "free" ? (
                   "Free"
@@ -603,149 +581,6 @@ export default function BillingPage() {
           );
         })}
       </div>
-
-      {/* Downgrade blocker modal */}
-      {downgradeBlock && (
-        <div
-          style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            background: "rgba(0,0,0,0.5)",
-            backdropFilter: "blur(4px)",
-            zIndex: 1000,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: "1rem",
-          }}
-          onClick={() => setDowngradeBlock(null)}
-        >
-          <div
-            onClick={(e) => e.stopPropagation()}
-            style={{
-              background: t.paper,
-              borderRadius: 16,
-              border: "1px solid " + t.ink08,
-              padding: "2rem",
-              maxWidth: 420,
-              width: "100%",
-              boxShadow: "0 20px 60px rgba(0,0,0,0.15)",
-            }}
-          >
-            <div
-              style={{
-                fontFamily: "var(--serif)",
-                fontSize: "1.2rem",
-                fontWeight: 700,
-                color: t.ink,
-                marginBottom: "0.5rem",
-              }}
-            >
-              Can't downgrade to {downgradeBlock.plan} yet
-            </div>
-            <p
-              style={{
-                fontSize: "0.86rem",
-                color: t.ink50,
-                lineHeight: 1.6,
-                marginBottom: "1.2rem",
-              }}
-            >
-              Your current usage exceeds the {downgradeBlock.plan} plan limits.
-              Please make the following changes first:
-            </p>
-
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                gap: "0.6rem",
-                marginBottom: "1.5rem",
-              }}
-            >
-              {downgradeBlock.blockers.map(function (b, i) {
-                return (
-                  <div
-                    key={i}
-                    style={{
-                      padding: "0.8rem 1rem",
-                      borderRadius: 10,
-                      background: t.red + "08",
-                      border: "1px solid " + t.red + "18",
-                    }}
-                  >
-                    <div
-                      style={{
-                        fontFamily: "var(--mono)",
-                        fontSize: "0.64rem",
-                        fontWeight: 600,
-                        textTransform: "uppercase",
-                        letterSpacing: "0.06em",
-                        color: t.red,
-                        marginBottom: "0.25rem",
-                      }}
-                    >
-                      {b.type} — {b.current} /{" "}
-                      {b.allowed === 999 ? "∞" : b.allowed}
-                    </div>
-                    <div
-                      style={{
-                        fontSize: "0.82rem",
-                        color: t.ink,
-                        lineHeight: 1.5,
-                      }}
-                    >
-                      {b.action}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            <div style={{ display: "flex", gap: "0.5rem" }}>
-              <button
-                onClick={() => setDowngradeBlock(null)}
-                style={{
-                  flex: 1,
-                  padding: "0.55rem 1rem",
-                  borderRadius: 8,
-                  border: "1.5px solid " + t.ink20,
-                  background: "none",
-                  color: t.ink,
-                  fontFamily: "var(--body)",
-                  fontSize: "0.82rem",
-                  fontWeight: 600,
-                  cursor: "pointer",
-                }}
-              >
-                Got it
-              </button>
-              <a
-                href="/dashboard/sites"
-                style={{
-                  flex: 1,
-                  padding: "0.55rem 1rem",
-                  borderRadius: 8,
-                  border: "none",
-                  background: t.accent,
-                  color: "white",
-                  fontFamily: "var(--body)",
-                  fontSize: "0.82rem",
-                  fontWeight: 600,
-                  cursor: "pointer",
-                  textDecoration: "none",
-                  textAlign: "center",
-                }}
-              >
-                Manage sites
-              </a>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

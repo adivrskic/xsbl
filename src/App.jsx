@@ -20,6 +20,7 @@ import HowSection from "./components/landing/HowSection";
 import AgentSection from "./components/landing/AgentSection";
 import ComplianceSection from "./components/landing/ComplianceSection";
 import GitHubSection from "./components/landing/GitHubSection";
+import SimulatorSection from "./components/landing/SimulatorSection";
 import PricingSection from "./components/landing/PricingSection";
 import CtaSection from "./components/landing/CtaSection";
 import Footer from "./components/landing/Footer";
@@ -40,18 +41,6 @@ import BillingPage from "./pages/dashboard/BillingPage";
 import OnboardingPage from "./pages/dashboard/OnboardingPage";
 
 function LandingPage() {
-  const location = useLocation();
-
-  useEffect(() => {
-    if (location.hash) {
-      var id = location.hash.replace("#", "");
-      // Small delay to let sections render
-      setTimeout(function () {
-        document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
-      }, 100);
-    }
-  }, [location]);
-
   return (
     <>
       <a href="#main-content" className="skip-to-content">
@@ -65,6 +54,7 @@ function LandingPage() {
         <HowSection />
         <AgentSection />
         <GitHubSection />
+        <SimulatorSection />
         <ComplianceSection />
         <PricingSection />
         <CtaSection />

@@ -3,8 +3,6 @@ import { useTheme } from "../../context/ThemeContext";
 import { supabase } from "../../lib/supabase";
 import { useToast } from "../ui/Toast";
 import { Loader2, ExternalLink, Check, AlertTriangle } from "lucide-react";
-import "../../styles/github-pr.css";
-import "../../styles/dashboard.css";
 
 function GitHubIcon({ size = 14 }) {
   return (
@@ -19,13 +17,21 @@ export default function CreatePRButton({ issue, site }) {
   const toast = useToast();
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
+  const [elapsed, setElapsed] = useState(0);
 
   var hasGitHub = site && site.github_repo && site.github_token;
+
   if (!hasGitHub) return null;
 
   const handleCreatePR = async () => {
     setLoading(true);
     setResult(null);
+    setElapsed(0);
+    var timer = setInterval(function () {
+      setElapsed(function (prev) {
+        return prev + 1;
+      });
+    }, 1000);
     try {
       var {
         data: { session },
@@ -34,47 +40,172 @@ export default function CreatePRButton({ issue, site }) {
         body: { issue_id: issue.id, site_id: site.id },
         headers: { Authorization: "Bearer " + (session?.access_token || "") },
       });
+
       if (error) throw new Error(error.message);
       if (data?.error) throw new Error(data.error);
+
       setResult(data);
-      if (data.status === "created")
+
+      if (data.status === "created") {
         toast.success("PR #" + data.pr_number + " created!");
-      else if (data.status === "suggestion")
+      } else if (data.status === "suggestion") {
         toast.info(
           "Could not find the exact source file — see suggestion below"
         );
+      }
     } catch (err) {
       toast.error("Failed: " + String(err).substring(0, 100));
       setResult({ error: String(err) });
     }
+    clearInterval(timer);
     setLoading(false);
   };
 
+  var steps = [
+    { at: 0, label: "Fetching repo files…" },
+    { at: 4, label: "Finding relevant source files…" },
+    { at: 8, label: "Reading source code…" },
+    { at: 12, label: "AI is generating the fix…" },
+    { at: 25, label: "Creating branch & committing…" },
+    { at: 35, label: "Opening pull request…" },
+  ];
+  var currentStep = "";
+  for (var si = steps.length - 1; si >= 0; si--) {
+    if (elapsed >= steps[si].at) {
+      currentStep = steps[si].label;
+      break;
+    }
+  }
+
   return (
     <div style={{ marginTop: "0.8rem" }}>
-      {!result && (
-        <button onClick={handleCreatePR} disabled={loading} className="gh-btn">
-          {loading ? (
-            <Loader2 size={14} className="xsbl-spin" />
-          ) : (
-            <GitHubIcon size={14} />
-          )}
-          {loading ? "Creating PR\u2026" : "Create fix PR"}
+      {/* Create PR button / progress */}
+      {!result && !loading && (
+        <button
+          onClick={handleCreatePR}
+          style={{
+            padding: "0.5rem 1rem",
+            borderRadius: 7,
+            border: "none",
+            background: "#24292e",
+            color: "white",
+            fontFamily: "var(--body)",
+            fontSize: "0.82rem",
+            fontWeight: 600,
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            gap: "0.4rem",
+          }}
+        >
+          <GitHubIcon size={14} />
+          Create fix PR
+          <span
+            style={{
+              fontFamily: "var(--mono)",
+              fontSize: "0.5rem",
+              fontWeight: 700,
+              padding: "0.1rem 0.3rem",
+              borderRadius: 3,
+              background: "rgba(255,255,255,0.15)",
+              color: "rgba(255,255,255,0.7)",
+              textTransform: "uppercase",
+              letterSpacing: "0.05em",
+            }}
+          >
+            beta
+          </span>
         </button>
       )}
 
+      {/* Loading progress */}
+      {loading && (
+        <div
+          style={{
+            padding: "0.8rem",
+            borderRadius: 8,
+            background: t.accentBg,
+            border: "1px solid " + t.accent + "20",
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "0.4rem",
+              marginBottom: "0.4rem",
+            }}
+          >
+            <Loader2 size={14} color={t.accent} className="xsbl-spin" />
+            <span
+              style={{ fontSize: "0.82rem", fontWeight: 600, color: t.ink }}
+            >
+              Creating PR…
+            </span>
+            <span
+              style={{
+                fontFamily: "var(--mono)",
+                fontSize: "0.66rem",
+                color: t.ink50,
+                marginLeft: "auto",
+              }}
+            >
+              {elapsed}s
+            </span>
+          </div>
+          <div
+            style={{
+              fontFamily: "var(--mono)",
+              fontSize: "0.7rem",
+              color: t.ink50,
+              lineHeight: 1.6,
+            }}
+          >
+            {currentStep}
+          </div>
+          <div
+            style={{ fontSize: "0.66rem", color: t.ink20, marginTop: "0.3rem" }}
+          >
+            Usually takes 15–40 seconds
+          </div>
+        </div>
+      )}
+
+      {/* PR created */}
       {result && result.status === "created" && (
-        <div className="pr-result pr-result--success">
-          <div className="pr-result__header">
+        <div
+          style={{
+            padding: "0.8rem",
+            borderRadius: 8,
+            background: `${t.green}08`,
+            border: `1px solid ${t.green}20`,
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "0.4rem",
+              marginBottom: "0.4rem",
+            }}
+          >
             <Check size={15} color={t.green} strokeWidth={2.5} />
             <span
-              className="pr-result__title"
-              style={{ color: "var(--green)" }}
+              style={{ fontSize: "0.84rem", fontWeight: 600, color: t.green }}
             >
               PR #{result.pr_number} created
             </span>
           </div>
-          <p className="pr-result__desc">{result.description}</p>
+          <p
+            style={{
+              fontSize: "0.78rem",
+              color: t.ink50,
+              margin: "0 0 0.4rem 0",
+              lineHeight: 1.5,
+            }}
+          >
+            {result.description}
+          </p>
           <div
             style={{
               display: "flex",
@@ -87,46 +218,113 @@ export default function CreatePRButton({ issue, site }) {
               href={result.pr_url}
               target="_blank"
               rel="noopener noreferrer"
-              className="pr-result__link"
+              style={{
+                fontFamily: "var(--mono)",
+                fontSize: "0.72rem",
+                color: t.accent,
+                textDecoration: "none",
+                display: "flex",
+                alignItems: "center",
+                gap: "0.2rem",
+              }}
             >
               View on GitHub <ExternalLink size={11} />
             </a>
-            <span className="pr-result__meta">
+            <span
+              style={{
+                fontFamily: "var(--mono)",
+                fontSize: "0.62rem",
+                color: t.ink50,
+              }}
+            >
               {result.file} → {result.branch}
             </span>
           </div>
         </div>
       )}
 
+      {/* Suggestion (no source file found) */}
       {result && result.status === "suggestion" && (
-        <div className="pr-result pr-result--suggestion">
-          <div className="pr-result__header">
+        <div
+          style={{
+            padding: "0.8rem",
+            borderRadius: 8,
+            background: t.accentBg,
+            border: `1px solid ${t.accent}20`,
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "0.4rem",
+              marginBottom: "0.4rem",
+            }}
+          >
             <AlertTriangle size={15} color={t.amber} strokeWidth={2} />
-            <span className="pr-result__title" style={{ color: "var(--ink)" }}>
+            <span
+              style={{ fontSize: "0.84rem", fontWeight: 600, color: t.ink }}
+            >
               Suggested fix
             </span>
           </div>
-          <p className="pr-result__desc">{result.description}</p>
+          <p
+            style={{
+              fontSize: "0.78rem",
+              color: t.ink50,
+              margin: "0 0 0.5rem 0",
+              lineHeight: 1.5,
+            }}
+          >
+            {result.description}
+          </p>
           {result.fixed_content && (
-            <pre className="dash-code-block" style={{ margin: 0 }}>
+            <pre
+              style={{
+                padding: "0.6rem 0.8rem",
+                borderRadius: 6,
+                background: t.codeBg,
+                fontFamily: "var(--mono)",
+                fontSize: "0.68rem",
+                color: "#a3a3a3",
+                overflowX: "auto",
+                whiteSpace: "pre-wrap",
+                margin: 0,
+                lineHeight: 1.7,
+              }}
+            >
               {result.fixed_content}
             </pre>
           )}
-          <p className="pr-result__file">
+          <p
+            style={{ fontSize: "0.68rem", color: t.ink50, marginTop: "0.4rem" }}
+          >
             Suggested file:{" "}
-            <code className="dash-code-accent">{result.file_path}</code>
+            <code style={{ fontFamily: "var(--mono)", color: t.accent }}>
+              {result.file_path}
+            </code>
           </p>
         </div>
       )}
 
+      {/* Error */}
       {result && result.error && !result.status && (
         <div
-          className="pr-result pr-result--error"
-          style={{ marginTop: "0.3rem" }}
+          style={{
+            padding: "0.6rem 0.8rem",
+            borderRadius: 8,
+            marginTop: "0.3rem",
+            background: `${t.red}08`,
+            border: `1px solid ${t.red}20`,
+            fontSize: "0.78rem",
+            color: t.red,
+          }}
         >
           {result.error}
         </div>
       )}
+
+      <style>{`.xsbl-spin { animation: xsbl-spin 0.6s linear infinite; } @keyframes xsbl-spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   );
 }
