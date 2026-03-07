@@ -5,6 +5,7 @@ import "../../styles/dashboard-pages.css";
 import "../../styles/dashboard-modals.css";
 import { useAuth } from "../../context/AuthContext";
 import { supabase } from "../../lib/supabase";
+import { logAudit } from "../../lib/audit";
 import { useToast } from "../../components/ui/Toast";
 import { useConfirm } from "../../components/ui/ConfirmModal";
 import PlanGate from "../../components/ui/PlanGate";
@@ -25,6 +26,8 @@ import {
   CircleAlert,
   FileText,
   Calendar,
+  Key,
+  Copy,
 } from "lucide-react";
 
 /* ── Editable field ── */
@@ -446,6 +449,434 @@ function InviteForm({ orgId, onInvited }) {
   );
 }
 
+/* ── API Keys Panel (Pro+) ── */
+function ApiKeysPanel({ org }) {
+  const { t } = useTheme();
+  const [keys, setKeys] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [creating, setCreating] = useState(false);
+  const [newKeyName, setNewKeyName] = useState("");
+  const [revealedKey, setRevealedKey] = useState(null);
+  const [copied, setCopied] = useState(false);
+  const [revoking, setRevoking] = useState(null);
+
+  if (!org) return null;
+
+  var loadKeys = async function () {
+    var {
+      data: { session },
+    } = await supabase.auth.getSession();
+    var { data, error } = await supabase.functions.invoke(
+      "api-keys?action=list",
+      {
+        headers: { Authorization: "Bearer " + (session?.access_token || "") },
+      }
+    );
+    if (data && data.keys) setKeys(data.keys);
+    setLoading(false);
+  };
+
+  useEffect(function () {
+    loadKeys();
+  }, []);
+
+  var handleCreate = async function () {
+    if (!newKeyName.trim()) return;
+    setCreating(true);
+    var {
+      data: { session },
+    } = await supabase.auth.getSession();
+    var { data, error } = await supabase.functions.invoke(
+      "api-keys?action=create",
+      {
+        body: { name: newKeyName.trim() },
+        headers: { Authorization: "Bearer " + (session?.access_token || "") },
+      }
+    );
+    if (data && data.key) {
+      setRevealedKey(data);
+      setNewKeyName("");
+      logAudit({
+        action: "settings.api_key_created",
+        resourceType: "settings",
+        resourceId: data.id,
+        description: "API key created: " + data.name,
+      });
+      loadKeys();
+    }
+    setCreating(false);
+  };
+
+  var handleRevoke = async function (keyId, keyName) {
+    setRevoking(keyId);
+    var {
+      data: { session },
+    } = await supabase.auth.getSession();
+    await supabase.functions.invoke("api-keys?action=revoke", {
+      body: { id: keyId },
+      headers: { Authorization: "Bearer " + (session?.access_token || "") },
+    });
+    logAudit({
+      action: "settings.api_key_revoked",
+      resourceType: "settings",
+      resourceId: keyId,
+      description: "API key revoked: " + keyName,
+    });
+    setRevoking(null);
+    loadKeys();
+  };
+
+  var handleCopy = function () {
+    if (!revealedKey) return;
+    navigator.clipboard.writeText(revealedKey.key);
+    setCopied(true);
+    setTimeout(function () {
+      setCopied(false);
+    }, 2000);
+  };
+
+  var activeKeys = keys.filter(function (k) {
+    return !k.revoked_at;
+  });
+  var revokedKeys = keys.filter(function (k) {
+    return !!k.revoked_at;
+  });
+
+  return (
+    <div
+      style={{
+        padding: "1.5rem",
+        borderRadius: 12,
+        border: "1px solid " + t.ink08,
+        background: t.cardBg,
+        marginBottom: "1rem",
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: "0.5rem",
+          marginBottom: "0.6rem",
+        }}
+      >
+        <Key size={17} color={t.accent} strokeWidth={1.8} />
+        <h3
+          style={{
+            fontSize: "0.95rem",
+            fontWeight: 600,
+            color: t.ink,
+            margin: 0,
+          }}
+        >
+          API Keys
+        </h3>
+        <span
+          style={{
+            fontFamily: "var(--mono)",
+            fontSize: "0.52rem",
+            fontWeight: 600,
+            padding: "0.08rem 0.3rem",
+            borderRadius: 3,
+            background: t.ink04,
+            color: t.ink50,
+          }}
+        >
+          {activeKeys.length}/5
+        </span>
+      </div>
+      <p
+        style={{
+          fontSize: "0.76rem",
+          color: t.ink50,
+          marginBottom: "1rem",
+          lineHeight: 1.6,
+        }}
+      >
+        API keys let you authenticate programmatically. Keys are shown once on
+        creation — store them securely.
+      </p>
+
+      {/* Revealed key banner */}
+      {revealedKey && (
+        <div
+          style={{
+            padding: "0.8rem 1rem",
+            borderRadius: 8,
+            background: t.greenBg || "#f0fdf4",
+            border: "1px solid " + (t.green + "30"),
+            marginBottom: "1rem",
+          }}
+        >
+          <div
+            style={{
+              fontSize: "0.72rem",
+              fontWeight: 600,
+              color: t.green,
+              marginBottom: "0.3rem",
+            }}
+          >
+            Key created — copy it now, it won't be shown again
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
+            <input
+              value={revealedKey.key}
+              readOnly
+              style={{
+                flex: 1,
+                padding: "0.4rem 0.6rem",
+                borderRadius: 5,
+                border: "1.5px solid " + t.ink08,
+                background: t.paper,
+                color: t.ink,
+                fontFamily: "var(--mono)",
+                fontSize: "0.72rem",
+                outline: "none",
+              }}
+            />
+            <button
+              onClick={handleCopy}
+              style={{
+                padding: "0.4rem 0.7rem",
+                borderRadius: 5,
+                border: "none",
+                background: t.accent,
+                color: "white",
+                fontFamily: "var(--mono)",
+                fontSize: "0.68rem",
+                fontWeight: 600,
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                gap: "0.25rem",
+              }}
+            >
+              {copied ? <Check size={12} /> : <Copy size={12} />}
+              {copied ? "Copied" : "Copy"}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Create form */}
+      {activeKeys.length < 5 && (
+        <div
+          style={{
+            display: "flex",
+            gap: "0.3rem",
+            marginBottom: "1rem",
+            flexWrap: "wrap",
+          }}
+        >
+          <input
+            value={newKeyName}
+            onChange={function (e) {
+              setNewKeyName(e.target.value);
+            }}
+            onKeyDown={function (e) {
+              if (e.key === "Enter") handleCreate();
+            }}
+            placeholder="Key name (e.g. CI/CD, Staging)"
+            style={{
+              flex: 1,
+              minWidth: 150,
+              padding: "0.4rem 0.6rem",
+              borderRadius: 5,
+              border: "1.5px solid " + t.ink08,
+              background: t.paper,
+              color: t.ink,
+              fontFamily: "var(--mono)",
+              fontSize: "0.72rem",
+              outline: "none",
+            }}
+          />
+          <button
+            onClick={handleCreate}
+            disabled={!newKeyName.trim() || creating}
+            style={{
+              padding: "0.4rem 0.8rem",
+              borderRadius: 5,
+              border: "none",
+              background: t.accent,
+              color: "white",
+              fontFamily: "var(--mono)",
+              fontSize: "0.72rem",
+              fontWeight: 600,
+              cursor:
+                !newKeyName.trim() || creating ? "not-allowed" : "pointer",
+              opacity: !newKeyName.trim() || creating ? 0.5 : 1,
+              display: "flex",
+              alignItems: "center",
+              gap: "0.25rem",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {creating ? (
+              <Loader2 size={12} className="xsbl-spin" />
+            ) : (
+              <Plus size={12} />
+            )}
+            Create key
+          </button>
+        </div>
+      )}
+
+      {/* Active keys */}
+      {loading ? (
+        <div style={{ textAlign: "center", padding: "1rem", color: t.ink50 }}>
+          <Loader2 size={18} className="xsbl-spin" color={t.accent} />
+        </div>
+      ) : activeKeys.length === 0 ? (
+        <div
+          style={{
+            textAlign: "center",
+            padding: "1.5rem",
+            color: t.ink50,
+            fontSize: "0.78rem",
+          }}
+        >
+          No API keys created yet.
+        </div>
+      ) : (
+        <div
+          style={{ display: "flex", flexDirection: "column", gap: "0.3rem" }}
+        >
+          {activeKeys.map(function (k) {
+            return (
+              <div
+                key={k.id}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.6rem",
+                  padding: "0.6rem 0.7rem",
+                  borderRadius: 7,
+                  border: "1px solid " + t.ink08,
+                  background: t.paper,
+                }}
+              >
+                <Key size={14} color={t.ink50} />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "0.4rem",
+                    }}
+                  >
+                    <span
+                      style={{
+                        fontSize: "0.8rem",
+                        fontWeight: 600,
+                        color: t.ink,
+                      }}
+                    >
+                      {k.name}
+                    </span>
+                  </div>
+                  <div
+                    style={{
+                      display: "flex",
+                      gap: "0.6rem",
+                      fontFamily: "var(--mono)",
+                      fontSize: "0.6rem",
+                      color: t.ink50,
+                      marginTop: "0.1rem",
+                    }}
+                  >
+                    <span>{k.key_prefix}</span>
+                    <span>
+                      Created {new Date(k.created_at).toLocaleDateString()}
+                    </span>
+                    {k.last_used_at && (
+                      <span>
+                        Last used{" "}
+                        {new Date(k.last_used_at).toLocaleDateString()}
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <button
+                  onClick={function () {
+                    handleRevoke(k.id, k.name);
+                  }}
+                  disabled={revoking === k.id}
+                  style={{
+                    padding: "0.25rem 0.5rem",
+                    borderRadius: 4,
+                    border: "1px solid " + t.red + "30",
+                    background: "none",
+                    color: t.red,
+                    fontFamily: "var(--mono)",
+                    fontSize: "0.6rem",
+                    fontWeight: 600,
+                    cursor: revoking === k.id ? "not-allowed" : "pointer",
+                    opacity: revoking === k.id ? 0.5 : 1,
+                  }}
+                >
+                  {revoking === k.id ? "Revoking..." : "Revoke"}
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Revoked keys (collapsed) */}
+      {revokedKeys.length > 0 && (
+        <details style={{ marginTop: "0.8rem" }}>
+          <summary
+            style={{
+              fontFamily: "var(--mono)",
+              fontSize: "0.6rem",
+              color: t.ink50,
+              cursor: "pointer",
+              padding: "0.3rem 0",
+            }}
+          >
+            {revokedKeys.length} revoked key
+            {revokedKeys.length !== 1 ? "s" : ""}
+          </summary>
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: "0.2rem",
+              marginTop: "0.3rem",
+            }}
+          >
+            {revokedKeys.map(function (k) {
+              return (
+                <div
+                  key={k.id}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "0.5rem",
+                    padding: "0.4rem 0.7rem",
+                    borderRadius: 6,
+                    opacity: 0.5,
+                    fontFamily: "var(--mono)",
+                    fontSize: "0.6rem",
+                    color: t.ink50,
+                  }}
+                >
+                  <Key size={12} />
+                  <span style={{ textDecoration: "line-through" }}>
+                    {k.name}
+                  </span>
+                  <span>{k.key_prefix}</span>
+                  <span style={{ marginLeft: "auto" }}>Revoked</span>
+                </div>
+              );
+            })}
+          </div>
+        </details>
+      )}
+    </div>
+  );
+}
+
 /* ── Scheduled Reports (Agency) ── */
 function ScheduledReports({ org }) {
   const { t } = useTheme();
@@ -483,6 +914,16 @@ function ScheduledReports({ org }) {
       .eq("id", org.id);
     setSaving(false);
     setSaved(true);
+    logAudit({
+      action: "settings.updated",
+      resourceType: "settings",
+      description: "Report schedule updated to " + (schedule || "off"),
+      metadata: {
+        schedule: schedule || "off",
+        recipients: emailList.length,
+        white_label: whiteLabel,
+      },
+    });
     setTimeout(function () {
       setSaved(false);
     }, 2000);
@@ -725,6 +1166,15 @@ function AlertIntegrations({ org }) {
       .eq("id", org.id);
     setSaving(false);
     setSaved(true);
+    logAudit({
+      action: "settings.alerts_updated",
+      resourceType: "settings",
+      description: "Alert integrations updated",
+      metadata: {
+        has_slack: !!slackUrl.trim(),
+        alert_emails: emailList.length,
+      },
+    });
     setTimeout(function () {
       setSaved(false);
     }, 2000);
@@ -1010,6 +1460,12 @@ export default function SettingsPage() {
   const handleOrgNameSave = async (name) => {
     await supabase.from("organizations").update({ name }).eq("id", org.id);
     await refreshOrg?.();
+    logAudit({
+      action: "settings.updated",
+      resourceType: "settings",
+      description: "Workspace name changed to " + name,
+      metadata: { field: "org_name", value: name },
+    });
     toast.success("Workspace name updated");
   };
 
@@ -1019,6 +1475,13 @@ export default function SettingsPage() {
       .delete()
       .eq("org_id", org.id)
       .eq("user_id", userId);
+    logAudit({
+      action: "user.removed",
+      resourceType: "user",
+      resourceId: userId,
+      description: "Team member removed",
+      metadata: { removed_user_id: userId },
+    });
     toast.success("Team member removed");
     await loadMembers();
   };
@@ -1035,6 +1498,16 @@ export default function SettingsPage() {
       { onConflict: "user_id" }
     );
     toast.success("Notification preferences saved");
+    logAudit({
+      action: "settings.updated",
+      resourceType: "settings",
+      description: "Notification preferences updated",
+      metadata: {
+        scan_complete: notifScans,
+        critical_issues: notifIssues,
+        weekly_digest: notifWeekly,
+      },
+    });
     setNotifSaving(false);
   };
 
@@ -1668,6 +2141,15 @@ export default function SettingsPage() {
         feature="Slack & email alerts"
       >
         <AlertIntegrations org={org} />
+      </PlanGate>
+
+      {/* API Keys — Pro+ */}
+      <PlanGate
+        currentPlan={org?.plan || "free"}
+        requiredPlan="pro"
+        feature="API keys"
+      >
+        <ApiKeysPanel org={org} />
       </PlanGate>
 
       {/* Scheduled Reports — Agency only */}

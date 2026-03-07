@@ -22,12 +22,26 @@ import {
   Lightbulb,
   Heart,
   Sparkles,
+  Shield,
+  Package,
 } from "lucide-react";
 import XsblBull from "../../components/landing/XsblBull";
 
 const navItems = [
   { label: "Overview", path: "/dashboard", icon: LayoutDashboard, end: true },
   { label: "Sites", path: "/dashboard/sites", icon: Globe },
+  {
+    label: "Audit Log",
+    path: "/dashboard/audit-log",
+    icon: Shield,
+    plans: ["agency"],
+  },
+  {
+    label: "Evidence Export",
+    path: "/dashboard/evidence",
+    icon: Package,
+    plans: ["agency"],
+  },
   { label: "Settings", path: "/dashboard/settings", icon: Settings },
   { label: "Billing", path: "/dashboard/billing", icon: CreditCard },
 ];
@@ -433,31 +447,36 @@ export default function DashboardLayout() {
           aria-label="Dashboard navigation"
           style={{ flex: 1, padding: "0.6rem" }}
         >
-          {navItems.map(({ label, path, icon: Icon, end }) => (
-            <NavLink
-              key={path}
-              to={path}
-              end={end}
-              onClick={() => setMobileOpen(false)}
-              style={({ isActive }) => ({
-                display: "flex",
-                alignItems: "center",
-                gap: "0.7rem",
-                padding: "0.55rem 0.8rem",
-                borderRadius: 8,
-                marginBottom: "0.15rem",
-                textDecoration: "none",
-                fontSize: "0.85rem",
-                fontWeight: 500,
-                color: isActive ? t.accent : t.ink50,
-                background: isActive ? t.accentBg : "transparent",
-                transition: "all 0.15s",
-              })}
-            >
-              <Icon size={17} strokeWidth={1.8} />
-              {label}
-            </NavLink>
-          ))}
+          {navItems
+            .filter(function (item) {
+              if (!item.plans) return true;
+              return item.plans.indexOf(org?.plan || "free") !== -1;
+            })
+            .map(({ label, path, icon: Icon, end }) => (
+              <NavLink
+                key={path}
+                to={path}
+                end={end}
+                onClick={() => setMobileOpen(false)}
+                style={({ isActive }) => ({
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.7rem",
+                  padding: "0.55rem 0.8rem",
+                  borderRadius: 8,
+                  marginBottom: "0.15rem",
+                  textDecoration: "none",
+                  fontSize: "0.85rem",
+                  fontWeight: 500,
+                  color: isActive ? t.accent : t.ink50,
+                  background: isActive ? t.accentBg : "transparent",
+                  transition: "all 0.15s",
+                })}
+              >
+                <Icon size={17} strokeWidth={1.8} />
+                {label}
+              </NavLink>
+            ))}
         </nav>
 
         {/* User footer with links + feedback */}

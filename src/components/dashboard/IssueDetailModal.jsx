@@ -15,6 +15,7 @@ import CreatePRButton from "./CreatePRButton";
 import AltTextGenerator from "./AltTextGenerator";
 import PlanGate from "../ui/PlanGate";
 import { useAuth } from "../../context/AuthContext";
+import { logAudit } from "../../lib/audit";
 import "../../styles/dashboard.css";
 import "../../styles/dashboard-modals.css";
 
@@ -116,6 +117,19 @@ export default function IssueDetailModal({ issue, site, onClose, onUpdate }) {
     if (!error) {
       setStatus(newStatus);
       onUpdate?.({ ...issue, status: newStatus });
+      logAudit({
+        action: "issue.status_changed",
+        resourceType: "issue",
+        resourceId: issue.id,
+        description: issue.rule_id + " changed to " + newStatus,
+        metadata: {
+          rule_id: issue.rule_id,
+          impact: issue.impact,
+          from: issue.status,
+          to: newStatus,
+          site_id: issue.site_id,
+        },
+      });
     }
     setStatusSaving(false);
   };
@@ -472,7 +486,7 @@ export default function IssueDetailModal({ issue, site, onClose, onUpdate }) {
                   gap: "0.4rem",
                 }}
               >
-                <Sparkles size={14} /> Generate fix
+                <Sparkles size={14} /> Generate fix with Claude
               </button>
             )}
 

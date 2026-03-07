@@ -3,6 +3,7 @@ import { Link, useSearchParams } from "react-router-dom";
 import { useTheme } from "../../context/ThemeContext";
 import { useAuth } from "../../context/AuthContext";
 import { supabase } from "../../lib/supabase";
+import { logAudit } from "../../lib/audit";
 import { useToast } from "../../components/ui/Toast";
 import { useConfirm } from "../../components/ui/ConfirmModal";
 import { Globe, Plus, Trash2, Lock } from "lucide-react";
@@ -93,6 +94,13 @@ function AddSiteModal({ onClose, onAdded }) {
       setLoading(false);
     } else {
       onAdded(data);
+      logAudit({
+        action: "site.created",
+        resourceType: "site",
+        resourceId: data.id,
+        description: "Added site " + d,
+        metadata: { domain: d },
+      });
       onClose();
     }
   };
@@ -328,6 +336,13 @@ export default function SitesPage() {
     });
     if (!ok) return;
     await supabase.from("sites").delete().eq("id", id);
+    logAudit({
+      action: "site.deleted",
+      resourceType: "site",
+      resourceId: id,
+      description: "Removed site " + domain,
+      metadata: { domain: domain },
+    });
     setSites((p) => {
       var updated = p.filter((s) => s.id !== id);
       _sitesCache.data = updated;

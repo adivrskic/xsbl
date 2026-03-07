@@ -38,6 +38,8 @@ import SitesPage from "./pages/dashboard/SitesPage";
 import SiteDetailPage from "./pages/dashboard/SiteDetailPage";
 import SettingsPage from "./pages/dashboard/SettingsPage";
 import BillingPage from "./pages/dashboard/BillingPage";
+import AuditLogPage from "./pages/dashboard/AuditLogPage";
+import EvidenceExportPage from "./pages/dashboard/EvidenceExportPage";
 import OnboardingPage from "./pages/dashboard/OnboardingPage";
 
 function LandingPage() {
@@ -217,6 +219,8 @@ export default function App() {
                 <Route index element={<OverviewPage />} />
                 <Route path="sites" element={<SitesPage />} />
                 <Route path="sites/:id" element={<SiteDetailPage />} />
+                <Route path="audit-log" element={<AuditLogPage />} />
+                <Route path="evidence" element={<EvidenceExportPage />} />
                 <Route path="settings" element={<SettingsPage />} />
                 <Route path="billing" element={<BillingPage />} />
               </Route>
