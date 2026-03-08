@@ -4,6 +4,7 @@
 .sim-wrapper {
   position: relative;
   overflow: hidden;
+  transition: filter 0.4s ease;
 }
 
 .sim-glow {
@@ -204,7 +205,6 @@
   overflow: hidden;
   background: var(--card-bg);
   border: 1px solid var(--ink08);
-  transition: filter 0.4s ease;
 }
 
 .sim-site__nav {

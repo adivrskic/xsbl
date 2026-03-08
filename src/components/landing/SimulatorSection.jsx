@@ -43,18 +43,9 @@ var DEMO_MODES = [
 ];
 
 /* A fake "website" card to apply filters to */
-function DemoSite({ filter, t }) {
-  var filterStyle = filter ? { filter: filter } : {};
-
+function DemoSite({ t }) {
   return (
-    <div
-      className="sim-site"
-      style={filterStyle}
-      role="img"
-      aria-label={
-        "Website preview" + (filter ? " with vision simulation applied" : "")
-      }
-    >
+    <div className="sim-site" role="img" aria-label="Website preview">
       {/* Nav bar */}
       <div className="sim-site__nav">
         <div className="sim-site__dot" />
@@ -121,9 +112,20 @@ export default function SimulatorSection() {
     DEMO_MODES.find(function (m) {
       return m.id === active;
     }) || DEMO_MODES[0];
+  var sectionFilter = activeMode.color
+    ? { filter: activeMode.color, transition: "filter 0.4s ease" }
+    : { transition: "filter 0.4s ease" };
 
   return (
-    <div className="sim-wrapper">
+    <div
+      className="sim-wrapper"
+      style={sectionFilter}
+      aria-label={
+        activeMode.color
+          ? "Section simulating " + activeMode.name + " vision"
+          : undefined
+      }
+    >
       {/* Glow background — colors need theme vars inline */}
       <div
         className="sim-glow"
@@ -253,7 +255,7 @@ export default function SimulatorSection() {
               </div>
 
               {/* Demo site with filter */}
-              <DemoSite filter={activeMode.color} t={t} />
+              <DemoSite t={t} />
 
               {/* Active mode label */}
               <div className="sim-active-label" aria-live="polite">
