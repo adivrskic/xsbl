@@ -69,13 +69,13 @@ export default function VsSection() {
       </FadeIn>
 
       <div className="vs-columns">
-        <FadeIn delay={0} style={{ flex: 1, minWidth: 280, display: "flex" }}>
+        <FadeIn delay={0} className="vs-column-wrap">
           <VsColumn items={vsOverlay.bad} isBad />
         </FadeIn>
         <div className="vs-divider">
           <span className="vs-divider__text">vs.</span>
         </div>
-        <FadeIn delay={0.1} style={{ flex: 1, minWidth: 280, display: "flex" }}>
+        <FadeIn delay={0.1} className="vs-column-wrap">
           <VsColumn items={vsOverlay.good} isBad={false} />
         </FadeIn>
       </div>

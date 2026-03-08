@@ -43,6 +43,8 @@ import AuditLogPage from "./pages/dashboard/AuditLogPage";
 import EvidenceExportPage from "./pages/dashboard/EvidenceExportPage";
 import ElementTester from "./pages/dashboard/ElementTester";
 import OnboardingPage from "./pages/dashboard/OnboardingPage";
+import NotFoundPage from "./pages/NotFoundPage";
+import ErrorBoundary from "./components/ui/ErrorBoundary";
 
 function LandingPage() {
   return (
@@ -84,31 +86,49 @@ function PublicLayout({ children }) {
 }
 
 const PAGE_TITLES = {
-  "/": "xsbl | Make Your Web Accessible",
-  "/login": "Sign in | xsbl",
-  "/signup": "Sign up | xsbl",
-  "/reset-password": "Reset password | xsbl",
-  "/docs": "Documentation | xsbl",
-  "/blog": "Blog | xsbl",
-  "/contact": "Contact | xsbl",
-  "/dashboard": "Dashboard | xsbl",
-  "/dashboard/sites": "Sites | xsbl",
-  "/dashboard/settings": "Settings | xsbl",
-  "/dashboard/billing": "Billing | xsbl",
-  "/dashboard/onboarding": "Get started | xsbl",
+  "/": "xsbl — make your web accessible",
+  "/login": "Sign in — xsbl",
+  "/signup": "Sign up — xsbl",
+  "/reset-password": "Reset password — xsbl",
+  "/docs": "Documentation — xsbl",
+  "/blog": "Blog — xsbl",
+  "/contact": "Contact — xsbl",
+  "/dashboard": "Dashboard — xsbl",
+  "/dashboard/sites": "Sites — xsbl",
+  "/dashboard/settings": "Settings — xsbl",
+  "/dashboard/billing": "Billing — xsbl",
+  "/dashboard/onboarding": "Get started — xsbl",
+  "/dashboard/tester": "Element tester — xsbl",
+  "/dashboard/audit-log": "Audit log — xsbl",
+  "/dashboard/evidence": "Evidence export — xsbl",
 };
 
 function PageTitle() {
   const location = useLocation();
   useEffect(() => {
-    const path = location.pathname;
-    document.title =
-      PAGE_TITLES[path] ||
-      (path.startsWith("/dashboard/sites/")
-        ? "Site details — xsbl"
-        : path.startsWith("/blog/")
-        ? "Blog — xsbl"
-        : "xsbl — make your web accessible");
+    var path = location.pathname;
+    if (PAGE_TITLES[path]) {
+      document.title = PAGE_TITLES[path];
+    } else if (path.startsWith("/dashboard/sites/")) {
+      document.title = "Site details — xsbl";
+    } else if (path.startsWith("/blog/")) {
+      // Try to extract slug and find article title
+      var slug = path.replace("/blog/", "");
+      try {
+        var el = document.querySelector(".blog-article__title");
+        if (el && el.textContent) {
+          document.title = el.textContent + " — xsbl";
+        } else {
+          document.title = "Blog — xsbl";
+        }
+      } catch (e) {
+        document.title = "Blog — xsbl";
+      }
+    } else if (path.startsWith("/status/")) {
+      document.title = "Accessibility status — xsbl";
+    } else {
+      document.title = "xsbl — make your web accessible";
+    }
   }, [location.pathname]);
   return null;
 }
@@ -116,6 +136,18 @@ function PageTitle() {
 /* Scroll to #hash after navigation (e.g. /blog → /#pricing) */
 function ScrollToHash() {
   const location = useLocation();
+
+  // Scroll to top on route change (unless hash is present)
+  useEffect(
+    function () {
+      if (!location.hash) {
+        window.scrollTo(0, 0);
+      }
+    },
+    [location.pathname]
+  );
+
+  // Handle hash scrolling
   useEffect(
     function () {
       if (!location.hash) return;
@@ -156,90 +188,93 @@ export default function App() {
         transition: "background 0.4s, color 0.4s",
       }}
     >
-      <BrowserRouter>
-        <PageTitle />
-        <ScrollToHash />
-        <ToastProvider>
-          <ConfirmProvider>
-            <Routes>
-              {/* Public */}
-              <Route path="/" element={<LandingPage />} />
-              <Route path="/login" element={<LoginPage />} />
-              <Route path="/signup" element={<SignupPage />} />
-              <Route
-                path="/docs"
-                element={
-                  <PublicLayout>
-                    <DocsPage />
-                  </PublicLayout>
-                }
-              />
-              <Route
-                path="/blog"
-                element={
-                  <PublicLayout>
-                    <BlogPage />
-                  </PublicLayout>
-                }
-              />
-              <Route
-                path="/blog/:slug"
-                element={
-                  <PublicLayout>
-                    <BlogArticlePage />
-                  </PublicLayout>
-                }
-              />
-              <Route
-                path="/contact"
-                element={
-                  <PublicLayout>
-                    <ContactPage />
-                  </PublicLayout>
-                }
-              />
+      <ErrorBoundary>
+        <BrowserRouter>
+          <PageTitle />
+          <ScrollToHash />
+          <ToastProvider>
+            <ConfirmProvider>
+              <Routes>
+                {/* Public */}
+                <Route path="/" element={<LandingPage />} />
+                <Route path="/login" element={<LoginPage />} />
+                <Route path="/signup" element={<SignupPage />} />
+                <Route
+                  path="/docs"
+                  element={
+                    <PublicLayout>
+                      <DocsPage />
+                    </PublicLayout>
+                  }
+                />
+                <Route
+                  path="/blog"
+                  element={
+                    <PublicLayout>
+                      <BlogPage />
+                    </PublicLayout>
+                  }
+                />
+                <Route
+                  path="/blog/:slug"
+                  element={
+                    <PublicLayout>
+                      <BlogArticlePage />
+                    </PublicLayout>
+                  }
+                />
+                <Route
+                  path="/contact"
+                  element={
+                    <PublicLayout>
+                      <ContactPage />
+                    </PublicLayout>
+                  }
+                />
 
-              <Route
-                path="/status/:slug"
-                element={
-                  <PublicLayout>
-                    <StatusPage />
-                  </PublicLayout>
-                }
-              />
+                <Route
+                  path="/status/:slug"
+                  element={
+                    <PublicLayout>
+                      <StatusPage />
+                    </PublicLayout>
+                  }
+                />
 
-              {/* Onboarding */}
-              <Route
-                path="/dashboard/onboarding"
-                element={
-                  <AuthGuard>
-                    <OnboardingPage />
-                  </AuthGuard>
-                }
-              />
+                {/* Onboarding */}
+                <Route
+                  path="/dashboard/onboarding"
+                  element={
+                    <AuthGuard>
+                      <OnboardingPage />
+                    </AuthGuard>
+                  }
+                />
 
-              {/* Dashboard */}
-              <Route
-                path="/dashboard"
-                element={
-                  <AuthGuard>
-                    <DashboardLayout />
-                  </AuthGuard>
-                }
-              >
-                <Route index element={<OverviewPage />} />
-                <Route path="sites" element={<SitesPage />} />
-                <Route path="sites/:id" element={<SiteDetailPage />} />
-                <Route path="tester" element={<ElementTester />} />
-                <Route path="audit-log" element={<AuditLogPage />} />
-                <Route path="evidence" element={<EvidenceExportPage />} />
-                <Route path="settings" element={<SettingsPage />} />
-                <Route path="billing" element={<BillingPage />} />
-              </Route>
-            </Routes>
-          </ConfirmProvider>
-        </ToastProvider>
-      </BrowserRouter>
+                {/* Dashboard */}
+                <Route
+                  path="/dashboard"
+                  element={
+                    <AuthGuard>
+                      <DashboardLayout />
+                    </AuthGuard>
+                  }
+                >
+                  <Route index element={<OverviewPage />} />
+                  <Route path="sites" element={<SitesPage />} />
+                  <Route path="sites/:id" element={<SiteDetailPage />} />
+                  <Route path="tester" element={<ElementTester />} />
+                  <Route path="audit-log" element={<AuditLogPage />} />
+                  <Route path="evidence" element={<EvidenceExportPage />} />
+                  <Route path="settings" element={<SettingsPage />} />
+                  <Route path="billing" element={<BillingPage />} />
+                </Route>
+                <Route path="*" element={<NotFoundPage />} />
+              </Routes>
+            </ConfirmProvider>
+          </ToastProvider>
+        </BrowserRouter>
+      </ErrorBoundary>
     </div>
   );
 }

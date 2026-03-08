@@ -5,7 +5,7 @@ export default function Footer() {
   return (
     <footer className="footer">
       <span>xsbl · Accessibility scanning, powered by AI.</span>
-      <div className="footer__links">
+      <nav className="footer__links" aria-label="Footer navigation">
         {footerLinks.map(function (link) {
           return (
             <a key={link.label} href={link.href} className="nav-link">
@@ -13,7 +13,7 @@ export default function Footer() {
             </a>
           );
         })}
-      </div>
+      </nav>
     </footer>
   );
 }

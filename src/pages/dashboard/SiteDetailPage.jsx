@@ -3,7 +3,6 @@ import { useParams, Link, useNavigate } from "react-router-dom";
 import { useTheme } from "../../context/ThemeContext";
 import { useAuth } from "../../context/AuthContext";
 import { supabase } from "../../lib/supabase";
-import { invalidateSitesCache } from "./SitesPage";
 import {
   useKeyboardShortcuts,
   ShortcutHelpOverlay,
@@ -213,6 +212,7 @@ function ImpactBadge({ impact }) {
 /* ── Verify panel ── */
 function VerifyPanel({ site, onVerified }) {
   const { t } = useTheme();
+  const { session } = useAuth();
   const [method, setMethod] = useState("meta_tag");
   const [copied, setCopied] = useState(false);
   const [verifying, setVerifying] = useState(false);
@@ -245,9 +245,6 @@ function VerifyPanel({ site, onVerified }) {
     setVerifying(true);
     setResult(null);
     try {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
       const { data, error } = await supabase.functions.invoke("verify-site", {
         body: { site_id: site.id },
         headers: { Authorization: `Bearer ${session?.access_token}` },
@@ -282,7 +279,7 @@ function VerifyPanel({ site, onVerified }) {
         }}
       >
         <AlertTriangle size={16} color={t.amber} strokeWidth={2} />
-        <h3
+        <h2
           style={{
             fontFamily: "var(--serif)",
             fontSize: "1rem",
@@ -292,7 +289,7 @@ function VerifyPanel({ site, onVerified }) {
           }}
         >
           Verify ownership
-        </h3>
+        </h2>
       </div>
       <p
         style={{
@@ -1160,7 +1157,7 @@ function ScoreExplainerModal({ t, score, issues, scans, onClose }) {
         >
           <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
             <HelpCircle size={18} color={t.accent} strokeWidth={2} />
-            <h3
+            <h2
               style={{
                 fontFamily: "var(--serif)",
                 fontSize: "1.05rem",
@@ -1170,7 +1167,7 @@ function ScoreExplainerModal({ t, score, issues, scans, onClose }) {
               }}
             >
               How your score is calculated
-            </h3>
+            </h2>
           </div>
           <button
             onClick={onClose}
@@ -1244,7 +1241,7 @@ function ScoreExplainerModal({ t, score, issues, scans, onClose }) {
           {/* Per-page breakdown (if multi-page) */}
           {isMultiPage && (
             <div style={{ marginBottom: "1.2rem" }}>
-              <h4
+              <h3
                 style={{
                   fontSize: "0.82rem",
                   fontWeight: 700,
@@ -1253,7 +1250,7 @@ function ScoreExplainerModal({ t, score, issues, scans, onClose }) {
                 }}
               >
                 Per-page scores (averaged)
-              </h4>
+              </h3>
               <div
                 style={{
                   borderRadius: 8,
@@ -1375,7 +1372,7 @@ function ScoreExplainerModal({ t, score, issues, scans, onClose }) {
           )}
 
           {/* Deduction weights */}
-          <h4
+          <h3
             style={{
               fontSize: "0.82rem",
               fontWeight: 700,
@@ -1384,7 +1381,7 @@ function ScoreExplainerModal({ t, score, issues, scans, onClose }) {
             }}
           >
             Deduction weights (latest scan)
-          </h4>
+          </h3>
           <div
             style={{
               borderRadius: 8,
@@ -1508,7 +1505,7 @@ function ScoreExplainerModal({ t, score, issues, scans, onClose }) {
           {/* Top offending rules */}
           {topRules.length > 0 && (
             <div>
-              <h4
+              <h3
                 style={{
                   fontSize: "0.82rem",
                   fontWeight: 700,
@@ -1517,7 +1514,7 @@ function ScoreExplainerModal({ t, score, issues, scans, onClose }) {
                 }}
               >
                 Top issues affecting your score
-              </h4>
+              </h3>
               <div
                 style={{
                   display: "flex",
@@ -1638,7 +1635,7 @@ function ScoreExplainerModal({ t, score, issues, scans, onClose }) {
 /* ── Main page ── */
 export default function SiteDetailPage() {
   const { t } = useTheme();
-  const { session, org } = useAuth();
+  const { session, org, refreshSites } = useAuth();
   const { id } = useParams();
   const navigate = useNavigate();
   const [site, setSite] = useState(null);
@@ -1673,33 +1670,30 @@ export default function SiteDetailPage() {
         setLoading(false);
         return;
       }
-      const { data: s } = await supabase
-        .from("sites")
-        .select("*")
-        .eq("id", id)
-        .single();
-      setSite(s);
-      if (s) {
-        const { data: sc } = await supabase
+      // Parallel fetch — site, scans, and issues have no dependency on each other
+      var [siteRes, scansRes, issuesRes] = await Promise.all([
+        supabase.from("sites").select("*").eq("id", id).single(),
+        supabase
           .from("scans")
           .select("*")
           .eq("site_id", id)
           .order("created_at", { ascending: false })
-          .limit(50);
-        setScans(sc || []);
-        const { data: iss } = await supabase
+          .limit(50),
+        supabase
           .from("issues")
           .select("*")
           .eq("site_id", id)
           .order("created_at", { ascending: false })
-          .limit(500);
-        setIssues(iss || []);
-        cacheRef.current = {
-          id: id,
-          site: s,
-          scans: sc || [],
-          issues: iss || [],
-        };
+          .limit(500),
+      ]);
+      var s = siteRes.data;
+      var sc = scansRes.data || [];
+      var iss = issuesRes.data || [];
+      setSite(s);
+      setScans(sc);
+      setIssues(iss);
+      if (s) {
+        cacheRef.current = { id: id, site: s, scans: sc, issues: iss };
       }
       setLoading(false);
     },
@@ -1752,9 +1746,6 @@ export default function SiteDetailPage() {
     try {
       const body = { site_id: id };
       if (config.urls) body.urls = config.urls;
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
       const res = await supabase.functions.invoke("scan-site", {
         body,
         headers: { Authorization: `Bearer ${session?.access_token}` },
@@ -2186,6 +2177,8 @@ export default function SiteDetailPage() {
 
       {/* Tabs */}
       <div
+        role="tablist"
+        aria-label="Site sections"
         style={{
           display: "flex",
           gap: "0.15rem",
@@ -2196,6 +2189,10 @@ export default function SiteDetailPage() {
         {tabDefs.map(({ id: tid, label }) => (
           <button
             key={tid}
+            role="tab"
+            aria-selected={tab === tid}
+            aria-controls={"tabpanel-" + tid}
+            id={"tab-" + tid}
             onClick={() => setTab(tid)}
             style={{
               padding: "0.55rem 0.9rem",
@@ -2231,7 +2228,7 @@ export default function SiteDetailPage() {
               });
             }
             /* Invalidate the sites list cache so SitesPage shows verified too */
-            invalidateSitesCache();
+            refreshSites();
             /* Force a background reload to sync everything from DB */
             loadData(true);
           }}
@@ -2240,7 +2237,11 @@ export default function SiteDetailPage() {
 
       {/* ── Overview ── */}
       {tab === "overview" && (
-        <div>
+        <div
+          role="tabpanel"
+          id="tabpanel-overview"
+          aria-labelledby="tab-overview"
+        >
           {/* ── Scan panel (hidden for client users) ── */}
           {!isClient && (
             <div
@@ -2262,7 +2263,7 @@ export default function SiteDetailPage() {
                 }}
               >
                 <div>
-                  <h3
+                  <h2
                     style={{
                       fontFamily: "var(--serif)",
                       fontSize: "1rem",
@@ -2272,7 +2273,7 @@ export default function SiteDetailPage() {
                     }}
                   >
                     Run a scan
-                  </h3>
+                  </h2>
                   <p
                     style={{
                       fontFamily: "var(--body)",
@@ -2395,50 +2396,54 @@ export default function SiteDetailPage() {
               </div>
 
               {/* Progress + error below buttons */}
-              {scanProgress && (
-                <div
-                  style={{
-                    marginTop: "0.8rem",
-                    padding: "0.5rem 0.8rem",
-                    borderRadius: 8,
-                    background: t.cardBg,
-                    border: "1px solid " + t.ink08,
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "0.5rem",
-                    fontFamily: "var(--mono)",
-                    fontSize: "0.75rem",
-                    color: t.accent,
-                  }}
-                >
-                  <Loader2 size={13} className="xsbl-spin" />
-                  {scanProgress}
-                </div>
-              )}
-              {scanError && (
-                <div
-                  style={{
-                    marginTop: "0.6rem",
-                    padding: "0.55rem 0.9rem",
-                    borderRadius: 8,
-                    background: t.red + "08",
-                    border: "1px solid " + t.red + "20",
-                    color: t.red,
-                    fontSize: "0.82rem",
-                    lineHeight: 1.5,
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "0.4rem",
-                  }}
-                >
-                  <AlertTriangle
-                    size={14}
-                    strokeWidth={2}
-                    style={{ flexShrink: 0 }}
-                  />
-                  {scanError}
-                </div>
-              )}
+              <div aria-live="polite" aria-atomic="true">
+                {scanProgress && (
+                  <div
+                    style={{
+                      marginTop: "0.8rem",
+                      padding: "0.5rem 0.8rem",
+                      borderRadius: 8,
+                      background: t.cardBg,
+                      border: "1px solid " + t.ink08,
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "0.5rem",
+                      fontFamily: "var(--mono)",
+                      fontSize: "0.75rem",
+                      color: t.accent,
+                    }}
+                  >
+                    <Loader2 size={13} className="xsbl-spin" />
+                    {scanProgress}
+                  </div>
+                )}
+                {scanError && (
+                  <div
+                    role="alert"
+                    style={{
+                      marginTop: "0.6rem",
+                      padding: "0.55rem 0.9rem",
+                      borderRadius: 8,
+                      background: t.red + "08",
+                      border: "1px solid " + t.red + "20",
+                      color: t.red,
+                      fontSize: "0.82rem",
+                      lineHeight: 1.5,
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "0.4rem",
+                    }}
+                  >
+                    <AlertTriangle
+                      size={14}
+                      strokeWidth={2}
+                      style={{ flexShrink: 0 }}
+                    />
+                    {scanError}
+                  </div>
+                )}
+              </div>
+              {/* end aria-live */}
             </div>
           )}
 
@@ -2639,7 +2644,7 @@ export default function SiteDetailPage() {
 
       {/* ── Issues ── */}
       {tab === "issues" && (
-        <div>
+        <div role="tabpanel" id="tabpanel-issues" aria-labelledby="tab-issues">
           <div
             style={{
               display: "flex",
@@ -3492,118 +3497,129 @@ export default function SiteDetailPage() {
         </div>
       )}
       {/* ── Scans ── */}
-      {tab === "scans" &&
-        (scans.length === 0 ? (
-          <div
-            style={{
-              padding: "3rem",
-              textAlign: "center",
-              border: `1px dashed ${t.ink20}`,
-              borderRadius: 12,
-            }}
-          >
-            <p style={{ color: t.ink50 }}>No scans yet.</p>
-          </div>
-        ) : (
-          <div
-            style={{ display: "flex", flexDirection: "column", gap: "0.4rem" }}
-          >
-            {scans.map((scan) => (
-              <div
-                key={scan.id}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  padding: "0.85rem 1.1rem",
-                  borderRadius: 8,
-                  border: `1px solid ${t.ink08}`,
-                  background: t.cardBg,
-                }}
-              >
-                <div>
-                  <div
-                    style={{
-                      fontSize: "0.84rem",
-                      fontWeight: 500,
-                      color: t.ink,
-                    }}
-                  >
-                    {new Date(scan.created_at).toLocaleString()}
-                  </div>
-                  <div
-                    style={{
-                      fontFamily: "var(--mono)",
-                      fontSize: "0.68rem",
-                      color: t.ink50,
-                    }}
-                  >
-                    {scan.pages_scanned || 0} page
-                    {(scan.pages_scanned || 0) !== 1 ? "s" : ""} ·{" "}
-                    {scan.issues_found || 0} issue
-                    {(scan.issues_found || 0) !== 1 ? "s" : ""}
-                  </div>
-                </div>
+      {tab === "scans" && (
+        <div role="tabpanel" id="tabpanel-scans" aria-labelledby="tab-scans">
+          {scans.length === 0 ? (
+            <div
+              style={{
+                padding: "3rem",
+                textAlign: "center",
+                border: `1px dashed ${t.ink20}`,
+                borderRadius: 12,
+              }}
+            >
+              <p style={{ color: t.ink50 }}>No scans yet.</p>
+            </div>
+          ) : (
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: "0.4rem",
+              }}
+            >
+              {scans.map((scan) => (
                 <div
+                  key={scan.id}
                   style={{
                     display: "flex",
                     alignItems: "center",
-                    gap: "0.7rem",
+                    justifyContent: "space-between",
+                    padding: "0.85rem 1.1rem",
+                    borderRadius: 8,
+                    border: `1px solid ${t.ink08}`,
+                    background: t.cardBg,
                   }}
                 >
-                  {scan.score != null && (
+                  <div>
+                    <div
+                      style={{
+                        fontSize: "0.84rem",
+                        fontWeight: 500,
+                        color: t.ink,
+                      }}
+                    >
+                      {new Date(scan.created_at).toLocaleString()}
+                    </div>
+                    <div
+                      style={{
+                        fontFamily: "var(--mono)",
+                        fontSize: "0.68rem",
+                        color: t.ink50,
+                      }}
+                    >
+                      {scan.pages_scanned || 0} page
+                      {(scan.pages_scanned || 0) !== 1 ? "s" : ""} ·{" "}
+                      {scan.issues_found || 0} issue
+                      {(scan.issues_found || 0) !== 1 ? "s" : ""}
+                    </div>
+                  </div>
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "0.7rem",
+                    }}
+                  >
+                    {scan.score != null && (
+                      <span
+                        style={{
+                          fontFamily: "var(--mono)",
+                          fontSize: "0.88rem",
+                          fontWeight: 700,
+                          color:
+                            scan.score >= 80
+                              ? t.green
+                              : scan.score >= 50
+                              ? t.amber
+                              : t.red,
+                        }}
+                      >
+                        {Math.round(scan.score)}
+                      </span>
+                    )}
                     <span
                       style={{
                         fontFamily: "var(--mono)",
-                        fontSize: "0.88rem",
-                        fontWeight: 700,
+                        fontSize: "0.62rem",
+                        padding: "0.18rem 0.45rem",
+                        borderRadius: 4,
+                        fontWeight: 600,
+                        background:
+                          scan.status === "complete"
+                            ? t.greenBg
+                            : scan.status === "failed"
+                            ? `${t.red}12`
+                            : scan.status === "running"
+                            ? t.accentBg
+                            : t.ink04,
                         color:
-                          scan.score >= 80
+                          scan.status === "complete"
                             ? t.green
-                            : scan.score >= 50
-                            ? t.amber
-                            : t.red,
+                            : scan.status === "failed"
+                            ? t.red
+                            : scan.status === "running"
+                            ? t.accent
+                            : t.ink50,
                       }}
                     >
-                      {Math.round(scan.score)}
+                      {scan.status}
                     </span>
-                  )}
-                  <span
-                    style={{
-                      fontFamily: "var(--mono)",
-                      fontSize: "0.62rem",
-                      padding: "0.18rem 0.45rem",
-                      borderRadius: 4,
-                      fontWeight: 600,
-                      background:
-                        scan.status === "complete"
-                          ? t.greenBg
-                          : scan.status === "failed"
-                          ? `${t.red}12`
-                          : scan.status === "running"
-                          ? t.accentBg
-                          : t.ink04,
-                      color:
-                        scan.status === "complete"
-                          ? t.green
-                          : scan.status === "failed"
-                          ? t.red
-                          : scan.status === "running"
-                          ? t.accent
-                          : t.ink50,
-                    }}
-                  >
-                    {scan.status}
-                  </span>
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        ))}
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* ── Settings ── */}
       {tab === "settings" && (
-        <div>
+        <div
+          role="tabpanel"
+          id="tabpanel-settings"
+          aria-labelledby="tab-settings"
+        >
           {/* Scan Schedule */}
           <SchedulePicker
             site={site}

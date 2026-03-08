@@ -303,3 +303,18 @@
   color: var(--accent);
   text-decoration: none;
 }
+
+/* ── FOCUS VISIBLE ── */
+.dash-btn-sm:focus-visible,
+.dash-btn-sm--accent:focus-visible,
+.dash-btn-sm--green:focus-visible,
+.dash-btn-sm--red:focus-visible,
+.dash-modal-close:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.dash-schedule-opt:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}

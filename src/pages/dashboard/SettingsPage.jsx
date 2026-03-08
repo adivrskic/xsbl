@@ -66,6 +66,7 @@ function EditableField({ label, value, onSave, placeholder }) {
       {editing ? (
         <div style={{ display: "flex", gap: "0.4rem", alignItems: "center" }}>
           <input
+            aria-label={placeholder || "Edit value"}
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
             placeholder={placeholder}
@@ -364,6 +365,7 @@ function InviteForm({ orgId, onInvited }) {
         <div style={{ flex: 1, minWidth: 180 }}>
           <input
             type="email"
+            aria-label="Email address to invite"
             value={email}
             onChange={function (e) {
               setEmail(e.target.value);
@@ -609,6 +611,7 @@ function ClientAccessPanel({ org }) {
           Invite a client
         </div>
         <input
+          aria-label="Client email to invite"
           value={inviteEmail}
           onChange={function (e) {
             setInviteEmail(e.target.value);
@@ -991,6 +994,7 @@ function ApiKeysPanel({ org }) {
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
             <input
+              aria-label="API key value"
               value={revealedKey.key}
               readOnly
               style={{
@@ -1040,6 +1044,7 @@ function ApiKeysPanel({ org }) {
           }}
         >
           <input
+            aria-label="API key name"
             value={newKeyName}
             onChange={function (e) {
               setNewKeyName(e.target.value);
@@ -1409,6 +1414,7 @@ function ScheduledReports({ org }) {
           Recipient emails (comma-separated)
         </label>
         <input
+          aria-label="Report recipient email addresses"
           value={emails}
           onChange={function (e) {
             setEmails(e.target.value);
@@ -1441,6 +1447,7 @@ function ScheduledReports({ org }) {
         >
           <input
             type="checkbox"
+            aria-label="Enable white-label branding"
             checked={whiteLabel}
             onChange={function () {
               setWhiteLabel(!whiteLabel);
@@ -1453,6 +1460,7 @@ function ScheduledReports({ org }) {
         </label>
         {whiteLabel && (
           <input
+            aria-label="Company name for white-label reports"
             value={companyName}
             onChange={function (e) {
               setCompanyName(e.target.value);
@@ -1616,6 +1624,7 @@ function AlertIntegrations({ org }) {
         </label>
         <div style={{ display: "flex", gap: "0.4rem" }}>
           <input
+            aria-label="Slack webhook URL"
             value={slackUrl}
             onChange={function (e) {
               setSlackUrl(e.target.value);
@@ -1695,6 +1704,7 @@ function AlertIntegrations({ org }) {
           Email Alerts (comma separated)
         </label>
         <input
+          aria-label="Email addresses for alerts"
           value={emails}
           onChange={function (e) {
             setEmails(e.target.value);
@@ -1996,6 +2006,8 @@ export default function SettingsPage() {
 
       {/* Tab bar */}
       <div
+        role="tablist"
+        aria-label="Settings sections"
         style={{
           display: "flex",
           gap: "0.2rem",
@@ -2012,6 +2024,8 @@ export default function SettingsPage() {
           return (
             <button
               key={tab.id}
+              role="tab"
+              aria-selected={active}
               onClick={function () {
                 setSettingsTab(tab.id);
               }}
@@ -2309,6 +2323,7 @@ export default function SettingsPage() {
                 >
                   <input
                     type="checkbox"
+                    aria-label="Enable public status page"
                     checked={!!org.status_page_enabled}
                     onChange={async function (e) {
                       var enabled = e.target.checked;

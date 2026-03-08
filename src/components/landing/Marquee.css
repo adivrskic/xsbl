@@ -32,3 +32,13 @@
   border-radius: 50%;
   background: var(--accent-light);
 }
+
+@media (prefers-reduced-motion: reduce) {
+  .marquee__track {
+    animation: none;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 1.5rem;
+    padding: 0 1rem;
+  }
+}

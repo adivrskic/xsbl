@@ -194,3 +194,12 @@
   align-items: center;
   gap: 0.3rem;
 }
+
+/* ── FOCUS VISIBLE ── */
+.dash-stat-card:focus-visible,
+.dash-tab-btn:focus-visible,
+.dash-filter-btn:focus-visible,
+.dash-issue-row:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}

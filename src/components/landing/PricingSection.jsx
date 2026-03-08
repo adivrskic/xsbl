@@ -1,46 +1,10 @@
 import { pricingPlans } from "../../data/content";
-import { useAuth } from "../../context/AuthContext";
 import FadeIn from "./FadeIn";
 import Section from "./Section";
 import { Eyebrow, H2, SubText, Italic } from "./Typography";
 import "./PricingSection.css";
 
-var PLAN_ORDER = ["free", "starter", "pro", "agency"];
-
-function PriceCard({
-  tier,
-  price,
-  blurb,
-  features,
-  popular,
-  cta,
-  delay,
-  user,
-  currentPlan,
-}) {
-  var planKey = tier.toLowerCase();
-  var isCurrent = user && currentPlan === planKey;
-  var currentIdx = PLAN_ORDER.indexOf(currentPlan);
-  var targetIdx = PLAN_ORDER.indexOf(planKey);
-  var isUpgrade = targetIdx > currentIdx;
-  var isDowngrade = targetIdx < currentIdx;
-
-  var href = "/signup";
-  var label = cta;
-
-  if (user) {
-    if (isCurrent) {
-      href = "/dashboard";
-      label = "Current plan";
-    } else if (isUpgrade) {
-      href = "/dashboard/billing";
-      label = "Upgrade to " + tier;
-    } else if (isDowngrade) {
-      href = "/dashboard/billing";
-      label = "Manage plan";
-    }
-  }
-
+function PriceCard({ tier, price, blurb, features, popular, cta, delay }) {
   return (
     <FadeIn delay={delay}>
       <div className={"price-card" + (popular ? " price-card--popular" : "")}>
@@ -48,7 +12,7 @@ function PriceCard({
           <span className="price-card__popular-badge">Most popular</span>
         )}
 
-        <div className="price-card__tier">{tier}</div>
+        <h3 className="price-card__tier">{tier}</h3>
 
         <div className="price-card__price">
           {price === 0 ? "Free" : `$${price}`}
@@ -65,20 +29,8 @@ function PriceCard({
           ))}
         </ul>
 
-        <a
-          href={href}
-          className={
-            "price-card__cta" + (isCurrent ? " price-card__cta--current" : "")
-          }
-          style={
-            isCurrent
-              ? { opacity: 0.6, pointerEvents: "none" }
-              : isDowngrade
-              ? { opacity: 0.5 }
-              : undefined
-          }
-        >
-          {label}
+        <a href="/signup" className="price-card__cta">
+          {cta}
         </a>
       </div>
     </FadeIn>
@@ -86,9 +38,6 @@ function PriceCard({
 }
 
 export default function PricingSection() {
-  var { user, org } = useAuth();
-  var currentPlan = org?.plan || "free";
-
   return (
     <Section id="pricing">
       <FadeIn>
@@ -105,13 +54,7 @@ export default function PricingSection() {
 
       <div className="grid-1-mobile pricing-grid">
         {pricingPlans.map((plan, i) => (
-          <PriceCard
-            key={i}
-            {...plan}
-            delay={i * 0.06}
-            user={user}
-            currentPlan={currentPlan}
-          />
+          <PriceCard key={i} {...plan} delay={i * 0.06} />
         ))}
       </div>
     </Section>
