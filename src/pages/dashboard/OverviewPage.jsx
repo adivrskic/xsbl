@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { useTheme } from "../../context/ThemeContext";
 import { useAuth } from "../../context/AuthContext";
 import { Plus, AlertTriangle } from "lucide-react";
+import IssueTrendsChart from "../../components/dashboard/IssueTrendsChart";
 import "../../styles/dashboard.css";
 import "../../styles/dashboard-pages.css";
 
@@ -24,6 +25,7 @@ function Stat({ label, value, sub, accent }) {
 export default function OverviewPage() {
   const { t } = useTheme();
   const { org, usage, sites, loading, fetchUsage, fetchSites } = useAuth();
+  var isClient = org?.role === "client";
 
   useEffect(() => {
     if (org) {
@@ -42,8 +44,9 @@ export default function OverviewPage() {
         )
       : null;
 
-  var nearLimit = usage && usage.scans_used >= usage.scans_limit * 0.8;
-  var atLimit = usage && usage.scans_used >= usage.scans_limit;
+  var nearLimit =
+    !isClient && usage && usage.scans_used >= usage.scans_limit * 0.8;
+  var atLimit = !isClient && usage && usage.scans_used >= usage.scans_limit;
 
   return (
     <div>
@@ -52,9 +55,11 @@ export default function OverviewPage() {
           <h1 className="dash-page-title">Dashboard</h1>
           <p className="dash-page-subtitle">Your accessibility overview.</p>
         </div>
-        <Link to="/dashboard/sites?add=true" className="dash-add-btn">
-          <Plus size={15} strokeWidth={2.5} /> Add site
-        </Link>
+        {!isClient && (
+          <Link to="/dashboard/sites?add=true" className="dash-add-btn">
+            <Plus size={15} strokeWidth={2.5} /> Add site
+          </Link>
+        )}
       </div>
 
       {nearLimit && (
@@ -187,18 +192,27 @@ export default function OverviewPage() {
             />
           </div>
 
+          {/* Issue trends chart */}
+          {!isClient && <IssueTrendsChart />}
+
           <h2 className="dash-section-title">Your sites</h2>
 
           {siteList.length === 0 ? (
             <div className="dash-empty">
-              <p className="dash-empty__text">No sites added yet.</p>
-              <Link
-                to="/dashboard/sites?add=true"
-                className="dash-accent-link"
-                style={{ fontWeight: 600, fontSize: "0.88rem" }}
-              >
-                Add a site
-              </Link>
+              <p className="dash-empty__text">
+                {isClient
+                  ? "No sites have been shared with you yet."
+                  : "No sites added yet."}
+              </p>
+              {!isClient && (
+                <Link
+                  to="/dashboard/sites?add=true"
+                  className="dash-accent-link"
+                  style={{ fontWeight: 600, fontSize: "0.88rem" }}
+                >
+                  Add a site
+                </Link>
+              )}
             </div>
           ) : (
             <div

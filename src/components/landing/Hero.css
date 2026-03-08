@@ -50,7 +50,6 @@
 
   span {
     display: flex;
-    align-items: center;
   }
 }
 
@@ -84,6 +83,11 @@
 
 .hero__input:focus {
   border-color: var(--accent);
+}
+
+.hero__input:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 .hero__input:disabled {

@@ -24,26 +24,41 @@ import {
   Sparkles,
   Shield,
   Package,
+  Code,
 } from "lucide-react";
 import XsblBull from "../../components/landing/XsblBull";
+import HelpSearch from "../../components/ui/HelpSearch";
 
 const navItems = [
   { label: "Overview", path: "/dashboard", icon: LayoutDashboard, end: true },
   { label: "Sites", path: "/dashboard/sites", icon: Globe },
+  { label: "Element Tester", path: "/dashboard/tester", icon: Code },
   {
     label: "Audit Log",
     path: "/dashboard/audit-log",
     icon: Shield,
     plans: ["agency"],
+    hideForClient: true,
   },
   {
     label: "Evidence Export",
     path: "/dashboard/evidence",
     icon: Package,
     plans: ["agency"],
+    hideForClient: true,
   },
-  { label: "Settings", path: "/dashboard/settings", icon: Settings },
-  { label: "Billing", path: "/dashboard/billing", icon: CreditCard },
+  {
+    label: "Settings",
+    path: "/dashboard/settings",
+    icon: Settings,
+    hideForClient: true,
+  },
+  {
+    label: "Billing",
+    path: "/dashboard/billing",
+    icon: CreditCard,
+    hideForClient: true,
+  },
 ];
 
 /* ── Feedback Modal ── */
@@ -78,9 +93,7 @@ function FeedbackModal({ onClose, t, user }) {
             message: message.trim(),
             page_url: window.location.href,
           }),
-        }).catch(function () {
-          /* email is best-effort — don't block the UI */
-        });
+        }).catch(function () {});
       }
 
       setSent(true);
@@ -449,6 +462,7 @@ export default function DashboardLayout() {
         >
           {navItems
             .filter(function (item) {
+              if (item.hideForClient && org?.role === "client") return false;
               if (!item.plans) return true;
               return item.plans.indexOf(org?.plan || "free") !== -1;
             })
@@ -481,6 +495,9 @@ export default function DashboardLayout() {
 
         {/* User footer with links + feedback */}
         <div style={{ padding: "0.6rem", borderTop: `1px solid ${t.ink08}` }}>
+          {/* Help search */}
+          <HelpSearch />
+
           {/* Quick links */}
           <div
             style={{

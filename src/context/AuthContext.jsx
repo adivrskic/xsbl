@@ -30,7 +30,7 @@ export function AuthProvider({ children }) {
       var { data, error } = await supabase
         .from("org_members")
         .select(
-          "org_id, role, organizations(id, name, slug, plan, onboarding_complete, plan_limits)"
+          "org_id, role, organizations(id, name, slug, plan, onboarding_complete, plan_limits, status_page_enabled)"
         )
         .eq("user_id", userId)
         .order("role", { ascending: true })
@@ -74,19 +74,37 @@ export function AuthProvider({ children }) {
     return null;
   }, []);
 
-  const fetchSites = useCallback(async (orgId, force) => {
+  const fetchSites = useCallback(async (orgId, force, role) => {
     var now = Date.now();
     if (!force && now - lastFetch.current.sites < CACHE_TTL && sites)
       return sites;
 
     if (!orgId) return null;
     try {
-      var { data } = await supabase
-        .from("sites")
-        .select("id, domain, display_name, score, verified, last_scan_at")
-        .eq("org_id", orgId)
-        .order("created_at", { ascending: false });
-      var result = data || [];
+      var result = [];
+      if (role === "client") {
+        // Clients: only fetch sites they have explicit access to
+        var { data: accessData } = await supabase
+          .from("client_site_access")
+          .select(
+            "site_id, sites(id, domain, display_name, score, verified, last_scan_at)"
+          )
+          .eq("org_id", orgId);
+        result = (accessData || [])
+          .filter(function (a) {
+            return a.sites;
+          })
+          .map(function (a) {
+            return a.sites;
+          });
+      } else {
+        var { data } = await supabase
+          .from("sites")
+          .select("id, domain, display_name, score, verified, last_scan_at")
+          .eq("org_id", orgId)
+          .order("created_at", { ascending: false });
+        result = data || [];
+      }
       setSites(result);
       lastFetch.current.sites = now;
       return result;
@@ -105,7 +123,7 @@ export function AuthProvider({ children }) {
         fetchOrg(s.user.id, true).then(function (orgData) {
           if (orgData) {
             fetchUsage(true);
-            fetchSites(orgData.id, true);
+            fetchSites(orgData.id, true, orgData.role);
           }
         });
       }
@@ -121,7 +139,7 @@ export function AuthProvider({ children }) {
         fetchOrg(s.user.id, true).then(function (orgData) {
           if (orgData) {
             fetchUsage(true);
-            fetchSites(orgData.id, true);
+            fetchSites(orgData.id, true, orgData.role);
           }
         });
       } else {
@@ -189,14 +207,14 @@ export function AuthProvider({ children }) {
     return fetchUsage(true);
   };
   const refreshSites = function () {
-    if (org) return fetchSites(org.id, true);
+    if (org) return fetchSites(org.id, true, org.role);
   };
   const refreshAll = function () {
     if (user) {
       fetchOrg(user.id, true).then(function (o) {
         if (o) {
           fetchUsage(true);
-          fetchSites(o.id, true);
+          fetchSites(o.id, true, o.role);
         }
       });
     }

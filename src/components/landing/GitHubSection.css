@@ -1,5 +1,14 @@
 /* GitHubSection.css */
-@keyframes bullFloat {
+@keyframes gh-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes gh-bull-float {
   0%,
   100% {
     transform: translateY(0);
@@ -9,11 +18,19 @@
   }
 }
 
+/* ── Layout ── */
 .gh-layout {
   display: grid;
   grid-template-columns: 1fr 420px;
   gap: 3.5rem;
   align-items: center;
+}
+
+@media (max-width: 900px) {
+  .gh-layout {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
 }
 
 .gh-features {
@@ -29,7 +46,6 @@
 }
 
 .gh-feat__icon {
-  font-size: 0.9rem;
   width: 32px;
   height: 32px;
   display: flex;
@@ -54,28 +70,16 @@
   margin: 0;
 }
 
-/* PR Demo */
-.pr-demo {
-  position: relative;
-}
-
-.pr-demo__bull {
-  position: absolute;
-  top: -40px;
-  right: 20px;
-  z-index: 3;
-  animation: bullFloat 3s ease-in-out infinite;
-}
-
-.pr-card {
-  background: var(--code-bg);
+/* ── Card shell ── */
+.gh-card {
+  background: var(--code-bg, #1a1714);
   border-radius: 14px;
   overflow: hidden;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.03), 0 12px 32px rgba(0, 0, 0, 0.1),
     0 32px 64px rgba(0, 0, 0, 0.08);
 }
 
-.pr-card__bar {
+.gh-card__bar {
   padding: 0.75rem 1rem;
   display: flex;
   align-items: center;
@@ -84,13 +88,18 @@
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
-.pr-card__dot {
+.gh-card__dots {
+  display: flex;
+  gap: 5px;
+}
+
+.gh-card__dot {
   width: 9px;
   height: 9px;
   border-radius: 50%;
 }
 
-.pr-card__bar-title {
+.gh-card__bar-title {
   flex: 1;
   text-align: center;
   font-family: var(--mono);
@@ -98,18 +107,309 @@
   color: rgba(255, 255, 255, 0.2);
 }
 
-.pr-card__body {
+.gh-card__body {
   padding: 1.2rem 1.4rem;
 }
 
-.pr-card__title-row {
+/* ── Impact badge ── */
+.gh-impact {
+  font-family: var(--mono);
+  font-size: 0.52rem;
+  font-weight: 600;
+  padding: 0.08rem 0.25rem;
+  border-radius: 3px;
+  text-transform: uppercase;
+}
+
+.gh-impact--critical,
+.gh-impact--serious {
+  background: rgba(224, 85, 69, 0.12);
+  color: #e05545;
+}
+
+.gh-impact--moderate {
+  background: rgba(180, 83, 9, 0.1);
+  color: var(--amber, #b45309);
+}
+
+/* ── Scan card ── */
+.gh-scan__header {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 1rem;
+}
+
+.gh-scan__score-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(224, 85, 69, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.gh-scan__title {
+  font-family: var(--mono);
+  font-size: 0.82rem;
+  color: #e6edf3;
+  font-weight: 600;
+}
+
+.gh-scan__sub {
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  color: rgba(255, 255, 255, 0.3);
+}
+
+.gh-scan__list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.gh-scan__row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.5rem;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.gh-scan__rule {
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  color: #8b949e;
+  flex: 1;
+}
+
+.gh-scan__count {
+  font-family: var(--mono);
+  font-size: 0.58rem;
+  color: rgba(255, 255, 255, 0.18);
+}
+
+.gh-scan__summary {
+  margin-top: 0.9rem;
+  display: flex;
+  gap: 0.5rem;
+  font-family: var(--mono);
+  font-size: 0.58rem;
+  color: rgba(255, 255, 255, 0.25);
+}
+
+.gh-scan__summary-critical {
+  color: #e05545;
+}
+
+/* ── Select card ── */
+.gh-select__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.8rem;
+}
+
+.gh-select__title {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  color: #e6edf3;
+  font-weight: 600;
+}
+
+.gh-select__badge {
+  font-family: var(--mono);
+  font-size: 0.56rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  background: var(--accent-18, rgba(67, 56, 240, 0.1));
+  color: var(--accent-light, var(--accent));
+  cursor: default;
+}
+
+.gh-select__list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.gh-select__row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.5rem;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  transition: all 0.2s;
+}
+
+.gh-select__row--on {
+  background: var(--accent-0a, rgba(67, 56, 240, 0.04));
+  border-color: var(--accent-30, rgba(67, 56, 240, 0.19));
+}
+
+.gh-select__check {
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  border: 1.5px solid rgba(255, 255, 255, 0.15);
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.gh-select__check--on {
+  border-color: var(--accent);
+  background: var(--accent);
+}
+
+.gh-select__rule {
+  font-family: var(--mono);
+  font-size: 0.66rem;
+  color: #8b949e;
+  flex: 1;
+}
+
+.gh-select__rule--on {
+  color: #e6edf3;
+}
+
+.gh-select__count {
+  color: rgba(255, 255, 255, 0.15);
+}
+
+.gh-select__footer {
+  margin-top: 0.9rem;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.gh-select__btn {
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  font-weight: 600;
+  padding: 0.35rem 0.9rem;
+  border-radius: 6px;
+  background: var(--accent);
+  color: white;
+  cursor: default;
+}
+
+/* ── Generate card ── */
+.gh-gen__header {
   display: flex;
   align-items: center;
   gap: 0.5rem;
   margin-bottom: 0.8rem;
 }
 
-.pr-card__badge-open {
+.gh-gen__spinner {
+  display: inline-flex;
+  animation: gh-spin 1.2s linear infinite;
+}
+
+.gh-gen__title {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  color: #e6edf3;
+  font-weight: 600;
+}
+
+.gh-gen__tabs {
+  display: flex;
+  gap: 0;
+  margin-bottom: 0.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.gh-gen__tab {
+  font-family: var(--mono);
+  font-size: 0.58rem;
+  padding: 0.35rem 0.7rem;
+  color: rgba(255, 255, 255, 0.3);
+  border-bottom: 2px solid transparent;
+  cursor: default;
+}
+
+.gh-gen__tab--active {
+  color: #e6edf3;
+  border-bottom-color: var(--accent);
+}
+
+.gh-gen__diff {
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  line-height: 1.85;
+  background: rgba(0, 0, 0, 0.25);
+  border-radius: 6px;
+  padding: 0.6rem 0;
+  overflow: hidden;
+}
+
+.gh-gen__diff-line {
+  padding: 0 0.7rem;
+  display: flex;
+  gap: 0.6rem;
+  white-space: pre;
+}
+
+.gh-gen__diff-line--remove {
+  background: rgba(248, 81, 73, 0.1);
+}
+
+.gh-gen__diff-line--add {
+  background: rgba(63, 185, 80, 0.1);
+}
+
+.gh-gen__diff-prefix {
+  width: 10px;
+  flex-shrink: 0;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.12);
+}
+
+.gh-gen__diff-prefix--remove {
+  color: #f85149;
+}
+
+.gh-gen__diff-prefix--add {
+  color: #3fb950;
+}
+
+.gh-gen__diff-text--context {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.gh-gen__diff-text--remove {
+  color: #f85149;
+}
+
+.gh-gen__diff-text--add {
+  color: #3fb950;
+}
+
+.gh-gen__status {
+  margin-top: 0.7rem;
+  font-family: var(--mono);
+  font-size: 0.56rem;
+  color: rgba(255, 255, 255, 0.2);
+}
+
+/* ── PR card ── */
+.gh-pr__header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.8rem;
+}
+
+.gh-pr__badge {
   font-family: var(--mono);
   font-size: 0.6rem;
   font-weight: 600;
@@ -119,71 +419,56 @@
   color: white;
 }
 
-.pr-card__pr-name {
+.gh-pr__title {
   font-family: var(--mono);
   font-size: 0.82rem;
   color: #e6edf3;
   font-weight: 600;
 }
 
-.pr-card__meta {
+.gh-pr__meta {
   font-family: var(--mono);
   font-size: 0.62rem;
   color: rgba(255, 255, 255, 0.3);
   margin-bottom: 1rem;
 }
 
-.pr-card__branch {
+.gh-pr__branch {
   padding: 0.1rem 0.3rem;
   border-radius: 3px;
   background: rgba(255, 255, 255, 0.06);
   color: rgba(255, 255, 255, 0.5);
 }
 
-.pr-card__issues {
-  border-left: 2px solid color-mix(in srgb, var(--accent) 25%, transparent);
+.gh-pr__issues {
+  border-left: 2px solid var(--accent-40, rgba(67, 56, 240, 0.25));
   padding-left: 0.8rem;
   margin-bottom: 0.8rem;
 }
 
-.pr-card__issue-row {
+.gh-pr__issue-row {
   display: flex;
   align-items: center;
   gap: 0.4rem;
   margin-bottom: 0.3rem;
 }
 
-.pr-card__impact-badge {
-  font-family: var(--mono);
-  font-size: 0.52rem;
-  font-weight: 600;
-  padding: 0.08rem 0.25rem;
-  border-radius: 3px;
-  text-transform: uppercase;
+.gh-pr__issue-check {
+  color: #3fb950;
+  flex-shrink: 0;
 }
 
-.pr-card__impact-badge--critical,
-.pr-card__impact-badge--serious {
-  background: color-mix(in srgb, var(--red) 8%, transparent);
-  color: #e05545;
-}
-
-.pr-card__impact-badge--moderate {
-  background: color-mix(in srgb, var(--amber) 8%, transparent);
-  color: var(--amber);
-}
-
-.pr-card__issue-name {
+.gh-pr__issue-name {
   font-family: var(--mono);
   font-size: 0.68rem;
   color: #8b949e;
 }
 
-.pr-card__issue-count {
+.gh-pr__issue-count {
   color: rgba(255, 255, 255, 0.2);
 }
 
-.pr-card__files {
+.gh-pr__files {
   font-family: var(--mono);
   font-size: 0.62rem;
   color: rgba(255, 255, 255, 0.25);
@@ -191,15 +476,75 @@
   gap: 1rem;
 }
 
-/* Step indicators */
-.pr-steps {
+.gh-pr__additions {
+  color: #3fb950;
+}
+
+.gh-pr__deletions {
+  color: #f85149;
+}
+
+.gh-pr__actions {
+  margin-top: 0.8rem;
+  display: flex;
+  gap: 0.5rem;
+}
+
+.gh-pr__merge-btn {
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  font-weight: 600;
+  padding: 0.35rem 0.9rem;
+  border-radius: 6px;
+  background: #238636;
+  color: white;
+  cursor: default;
+}
+
+/* ── PR Demo ── */
+.gh-demo {
+  position: relative;
+}
+
+.gh-demo__bull {
+  position: absolute;
+  top: -25px;
+  right: 0;
+  z-index: 3;
+  animation: gh-bull-float 5s ease-in-out infinite;
+}
+
+.gh-demo__cards {
+  position: relative;
+  height: 340px;
+}
+
+.gh-demo__card {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity 0.35s ease, transform 0.35s ease;
+  pointer-events: none;
+}
+
+.gh-demo__card--active {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+/* ── Steps ── */
+.gh-steps {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 0.4rem;
   margin-top: 1rem;
 }
 
-.pr-step {
+.gh-step {
   padding: 0.6rem 0.5rem;
   border-radius: 8px;
   cursor: pointer;
@@ -209,12 +554,21 @@
   text-align: center;
 }
 
-.pr-step--active {
-  background: var(--accent-bg);
-  border-color: color-mix(in srgb, var(--accent) 19%, transparent);
+.gh-step:hover {
+  border-color: var(--accent);
 }
 
-.pr-step__label {
+.gh-step--active {
+  background: var(--accent-bg);
+  border-color: var(--accent-30, rgba(67, 56, 240, 0.19));
+}
+
+.gh-step__icon {
+  font-size: 1rem;
+  margin-bottom: 0.15rem;
+}
+
+.gh-step__label {
   font-family: var(--mono);
   font-size: 0.55rem;
   font-weight: 600;
@@ -223,15 +577,24 @@
   letter-spacing: 0.04em;
 }
 
-.pr-step--active .pr-step__label {
+.gh-step--active .gh-step__label {
   color: var(--accent);
 }
 
-.pr-step__detail {
+.gh-step__detail {
   margin-top: 0.5rem;
   font-family: var(--mono);
   font-size: 0.7rem;
   color: var(--ink50);
   text-align: center;
   line-height: 1.6;
+}
+
+@media (max-width: 600px) {
+  .gh-demo__cards {
+    height: 310px;
+  }
+  .gh-steps {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }

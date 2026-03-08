@@ -5,6 +5,8 @@ import Section from "./Section";
 import { Eyebrow, H2, SubText, Italic } from "./Typography";
 import XsblBull from "./XsblBull";
 import { Check, Sparkles, Search, MoveRight } from "lucide-react";
+import "./GitHubSection.css";
+
 /* ── shared card data ── */
 var issues = [
   {
@@ -40,13 +42,10 @@ var issues = [
 /* ── tiny components ── */
 function Dots() {
   return (
-    <div style={{ display: "flex", gap: 5 }}>
+    <div className="gh-card__dots" aria-hidden="true">
       {["#ff5f57", "#ffbd2e", "#28ca41"].map(function (c) {
         return (
-          <span
-            key={c}
-            style={{ width: 9, height: 9, borderRadius: "50%", background: c }}
-          />
+          <span key={c} className="gh-card__dot" style={{ background: c }} />
         );
       })}
     </div>
@@ -55,168 +54,46 @@ function Dots() {
 
 function CardShell({ title, children }) {
   return (
-    <div
-      style={{
-        background: "var(--code-bg, #1a1714)",
-        borderRadius: 14,
-        overflow: "hidden",
-        boxShadow:
-          "0 2px 4px rgba(0,0,0,0.03), 0 12px 32px rgba(0,0,0,0.1), 0 32px 64px rgba(0,0,0,0.08)",
-      }}
-    >
-      <div
-        style={{
-          padding: "0.75rem 1rem",
-          display: "flex",
-          alignItems: "center",
-          gap: "0.5rem",
-          background: "rgba(255,255,255,0.03)",
-          borderBottom: "1px solid rgba(255,255,255,0.05)",
-        }}
-      >
+    <div className="gh-card" role="img" aria-label={title}>
+      <div className="gh-card__bar">
         <Dots />
-        <span
-          style={{
-            flex: 1,
-            textAlign: "center",
-            fontFamily: "var(--mono)",
-            fontSize: "0.68rem",
-            color: "rgba(255,255,255,0.2)",
-          }}
-        >
-          {title}
-        </span>
+        <span className="gh-card__bar-title">{title}</span>
       </div>
-      <div style={{ padding: "1.2rem 1.4rem" }}>{children}</div>
+      <div className="gh-card__body">{children}</div>
     </div>
   );
 }
 
-function ImpactBadge({ impact, t }) {
-  var bg =
-    impact === "critical"
-      ? t.red + "20"
-      : impact === "serious"
-      ? t.red + "15"
-      : t.amber + "15";
-  var fg = impact === "critical" || impact === "serious" ? "#e05545" : t.amber;
-  return (
-    <span
-      style={{
-        fontFamily: "var(--mono)",
-        fontSize: "0.52rem",
-        fontWeight: 600,
-        padding: "0.08rem 0.25rem",
-        borderRadius: 3,
-        background: bg,
-        color: fg,
-        textTransform: "uppercase",
-      }}
-    >
-      {impact}
-    </span>
-  );
+function ImpactBadge({ impact }) {
+  return <span className={"gh-impact gh-impact--" + impact}>{impact}</span>;
 }
 
 /* ── Step 0: Scan results ── */
-function CardScan({ t }) {
+function CardScan() {
   return (
     <CardShell title="xsbl — scan results">
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: "0.6rem",
-          marginBottom: "1rem",
-        }}
-      >
-        <div
-          style={{
-            width: 36,
-            height: 36,
-            borderRadius: "50%",
-            background: t.red + "18",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-        >
+      <div className="gh-scan__header">
+        <div className="gh-scan__score-icon">
           <Search size={16} color="#e05545" strokeWidth={2} />
         </div>
         <div>
-          <div
-            style={{
-              fontFamily: "var(--mono)",
-              fontSize: "0.82rem",
-              color: "#e6edf3",
-              fontWeight: 600,
-            }}
-          >
-            12 violations found
-          </div>
-          <div
-            style={{
-              fontFamily: "var(--mono)",
-              fontSize: "0.6rem",
-              color: "rgba(255,255,255,0.3)",
-            }}
-          >
-            across 4 pages · scanned just now
-          </div>
+          <div className="gh-scan__title">12 violations found</div>
+          <div className="gh-scan__sub">across 4 pages · scanned just now</div>
         </div>
       </div>
-
-      <div style={{ display: "flex", flexDirection: "column", gap: "0.35rem" }}>
+      <div className="gh-scan__list">
         {issues.map(function (item, i) {
           return (
-            <div
-              key={i}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "0.4rem",
-                padding: "0.35rem 0.5rem",
-                borderRadius: 6,
-                background: "rgba(255,255,255,0.02)",
-                border: "1px solid rgba(255,255,255,0.04)",
-              }}
-            >
-              <ImpactBadge impact={item.impact} t={t} />
-              <span
-                style={{
-                  fontFamily: "var(--mono)",
-                  fontSize: "0.68rem",
-                  color: "#8b949e",
-                  flex: 1,
-                }}
-              >
-                {item.rule}
-              </span>
-              <span
-                style={{
-                  fontFamily: "var(--mono)",
-                  fontSize: "0.58rem",
-                  color: "rgba(255,255,255,0.18)",
-                }}
-              >
-                ×{item.count}
-              </span>
+            <div key={i} className="gh-scan__row">
+              <ImpactBadge impact={item.impact} />
+              <span className="gh-scan__rule">{item.rule}</span>
+              <span className="gh-scan__count">×{item.count}</span>
             </div>
           );
         })}
       </div>
-
-      <div
-        style={{
-          marginTop: "0.9rem",
-          display: "flex",
-          gap: "0.5rem",
-          fontFamily: "var(--mono)",
-          fontSize: "0.58rem",
-          color: "rgba(255,255,255,0.25)",
-        }}
-      >
-        <span style={{ color: "#e05545" }}>7 critical</span>
+      <div className="gh-scan__summary">
+        <span className="gh-scan__summary-critical">7 critical</span>
         <span>·</span>
         <span>3 serious</span>
         <span>·</span>
@@ -227,128 +104,51 @@ function CardScan({ t }) {
 }
 
 /* ── Step 1: Select issues ── */
-function CardSelect({ t }) {
+function CardSelect() {
   var checked = [true, true, false, false];
   return (
     <CardShell title="xsbl — select issues to fix">
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          marginBottom: "0.8rem",
-        }}
-      >
-        <span
-          style={{
-            fontFamily: "var(--mono)",
-            fontSize: "0.72rem",
-            color: "#e6edf3",
-            fontWeight: 600,
-          }}
-        >
-          Select issues
-        </span>
-        <span
-          style={{
-            fontFamily: "var(--mono)",
-            fontSize: "0.56rem",
-            padding: "0.2rem 0.5rem",
-            borderRadius: 4,
-            background: t.accent + "18",
-            color: t.accentLight || t.accent,
-            cursor: "default",
-          }}
-        >
-          Select all critical
-        </span>
+      <div className="gh-select__header">
+        <span className="gh-select__title">Select issues</span>
+        <span className="gh-select__badge">Select all critical</span>
       </div>
-
-      <div style={{ display: "flex", flexDirection: "column", gap: "0.3rem" }}>
+      <div className="gh-select__list">
         {issues.map(function (item, i) {
           var on = checked[i];
           return (
             <div
               key={i}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "0.5rem",
-                padding: "0.4rem 0.5rem",
-                borderRadius: 6,
-                background: on ? t.accent + "0a" : "rgba(255,255,255,0.02)",
-                border:
-                  "1px solid " +
-                  (on ? t.accent + "30" : "rgba(255,255,255,0.04)"),
-                transition: "all 0.2s",
-              }}
+              className={"gh-select__row" + (on ? " gh-select__row--on" : "")}
             >
-              {/* checkbox */}
               <span
-                style={{
-                  width: 14,
-                  height: 14,
-                  borderRadius: 3,
-                  border:
-                    "1.5px solid " + (on ? t.accent : "rgba(255,255,255,0.15)"),
-                  background: on ? t.accent : "transparent",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  flexShrink: 0,
-                }}
+                className={
+                  "gh-select__check" + (on ? " gh-select__check--on" : "")
+                }
               >
                 {on && <Check size={10} color="white" strokeWidth={3} />}
               </span>
-
-              <ImpactBadge impact={item.impact} t={t} />
+              <ImpactBadge impact={item.impact} />
               <span
-                style={{
-                  fontFamily: "var(--mono)",
-                  fontSize: "0.66rem",
-                  color: on ? "#e6edf3" : "#8b949e",
-                  flex: 1,
-                }}
+                className={
+                  "gh-select__rule" + (on ? " gh-select__rule--on" : "")
+                }
               >
                 {item.rule}
-                <span style={{ color: "rgba(255,255,255,0.15)" }}>
-                  {" "}
-                  ×{item.count}
-                </span>
+                <span className="gh-select__count"> ×{item.count}</span>
               </span>
             </div>
           );
         })}
       </div>
-
-      <div
-        style={{
-          marginTop: "0.9rem",
-          display: "flex",
-          justifyContent: "flex-end",
-        }}
-      >
-        <span
-          style={{
-            fontFamily: "var(--mono)",
-            fontSize: "0.62rem",
-            fontWeight: 600,
-            padding: "0.35rem 0.9rem",
-            borderRadius: 6,
-            background: t.accent,
-            color: "white",
-            cursor: "default",
-          }}
-        >
-          Generate fix
-        </span>
+      <div className="gh-select__footer">
+        <span className="gh-select__btn">Generate fix →</span>
       </div>
     </CardShell>
   );
 }
 
 /* ── Step 2: AI generating ── */
-function CardGenerate({ t }) {
+function CardGenerate() {
   var lines = [
     { type: "context", text: "  <h2 className={styles.title}>" },
     { type: "remove", text: '    <span style={{ color: "#888" }}>' },
@@ -362,286 +162,91 @@ function CardGenerate({ t }) {
 
   return (
     <CardShell title="xsbl — generating fix">
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: "0.5rem",
-          marginBottom: "0.8rem",
-        }}
-      >
-        <span
-          style={{
-            display: "inline-flex",
-            animation: "spin 1.2s linear infinite",
-          }}
-        >
-          <Sparkles size={15} color={t.accent} strokeWidth={2} />
+      <div className="gh-gen__header">
+        <span className="gh-gen__spinner">
+          <Sparkles size={15} color="var(--accent)" strokeWidth={2} />
         </span>
-        <span
-          style={{
-            fontFamily: "var(--mono)",
-            fontSize: "0.72rem",
-            color: "#e6edf3",
-            fontWeight: 600,
-          }}
-        >
-          Writing fixes…
-        </span>
+        <span className="gh-gen__title">Claude is writing fixes…</span>
       </div>
-      <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
-
-      {/* File tabs */}
-      <div
-        style={{
-          display: "flex",
-          gap: 0,
-          marginBottom: "0.5rem",
-          borderBottom: "1px solid rgba(255,255,255,0.06)",
-        }}
-      >
+      <div className="gh-gen__tabs">
         {["Hero.tsx", "Nav.tsx"].map(function (f, i) {
           return (
             <span
               key={f}
-              style={{
-                fontFamily: "var(--mono)",
-                fontSize: "0.58rem",
-                padding: "0.35rem 0.7rem",
-                color: i === 0 ? "#e6edf3" : "rgba(255,255,255,0.3)",
-                borderBottom:
-                  i === 0 ? "2px solid " + t.accent : "2px solid transparent",
-                cursor: "default",
-              }}
+              className={
+                "gh-gen__tab" + (i === 0 ? " gh-gen__tab--active" : "")
+              }
             >
               {f}
             </span>
           );
         })}
       </div>
-
-      {/* Diff view */}
       <div
-        style={{
-          fontFamily: "var(--mono)",
-          fontSize: "0.62rem",
-          lineHeight: 1.85,
-          background: "rgba(0,0,0,0.25)",
-          borderRadius: 6,
-          padding: "0.6rem 0",
-          overflow: "hidden",
-        }}
+        className="gh-gen__diff"
+        role="img"
+        aria-label="Code diff showing accessibility fixes"
       >
         {lines.map(function (l, i) {
-          var bg = "transparent";
-          var prefix = " ";
-          var prefixColor = "rgba(255,255,255,0.12)";
-          if (l.type === "remove") {
-            bg = "rgba(248,81,73,0.10)";
-            prefix = "−";
-            prefixColor = "#f85149";
-          } else if (l.type === "add") {
-            bg = "rgba(63,185,80,0.10)";
-            prefix = "+";
-            prefixColor = "#3fb950";
-          }
+          var lineClass = "gh-gen__diff-line";
+          if (l.type === "remove") lineClass += " gh-gen__diff-line--remove";
+          if (l.type === "add") lineClass += " gh-gen__diff-line--add";
+          var prefixClass = "gh-gen__diff-prefix";
+          if (l.type === "remove")
+            prefixClass += " gh-gen__diff-prefix--remove";
+          if (l.type === "add") prefixClass += " gh-gen__diff-prefix--add";
+          var prefix = l.type === "remove" ? "−" : l.type === "add" ? "+" : " ";
           return (
-            <div
-              key={i}
-              style={{
-                background: bg,
-                padding: "0 0.7rem",
-                display: "flex",
-                gap: "0.6rem",
-                whiteSpace: "pre",
-              }}
-            >
-              <span
-                style={{
-                  color: prefixColor,
-                  width: 10,
-                  flexShrink: 0,
-                  textAlign: "center",
-                }}
-              >
-                {prefix}
-              </span>
-              <span
-                style={{
-                  color:
-                    l.type === "context"
-                      ? "rgba(255,255,255,0.4)"
-                      : l.type === "remove"
-                      ? "#f85149"
-                      : "#3fb950",
-                }}
-              >
-                {l.text}
-              </span>
+            <div key={i} className={lineClass}>
+              <span className={prefixClass}>{prefix}</span>
+              <span className={"gh-gen__diff-text--" + l.type}>{l.text}</span>
             </div>
           );
         })}
       </div>
-
-      <div
-        style={{
-          marginTop: "0.7rem",
-          fontFamily: "var(--mono)",
-          fontSize: "0.56rem",
-          color: "rgba(255,255,255,0.2)",
-        }}
-      >
-        Fixing 7 issues in 2 files…
-      </div>
+      <div className="gh-gen__status">Fixing 7 issues in 2 files…</div>
     </CardShell>
   );
 }
 
 /* ── Step 3: PR created ── */
-function CardPR({ t }) {
+function CardPR() {
   return (
     <CardShell title="github.com — pull request">
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: "0.5rem",
-          marginBottom: "0.8rem",
-        }}
-      >
-        <span
-          style={{
-            fontFamily: "var(--mono)",
-            fontSize: "0.6rem",
-            fontWeight: 600,
-            padding: "0.15rem 0.4rem",
-            borderRadius: 10,
-            background: "#238636",
-            color: "white",
-          }}
-        >
-          Open
-        </span>
-        <span
-          style={{
-            fontFamily: "var(--mono)",
-            fontSize: "0.82rem",
-            color: "#e6edf3",
-            fontWeight: 600,
-          }}
-        >
-          fix(a11y)-xsbl: fix 7 critical issues
-        </span>
+      <div className="gh-pr__header">
+        <span className="gh-pr__badge">Open</span>
+        <span className="gh-pr__title">fix(a11y): fix 7 critical issues</span>
       </div>
-
-      <div
-        style={{
-          fontFamily: "var(--mono)",
-          fontSize: "0.62rem",
-          color: "rgba(255,255,255,0.3)",
-          marginBottom: "1rem",
-        }}
-      >
+      <div className="gh-pr__meta">
         xsbl-bot wants to merge 2 commits into{" "}
-        <span
-          style={{
-            padding: "0.1rem 0.3rem",
-            borderRadius: 3,
-            background: "rgba(255,255,255,0.06)",
-            color: "rgba(255,255,255,0.5)",
-          }}
-        >
-          main
-        </span>{" "}
-        from{" "}
-        <span
-          style={{
-            padding: "0.1rem 0.3rem",
-            borderRadius: 3,
-            background: "rgba(255,255,255,0.06)",
-            color: "rgba(255,255,255,0.5)",
-          }}
-        >
-          xsbl/fix-7-a11y
-        </span>
+        <span className="gh-pr__branch">main</span> from{" "}
+        <span className="gh-pr__branch">xsbl/fix-7-a11y</span>
       </div>
-
-      <div
-        style={{
-          borderLeft: "2px solid " + t.accent + "40",
-          paddingLeft: "0.8rem",
-          marginBottom: "0.8rem",
-        }}
-      >
+      <div className="gh-pr__issues">
         {issues.slice(0, 2).map(function (item, i) {
           return (
-            <div
-              key={i}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "0.4rem",
-                marginBottom: "0.3rem",
-              }}
-            >
-              <span style={{ color: "#3fb950", flexShrink: 0 }}>
+            <div key={i} className="gh-pr__issue-row">
+              <span className="gh-pr__issue-check">
                 <Check size={12} strokeWidth={2.5} />
               </span>
-              <ImpactBadge impact={item.impact} t={t} />
-              <span
-                style={{
-                  fontFamily: "var(--mono)",
-                  fontSize: "0.68rem",
-                  color: "#8b949e",
-                }}
-              >
+              <ImpactBadge impact={item.impact} />
+              <span className="gh-pr__issue-name">
                 {item.rule}{" "}
-                <span style={{ color: "rgba(255,255,255,0.2)" }}>
-                  ×{item.count}
-                </span>
+                <span className="gh-pr__issue-count">×{item.count}</span>
               </span>
             </div>
           );
         })}
       </div>
-
-      <div
-        style={{
-          fontFamily: "var(--mono)",
-          fontSize: "0.62rem",
-          color: "rgba(255,255,255,0.25)",
-          display: "flex",
-          gap: "1rem",
-        }}
-      >
+      <div className="gh-pr__files">
         <span>
-          <span style={{ color: "#3fb950" }}>+47</span>{" "}
-          <span style={{ color: "#f85149" }}>-12</span>
+          <span className="gh-pr__additions">+47</span>{" "}
+          <span className="gh-pr__deletions">-12</span>
         </span>
         <span>2 files changed</span>
       </div>
-
-      <div
-        style={{
-          marginTop: "0.8rem",
-          display: "flex",
-          gap: "0.5rem",
-        }}
-      >
-        <span
-          style={{
-            fontFamily: "var(--mono)",
-            fontSize: "0.62rem",
-            fontWeight: 600,
-            padding: "0.35rem 0.9rem",
-            borderRadius: 6,
-            background: "#238636",
-            color: "white",
-            cursor: "default",
-          }}
-        >
-          Merge pull request
-        </span>
+      <div className="gh-pr__actions">
+        <span className="gh-pr__merge-btn">Merge pull request</span>
       </div>
     </CardShell>
   );
@@ -649,8 +254,8 @@ function CardPR({ t }) {
 
 /* ── Main PR demo ── */
 function PRDemo() {
-  const { t } = useTheme();
-  const [step, setStep] = useState(0);
+  var { t } = useTheme();
+  var [step, setStep] = useState(0);
 
   var steps = [
     {
@@ -666,7 +271,7 @@ function PRDemo() {
     {
       label: "AI generates fix",
       icon: <Sparkles size={20} color={t.accent} strokeWidth={1.8} />,
-      detail: "xsbl AI reads your source code and writes the fix",
+      detail: "Claude reads your source code and writes the fix",
     },
     {
       label: "PR created",
@@ -675,108 +280,48 @@ function PRDemo() {
     },
   ];
 
-  var cards = [
-    <CardScan t={t} />,
-    <CardSelect t={t} />,
-    <CardGenerate t={t} />,
-    <CardPR t={t} />,
-  ];
+  var cards = [<CardScan />, <CardSelect />, <CardGenerate />, <CardPR />];
 
   return (
-    <div style={{ position: "relative" }}>
-      {/* Bull mascot peeking */}
-      <div
-        style={{
-          position: "absolute",
-          top: -25,
-          right: 0,
-          zIndex: 3,
-          animation: "bullFloat 5s ease-in-out infinite",
-        }}
-      >
+    <div className="gh-demo">
+      <div className="gh-demo__bull" aria-hidden="true">
         <XsblBull size={56} />
       </div>
-      <style>{`@keyframes bullFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }`}</style>
-
-      {/* Card area with crossfade — fixed height so toggling doesn't shift layout */}
-      <div style={{ position: "relative", height: 340 }}>
+      <div className="gh-demo__cards">
         {cards.map(function (card, i) {
           return (
             <div
               key={i}
-              style={{
-                position: "absolute",
-                top: 0,
-                left: 0,
-                width: "100%",
-                opacity: i === step ? 1 : 0,
-                transform: i === step ? "translateY(0)" : "translateY(6px)",
-                transition: "opacity 0.35s ease, transform 0.35s ease",
-                pointerEvents: i === step ? "auto" : "none",
-              }}
+              className={
+                "gh-demo__card" + (i === step ? " gh-demo__card--active" : "")
+              }
             >
               {card}
             </div>
           );
         })}
       </div>
-
-      {/* Step indicators */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(4, 1fr)",
-          gap: "0.4rem",
-          marginTop: "1rem",
-        }}
-      >
+      <div className="gh-steps" role="tablist" aria-label="PR creation steps">
         {steps.map(function (s, i) {
           var active = step === i;
           return (
-            <div
+            <button
               key={i}
+              role="tab"
+              aria-selected={active}
+              aria-label={s.label + ": " + s.detail}
               onClick={function () {
                 setStep(i);
               }}
-              style={{
-                padding: "0.6rem 0.5rem",
-                borderRadius: 8,
-                cursor: "pointer",
-                background: active ? t.accentBg : "transparent",
-                border: "1px solid " + (active ? t.accent + "30" : t.ink08),
-                transition: "all 0.2s",
-                textAlign: "center",
-              }}
+              className={"gh-step" + (active ? " gh-step--active" : "")}
             >
-              <div style={{ fontSize: "1rem", marginBottom: "0.15rem" }}>
-                {s.icon}
-              </div>
-              <div
-                style={{
-                  fontFamily: "var(--mono)",
-                  fontSize: "0.55rem",
-                  fontWeight: 600,
-                  color: active ? t.accent : t.ink50,
-                  textTransform: "uppercase",
-                  letterSpacing: "0.04em",
-                }}
-              >
-                {s.label}
-              </div>
-            </div>
+              <div className="gh-step__icon">{s.icon}</div>
+              <div className="gh-step__label">{s.label}</div>
+            </button>
           );
         })}
       </div>
-      <div
-        style={{
-          marginTop: "0.5rem",
-          fontFamily: "var(--mono)",
-          fontSize: "0.7rem",
-          color: t.ink50,
-          textAlign: "center",
-          lineHeight: 1.6,
-        }}
-      >
+      <div className="gh-step__detail" aria-live="polite">
         {steps[step].detail}
       </div>
     </div>
@@ -784,7 +329,7 @@ function PRDemo() {
 }
 
 export default function GitHubSection() {
-  const { t } = useTheme();
+  var { t } = useTheme();
 
   return (
     <Section id="github">
@@ -803,21 +348,9 @@ export default function GitHubSection() {
           ready to review and merge.
         </SubText>
       </FadeIn>
-
-      <div
-        className="hero-layout"
-        style={{
-          display: "grid",
-          gridTemplateColumns: "1fr 420px",
-          gap: "3.5rem",
-          alignItems: "center",
-        }}
-      >
-        {/* Left — feature list */}
+      <div className="gh-layout">
         <FadeIn delay={0.15}>
-          <div
-            style={{ display: "flex", flexDirection: "column", gap: "1.2rem" }}
-          >
+          <div className="gh-features">
             {[
               {
                 title: "Single or bulk fixes",
@@ -826,7 +359,7 @@ export default function GitHubSection() {
               },
               {
                 title: "AI reads your actual code",
-                desc: "Not generic suggestions — we write fixes that match your codebase.",
+                desc: "Not generic suggestions — Claude sees your source files and writes fixes that match your codebase.",
                 icon: <Sparkles size={17} color={t.accent} strokeWidth={1.8} />,
               },
               {
@@ -844,49 +377,11 @@ export default function GitHubSection() {
             ].map(function (feat, i) {
               return (
                 <FadeIn key={i} delay={0.2 + i * 0.05}>
-                  <div
-                    style={{
-                      display: "flex",
-                      gap: "0.8rem",
-                      alignItems: "flex-start",
-                    }}
-                  >
-                    <span
-                      style={{
-                        fontSize: "0.9rem",
-                        width: 32,
-                        height: 32,
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        borderRadius: 8,
-                        background: t.accentBg,
-                        flexShrink: 0,
-                      }}
-                    >
-                      {feat.icon}
-                    </span>
+                  <div className="gh-feat">
+                    <span className="gh-feat__icon">{feat.icon}</span>
                     <div>
-                      <h4
-                        style={{
-                          fontSize: "0.9rem",
-                          fontWeight: 600,
-                          color: t.ink,
-                          margin: "0 0 0.2rem 0",
-                        }}
-                      >
-                        {feat.title}
-                      </h4>
-                      <p
-                        style={{
-                          fontSize: "0.82rem",
-                          color: t.ink50,
-                          lineHeight: 1.6,
-                          margin: 0,
-                        }}
-                      >
-                        {feat.desc}
-                      </p>
+                      <h3 className="gh-feat__title">{feat.title}</h3>
+                      <p className="gh-feat__desc">{feat.desc}</p>
                     </div>
                   </div>
                 </FadeIn>
@@ -894,8 +389,6 @@ export default function GitHubSection() {
             })}
           </div>
         </FadeIn>
-
-        {/* Right — PR mockup */}
         <FadeIn delay={0.2}>
           <PRDemo />
         </FadeIn>

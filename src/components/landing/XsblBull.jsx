@@ -25,6 +25,7 @@ export default function XsblBull({ size = 36, style = {} }) {
       viewBox="200 80 1650 1850"
       fill="none"
       style={{ display: "block", ...style }}
+      aria-hidden="true"
     >
       {/* ── low-poly body ── */}
       <path

@@ -30,6 +30,7 @@ import DocsPage from "./pages/DocsPage";
 import BlogPage from "./pages/blog/BlogPage";
 import BlogArticlePage from "./pages/blog/BlogArticlePage";
 import ContactPage from "./pages/ContactPage";
+import StatusPage from "./pages/StatusPage";
 
 // Dashboard
 import DashboardLayout from "./pages/dashboard/DashboardLayout";
@@ -40,6 +41,7 @@ import SettingsPage from "./pages/dashboard/SettingsPage";
 import BillingPage from "./pages/dashboard/BillingPage";
 import AuditLogPage from "./pages/dashboard/AuditLogPage";
 import EvidenceExportPage from "./pages/dashboard/EvidenceExportPage";
+import ElementTester from "./pages/dashboard/ElementTester";
 import OnboardingPage from "./pages/dashboard/OnboardingPage";
 
 function LandingPage() {
@@ -197,6 +199,15 @@ export default function App() {
                 }
               />
 
+              <Route
+                path="/status/:slug"
+                element={
+                  <PublicLayout>
+                    <StatusPage />
+                  </PublicLayout>
+                }
+              />
+
               {/* Onboarding */}
               <Route
                 path="/dashboard/onboarding"
@@ -219,6 +230,7 @@ export default function App() {
                 <Route index element={<OverviewPage />} />
                 <Route path="sites" element={<SitesPage />} />
                 <Route path="sites/:id" element={<SiteDetailPage />} />
+                <Route path="tester" element={<ElementTester />} />
                 <Route path="audit-log" element={<AuditLogPage />} />
                 <Route path="evidence" element={<EvidenceExportPage />} />
                 <Route path="settings" element={<SettingsPage />} />

@@ -166,7 +166,11 @@ export default function AccessibilitySimulator({ site, issues, onClose }) {
   const { t, dark } = useTheme();
   const [screenshot, setScreenshot] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [viewport, setViewport] = useState("desktop");
+  const [viewport, setViewport] = useState(
+    typeof window !== "undefined" && window.innerWidth <= 768
+      ? "mobile"
+      : "desktop"
+  );
   const [mode, setMode] = useState("normal");
   const [showIssues, setShowIssues] = useState(true);
   const [zoom, setZoom] = useState(1);
@@ -1484,8 +1488,7 @@ export default function AccessibilitySimulator({ site, issues, onClose }) {
                 {/* Grab handle pill */}
                 <div
                   style={{
-                    position: "fixed",
-                    top: "50%",
+                    position: "relative",
                     width: 36,
                     height: 48,
                     borderRadius: 18,
@@ -1543,8 +1546,7 @@ export default function AccessibilitySimulator({ site, issues, onClose }) {
               {currentMode.special === "macular" && (
                 <div
                   style={{
-                    position: "fixed",
-                    top: "50%",
+                    position: "absolute",
                     inset: 0,
                     pointerEvents: "none",
                     display: "flex",

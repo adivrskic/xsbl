@@ -280,11 +280,13 @@ export default function SitesPage() {
   const [showAdd, setShowAdd] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
 
+  var isClient = org?.role === "client";
+
   // Auto-open add modal when navigated with ?add=true
   useEffect(() => {
-    if (searchParams.get("add") === "true") {
+    if (searchParams.get("add") === "true" && !isClient) {
       setShowAdd(true);
-      setSearchParams({}, { replace: true }); // Clean the URL
+      setSearchParams({}, { replace: true });
     }
   }, [searchParams]);
 
@@ -296,23 +298,41 @@ export default function SitesPage() {
 
   useEffect(() => {
     if (!org) return;
-    // Use module-level cache — survives component unmount/remount
-    if (_sitesCache.orgId === org.id && _sitesCache.data) {
+    if (_sitesCache.orgId === org.id && _sitesCache.data && !isClient) {
       setSites(_sitesCache.data);
       setLoading(false);
       return;
     }
-    supabase
-      .from("sites")
-      .select("*")
-      .eq("org_id", org.id)
-      .order("created_at", { ascending: false })
-      .then(({ data }) => {
-        var result = data || [];
-        _sitesCache = { orgId: org.id, data: result };
-        setSites(result);
-        setLoading(false);
-      });
+    if (isClient) {
+      // Clients: load only permitted sites
+      supabase
+        .from("client_site_access")
+        .select("site_id, sites(*)")
+        .eq("org_id", org.id)
+        .then(({ data }) => {
+          var result = (data || [])
+            .filter(function (a) {
+              return a.sites;
+            })
+            .map(function (a) {
+              return a.sites;
+            });
+          setSites(result);
+          setLoading(false);
+        });
+    } else {
+      supabase
+        .from("sites")
+        .select("*")
+        .eq("org_id", org.id)
+        .order("created_at", { ascending: false })
+        .then(({ data }) => {
+          var result = data || [];
+          _sitesCache = { orgId: org.id, data: result };
+          setSites(result);
+          setLoading(false);
+        });
+    }
   }, [org?.id]);
 
   const handleAddClick = () => {
@@ -391,26 +411,32 @@ export default function SitesPage() {
             )}
           </p>
         </div>
-        <button
-          onClick={handleAddClick}
-          style={{
-            background: atLimit ? t.ink20 : t.accent,
-            color: atLimit ? t.ink50 : "white",
-            border: "none",
-            padding: "0.55rem 1.2rem",
-            borderRadius: 8,
-            fontSize: "0.85rem",
-            fontWeight: 600,
-            fontFamily: "var(--body)",
-            cursor: atLimit ? "not-allowed" : "pointer",
-            display: "flex",
-            alignItems: "center",
-            gap: "0.35rem",
-          }}
-        >
-          {atLimit ? <Lock size={15} /> : <Plus size={15} strokeWidth={2.5} />}
-          {atLimit ? "Limit reached" : "Add site"}
-        </button>
+        {!isClient && (
+          <button
+            onClick={handleAddClick}
+            style={{
+              background: atLimit ? t.ink20 : t.accent,
+              color: atLimit ? t.ink50 : "white",
+              border: "none",
+              padding: "0.55rem 1.2rem",
+              borderRadius: 8,
+              fontSize: "0.85rem",
+              fontWeight: 600,
+              fontFamily: "var(--body)",
+              cursor: atLimit ? "not-allowed" : "pointer",
+              display: "flex",
+              alignItems: "center",
+              gap: "0.35rem",
+            }}
+          >
+            {atLimit ? (
+              <Lock size={15} />
+            ) : (
+              <Plus size={15} strokeWidth={2.5} />
+            )}
+            {atLimit ? "Limit reached" : "Add site"}
+          </button>
+        )}
       </div>
 
       {loading ? (
@@ -618,24 +644,28 @@ export default function SitesPage() {
                     {Math.round(site.score)}
                   </div>
                 )}
-                <button
-                  onClick={() => handleDelete(site.id, site.domain)}
-                  title="Remove"
-                  style={{
-                    background: "none",
-                    border: "none",
-                    color: t.ink50,
-                    cursor: "pointer",
-                    padding: "0.2rem",
-                    borderRadius: 4,
-                    display: "flex",
-                    alignItems: "center",
-                  }}
-                  onMouseEnter={(e) => (e.currentTarget.style.color = t.red)}
-                  onMouseLeave={(e) => (e.currentTarget.style.color = t.ink50)}
-                >
-                  <Trash2 size={15} strokeWidth={1.8} />
-                </button>
+                {!isClient && (
+                  <button
+                    onClick={() => handleDelete(site.id, site.domain)}
+                    title="Remove"
+                    style={{
+                      background: "none",
+                      border: "none",
+                      color: t.ink50,
+                      cursor: "pointer",
+                      padding: "0.2rem",
+                      borderRadius: 4,
+                      display: "flex",
+                      alignItems: "center",
+                    }}
+                    onMouseEnter={(e) => (e.currentTarget.style.color = t.red)}
+                    onMouseLeave={(e) =>
+                      (e.currentTarget.style.color = t.ink50)
+                    }
+                  >
+                    <Trash2 size={15} strokeWidth={1.8} />
+                  </button>
+                )}
               </div>
             </div>
           ))}

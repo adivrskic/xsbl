@@ -5,6 +5,7 @@ import FadeIn from "./FadeIn";
 import Section from "./Section";
 import { Eyebrow, H2, SubText, Italic } from "./Typography";
 import { Eye, Lock, ArrowRight, Search, Circle, Minus } from "lucide-react";
+import "./SimulatorSection.css";
 
 /* Static demo of vision modes — no real screenshot needed */
 var DEMO_MODES = [
@@ -43,66 +44,26 @@ var DEMO_MODES = [
 
 /* A fake "website" card to apply filters to */
 function DemoSite({ filter, t }) {
-  var style = {};
-  if (filter) {
-    if (filter.indexOf("blur") !== -1) {
-      style.filter = filter;
-    } else {
-      style.filter = filter;
-    }
-  }
+  var filterStyle = filter ? { filter: filter } : {};
 
   return (
     <div
-      style={{
-        borderRadius: 10,
-        overflow: "hidden",
-        background: t.cardBg,
-        border: "1px solid " + t.ink08,
-        transition: "filter 0.4s ease",
-        ...style,
-      }}
+      className="sim-site"
+      style={filterStyle}
+      role="img"
+      aria-label={
+        "Website preview" + (filter ? " with vision simulation applied" : "")
+      }
     >
       {/* Nav bar */}
-      <div
-        style={{
-          padding: "0.6rem 1rem",
-          display: "flex",
-          alignItems: "center",
-          gap: "0.6rem",
-          borderBottom: "1px solid " + t.ink08,
-        }}
-      >
-        <div
-          style={{
-            width: 8,
-            height: 8,
-            borderRadius: "50%",
-            background: t.accent,
-          }}
-        />
-        <span
-          style={{
-            fontFamily: "var(--mono)",
-            fontSize: "0.65rem",
-            fontWeight: 600,
-            color: t.ink,
-          }}
-        >
-          acme.com
-        </span>
-        <div style={{ flex: 1 }} />
-        <div style={{ display: "flex", gap: "0.8rem" }}>
+      <div className="sim-site__nav">
+        <div className="sim-site__dot" />
+        <span className="sim-site__brand">acme.com</span>
+        <div className="sim-site__spacer" />
+        <div className="sim-site__links">
           {["Products", "About", "Contact"].map(function (l) {
             return (
-              <span
-                key={l}
-                style={{
-                  fontFamily: "var(--body)",
-                  fontSize: "0.6rem",
-                  color: t.ink50,
-                }}
-              >
+              <span key={l} className="sim-site__link">
                 {l}
               </span>
             );
@@ -110,66 +71,19 @@ function DemoSite({ filter, t }) {
         </div>
       </div>
       {/* Hero area */}
-      <div style={{ padding: "1.5rem 1.2rem 1rem" }}>
-        <div
-          style={{
-            fontFamily: "var(--serif)",
-            fontSize: "1.1rem",
-            fontWeight: 700,
-            color: t.ink,
-            marginBottom: "0.4rem",
-            lineHeight: 1.3,
-          }}
-        >
-          Build something beautiful
-        </div>
-        <div
-          style={{
-            fontSize: "0.72rem",
-            color: t.ink50,
-            lineHeight: 1.6,
-            marginBottom: "0.8rem",
-          }}
-        >
+      <div className="sim-site__hero">
+        <div className="sim-site__title">Build something beautiful</div>
+        <div className="sim-site__text">
           The platform for modern teams to ship faster and build better
           products.
         </div>
-        <div style={{ display: "flex", gap: "0.5rem" }}>
-          <div
-            style={{
-              padding: "0.35rem 0.8rem",
-              borderRadius: 6,
-              background: t.accent,
-              color: "white",
-              fontSize: "0.62rem",
-              fontWeight: 600,
-            }}
-          >
-            Get started
-          </div>
-          <div
-            style={{
-              padding: "0.35rem 0.8rem",
-              borderRadius: 6,
-              border: "1px solid " + t.ink20,
-              color: t.ink50,
-              fontSize: "0.62rem",
-              fontWeight: 600,
-            }}
-          >
-            Learn more
-          </div>
+        <div className="sim-site__btns">
+          <div className="sim-site__btn-primary">Get started</div>
+          <div className="sim-site__btn-secondary">Learn more</div>
         </div>
       </div>
-      {/* Feature cards */}
-      <div
-        style={{
-          padding: "0 1.2rem 1.2rem",
-          display: "grid",
-          gridTemplateColumns: "1fr 1fr 1fr",
-          gap: "0.5rem",
-        }}
-      >
+      {/* Feature cards — colors are dynamic so stay inline */}
+      <div className="sim-site__cards">
         {[
           { label: "Analytics", color: t.accent },
           { label: "Security", color: t.green },
@@ -178,36 +92,18 @@ function DemoSite({ filter, t }) {
           return (
             <div
               key={card.label}
+              className="sim-site__card"
               style={{
-                padding: "0.6rem",
-                borderRadius: 6,
                 background: card.color + "08",
                 border: "1px solid " + card.color + "15",
               }}
             >
               <div
-                style={{
-                  width: 18,
-                  height: 18,
-                  borderRadius: 4,
-                  background: card.color + "20",
-                  marginBottom: "0.3rem",
-                }}
+                className="sim-site__card-icon"
+                style={{ background: card.color + "20" }}
               />
-              <div
-                style={{ fontSize: "0.58rem", fontWeight: 600, color: t.ink }}
-              >
-                {card.label}
-              </div>
-              <div
-                style={{
-                  fontSize: "0.5rem",
-                  color: t.ink50,
-                  marginTop: "0.15rem",
-                }}
-              >
-                Real-time data
-              </div>
+              <div className="sim-site__card-label">{card.label}</div>
+              <div className="sim-site__card-sub">Real-time data</div>
             </div>
           );
         })}
@@ -217,9 +113,9 @@ function DemoSite({ filter, t }) {
 }
 
 export default function SimulatorSection() {
-  const { t } = useTheme();
-  const { user } = useAuth();
-  const [active, setActive] = useState("normal");
+  var { t } = useTheme();
+  var { user } = useAuth();
+  var [active, setActive] = useState("normal");
 
   var activeMode =
     DEMO_MODES.find(function (m) {
@@ -227,51 +123,34 @@ export default function SimulatorSection() {
     }) || DEMO_MODES[0];
 
   return (
-    <div
-      style={{
-        position: "relative",
-        overflow: "hidden",
-      }}
-    >
-      {/* Glow background — full width */}
+    <div className="sim-wrapper">
+      {/* Glow background — colors need theme vars inline */}
       <div
+        className="sim-glow"
         style={{
-          position: "absolute",
-          inset: 0,
-          background: `radial-gradient(ellipse 80% 60% at 50% 40%, ${t.accent}12 0%, transparent 70%)`,
-          pointerEvents: "none",
+          background:
+            "radial-gradient(ellipse 80% 60% at 50% 40%, " +
+            t.accent +
+            "12 0%, transparent 70%)",
         }}
       />
       <div
+        className="sim-glow-orb sim-glow-orb--primary"
         style={{
-          position: "absolute",
-          top: "15%",
-          left: "30%",
-          width: "40vw",
-          height: "40vw",
-          maxWidth: 600,
-          maxHeight: 600,
-          borderRadius: "50%",
-          background: `radial-gradient(circle, ${t.accent}22 0%, transparent 70%)`,
-          filter: "blur(30px)",
-          pointerEvents: "none",
+          background:
+            "radial-gradient(circle, " + t.accent + "22 0%, transparent 70%)",
         }}
       />
       <div
+        className="sim-glow-orb sim-glow-orb--secondary"
         style={{
-          position: "absolute",
-          top: "30%",
-          right: "30%",
-          width: "35vw",
-          height: "35vw",
-          maxWidth: 400,
-          maxHeight: 400,
-          borderRadius: "50%",
-          background: `radial-gradient(circle, ${t.accentLight}15 0%, transparent 70%)`,
-          filter: "blur(30px)",
-          pointerEvents: "none",
+          background:
+            "radial-gradient(circle, " +
+            (t.accentLight || t.accent) +
+            "15 0%, transparent 70%)",
         }}
       />
+
       <Section id="simulator">
         <FadeIn>
           <Eyebrow>Accessibility simulator</Eyebrow>
@@ -289,24 +168,10 @@ export default function SimulatorSection() {
           </SubText>
         </FadeIn>
 
-        <div
-          className="hero-layout"
-          style={{
-            display: "grid",
-            gridTemplateColumns: "1fr 460px",
-            gap: "3rem",
-            alignItems: "center",
-          }}
-        >
+        <div className="sim-layout">
           {/* Left — feature description */}
           <FadeIn delay={0.15}>
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                gap: "1.2rem",
-              }}
-            >
+            <div className="sim-features">
               {[
                 {
                   title: "8 vision conditions",
@@ -323,48 +188,13 @@ export default function SimulatorSection() {
               ].map(function (feat, i) {
                 return (
                   <FadeIn key={i} delay={0.2 + i * 0.05}>
-                    <div
-                      style={{
-                        display: "flex",
-                        gap: "0.8rem",
-                        alignItems: "flex-start",
-                      }}
-                    >
-                      <span
-                        style={{
-                          width: 32,
-                          height: 32,
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          borderRadius: 8,
-                          background: t.accentBg,
-                          flexShrink: 0,
-                        }}
-                      >
+                    <div className="sim-feat">
+                      <span className="sim-feat__icon">
                         <Eye size={17} color={t.accent} strokeWidth={1.8} />
                       </span>
                       <div>
-                        <h4
-                          style={{
-                            fontSize: "0.9rem",
-                            fontWeight: 600,
-                            color: t.ink,
-                            margin: "0 0 0.2rem 0",
-                          }}
-                        >
-                          {feat.title}
-                        </h4>
-                        <p
-                          style={{
-                            fontSize: "0.82rem",
-                            color: t.ink50,
-                            lineHeight: 1.6,
-                            margin: 0,
-                          }}
-                        >
-                          {feat.desc}
-                        </p>
+                        <h3 className="sim-feat__title">{feat.title}</h3>
+                        <p className="sim-feat__desc">{feat.desc}</p>
                       </div>
                     </div>
                   </FadeIn>
@@ -373,43 +203,16 @@ export default function SimulatorSection() {
 
               {/* CTA */}
               <FadeIn delay={0.4}>
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "0.5rem",
-                    marginTop: "0.5rem",
-                  }}
-                >
+                <div className="sim-cta">
                   <a
                     href={user ? "/dashboard/sites" : "/signup"}
-                    style={{
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: "0.3rem",
-                      padding: "0.55rem 1.2rem",
-                      borderRadius: 8,
-                      background: t.accent,
-                      color: "white",
-                      fontSize: "0.85rem",
-                      fontWeight: 600,
-                      textDecoration: "none",
-                    }}
+                    className="sim-cta__btn"
                   >
                     {user ? "Open simulator" : "Try the simulator"}{" "}
                     <ArrowRight size={14} />
                   </a>
                   {!user && (
-                    <span
-                      style={{
-                        fontFamily: "var(--mono)",
-                        fontSize: "0.6rem",
-                        color: t.ink50,
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "0.25rem",
-                      }}
-                    >
+                    <span className="sim-cta__badge">
                       <Lock size={10} /> Pro & Agency plans
                     </span>
                   )}
@@ -420,46 +223,29 @@ export default function SimulatorSection() {
 
           {/* Right — interactive demo */}
           <FadeIn delay={0.2}>
-            <div style={{ position: "relative" }}>
+            <div className="sim-demo">
               {/* Mode selector pills */}
               <div
-                style={{
-                  display: "flex",
-                  flexWrap: "wrap",
-                  gap: "0.3rem",
-                  marginBottom: "0.8rem",
-                }}
+                className="sim-modes"
+                role="radiogroup"
+                aria-label="Vision simulation mode"
               >
                 {DEMO_MODES.map(function (mode) {
                   var isActive = active === mode.id;
                   return (
                     <button
                       key={mode.id}
+                      role="radio"
+                      aria-checked={isActive}
                       onClick={function () {
                         setActive(mode.id);
                       }}
-                      style={{
-                        padding: "0.35rem 0.6rem",
-                        borderRadius: 6,
-                        border:
-                          "1px solid " + (isActive ? t.accent + "40" : t.ink08),
-                        background: isActive ? t.accentBg : "transparent",
-                        color: isActive ? t.accent : t.ink50,
-                        fontFamily: "var(--mono)",
-                        fontSize: "0.58rem",
-                        fontWeight: 600,
-                        cursor: "pointer",
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "0.25rem",
-                        transition: "all 0.2s",
-                      }}
+                      className={
+                        "sim-mode-btn" +
+                        (isActive ? " sim-mode-btn--active" : "")
+                      }
                     >
-                      <span
-                        style={{ display: "inline-flex", alignItems: "center" }}
-                      >
-                        {mode.icon}
-                      </span>
+                      <span className="sim-mode-btn__icon">{mode.icon}</span>
                       {mode.name}
                     </button>
                   );
@@ -470,17 +256,9 @@ export default function SimulatorSection() {
               <DemoSite filter={activeMode.color} t={t} />
 
               {/* Active mode label */}
-              <div
-                style={{
-                  marginTop: "0.6rem",
-                  textAlign: "center",
-                  fontFamily: "var(--mono)",
-                  fontSize: "0.66rem",
-                  color: t.ink50,
-                }}
-              >
-                {activeMode.icon} Viewing as:{" "}
-                <span style={{ color: t.accent, fontWeight: 600 }}>
+              <div className="sim-active-label" aria-live="polite">
+                Viewing as:{" "}
+                <span className="sim-active-label__name">
                   {activeMode.name}
                 </span>
               </div>

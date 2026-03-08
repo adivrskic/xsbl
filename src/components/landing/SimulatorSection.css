@@ -1,0 +1,319 @@
+/* SimulatorSection.css */
+
+/* ── Wrapper with glow ── */
+.sim-wrapper {
+  position: relative;
+  overflow: hidden;
+}
+
+.sim-glow {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    ellipse 80% 60% at 50% 40%,
+    var(--accent-12, rgba(67, 56, 240, 0.07)) 0%,
+    transparent 70%
+  );
+  pointer-events: none;
+}
+
+.sim-glow-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(30px);
+  pointer-events: none;
+}
+
+.sim-glow-orb--primary {
+  top: 15%;
+  left: 30%;
+  width: 40vw;
+  height: 40vw;
+  max-width: 600px;
+  max-height: 600px;
+  background: radial-gradient(
+    circle,
+    var(--accent-22, rgba(67, 56, 240, 0.13)) 0%,
+    transparent 70%
+  );
+}
+
+.sim-glow-orb--secondary {
+  top: 30%;
+  right: 30%;
+  width: 35vw;
+  height: 35vw;
+  max-width: 400px;
+  max-height: 400px;
+  background: radial-gradient(
+    circle,
+    var(--accent-light-15, rgba(99, 91, 240, 0.09)) 0%,
+    transparent 70%
+  );
+}
+
+/* ── Layout ── */
+.sim-layout {
+  display: grid;
+  grid-template-columns: 1fr 460px;
+  gap: 3rem;
+  align-items: center;
+}
+
+@media (max-width: 900px) {
+  .sim-layout {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
+}
+
+.sim-features {
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
+}
+
+.sim-feat {
+  display: flex;
+  gap: 0.8rem;
+  align-items: flex-start;
+}
+
+.sim-feat__icon {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background: var(--accent-bg);
+  flex-shrink: 0;
+}
+
+.sim-feat__title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--ink);
+  margin: 0 0 0.2rem 0;
+}
+
+.sim-feat__desc {
+  font-size: 0.82rem;
+  color: var(--ink50);
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* ── CTA ── */
+.sim-cta {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.sim-cta__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.55rem 1.2rem;
+  border-radius: 8px;
+  background: var(--accent);
+  color: white;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background 0.2s, transform 0.2s;
+}
+
+.sim-cta__btn:hover {
+  transform: translateY(-1px);
+}
+
+.sim-cta__badge {
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  color: var(--ink50);
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+/* ── Demo container ── */
+.sim-demo {
+  position: relative;
+}
+
+/* ── Mode selector pills ── */
+.sim-modes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  margin-bottom: 0.8rem;
+}
+
+.sim-mode-btn {
+  padding: 0.35rem 0.6rem;
+  border-radius: 6px;
+  border: 1px solid var(--ink08);
+  background: transparent;
+  color: var(--ink50);
+  font-family: var(--mono);
+  font-size: 0.58rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  transition: all 0.2s;
+}
+
+.sim-mode-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.sim-mode-btn--active {
+  border-color: var(--accent-40, rgba(67, 56, 240, 0.25));
+  background: var(--accent-bg);
+  color: var(--accent);
+}
+
+.sim-mode-btn__icon {
+  display: inline-flex;
+  align-items: center;
+}
+
+/* ── Active mode label ── */
+.sim-active-label {
+  margin-top: 0.6rem;
+  text-align: center;
+  font-family: var(--mono);
+  font-size: 0.66rem;
+  color: var(--ink50);
+}
+
+.sim-active-label__name {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+/* ── Demo site (fake website preview) ── */
+.sim-site {
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--card-bg);
+  border: 1px solid var(--ink08);
+  transition: filter 0.4s ease;
+}
+
+.sim-site__nav {
+  padding: 0.6rem 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  border-bottom: 1px solid var(--ink08);
+}
+
+.sim-site__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+.sim-site__brand {
+  font-family: var(--mono);
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.sim-site__spacer {
+  flex: 1;
+}
+
+.sim-site__links {
+  display: flex;
+  gap: 0.8rem;
+}
+
+.sim-site__link {
+  font-family: var(--body);
+  font-size: 0.6rem;
+  color: var(--ink50);
+}
+
+.sim-site__hero {
+  padding: 1.5rem 1.2rem 1rem;
+}
+
+.sim-site__title {
+  font-family: var(--serif);
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--ink);
+  margin-bottom: 0.4rem;
+  line-height: 1.3;
+}
+
+.sim-site__text {
+  font-size: 0.72rem;
+  color: var(--ink50);
+  line-height: 1.6;
+  margin-bottom: 0.8rem;
+}
+
+.sim-site__btns {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.sim-site__btn-primary {
+  padding: 0.35rem 0.8rem;
+  border-radius: 6px;
+  background: var(--accent);
+  color: white;
+  font-size: 0.62rem;
+  font-weight: 600;
+}
+
+.sim-site__btn-secondary {
+  padding: 0.35rem 0.8rem;
+  border-radius: 6px;
+  border: 1px solid var(--ink20);
+  color: var(--ink50);
+  font-size: 0.62rem;
+  font-weight: 600;
+}
+
+.sim-site__cards {
+  padding: 0 1.2rem 1.2rem;
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 0.5rem;
+}
+
+.sim-site__card {
+  padding: 0.6rem;
+  border-radius: 6px;
+}
+
+.sim-site__card-icon {
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  margin-bottom: 0.3rem;
+}
+
+.sim-site__card-label {
+  font-size: 0.58rem;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.sim-site__card-sub {
+  font-size: 0.5rem;
+  color: var(--ink50);
+  margin-top: 0.15rem;
+}

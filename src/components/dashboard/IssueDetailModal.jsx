@@ -26,7 +26,13 @@ const STATUS_OPTIONS = [
   { value: "false_positive", label: "False positive" },
 ];
 
-export default function IssueDetailModal({ issue, site, onClose, onUpdate }) {
+export default function IssueDetailModal({
+  issue,
+  site,
+  onClose,
+  onUpdate,
+  readOnly,
+}) {
   const { t } = useTheme();
   const { org } = useAuth();
   var plan = org?.plan || "free";
@@ -37,6 +43,10 @@ export default function IssueDetailModal({ issue, site, onClose, onUpdate }) {
   const [showHtml, setShowHtml] = useState(false);
   const [status, setStatus] = useState(issue.status);
   const [statusSaving, setStatusSaving] = useState(false);
+  const [notes, setNotes] = useState(issue.auditor_notes || "");
+  const [notesSaving, setNotesSaving] = useState(false);
+  const [notesSaved, setNotesSaved] = useState(false);
+  const notesTimeout = useRef(null);
   const dialogRef = useRef(null);
   const previousFocus = useRef(null);
 
@@ -132,6 +142,21 @@ export default function IssueDetailModal({ issue, site, onClose, onUpdate }) {
       });
     }
     setStatusSaving(false);
+  };
+
+  var handleNotesSave = async function () {
+    setNotesSaving(true);
+    await supabase
+      .from("issues")
+      .update({ auditor_notes: notes.trim() || null })
+      .eq("id", issue.id);
+    setNotesSaving(false);
+    setNotesSaved(true);
+    onUpdate?.({ ...issue, auditor_notes: notes.trim() || null });
+    clearTimeout(notesTimeout.current);
+    notesTimeout.current = setTimeout(function () {
+      setNotesSaved(false);
+    }, 2000);
   };
 
   const impactColors = {
@@ -437,178 +462,182 @@ export default function IssueDetailModal({ issue, site, onClose, onUpdate }) {
           )}
 
           {/* AI fix */}
-          <div
-            style={{
-              padding: "1rem",
-              borderRadius: 10,
-              background: t.accentBg,
-              border: `1px solid ${t.accent}18`,
-            }}
-          >
+          {!readOnly && (
             <div
               style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "0.4rem",
-                marginBottom: "0.6rem",
+                padding: "1rem",
+                borderRadius: 10,
+                background: t.accentBg,
+                border: `1px solid ${t.accent}18`,
               }}
             >
-              <Sparkles size={15} color={t.accent} />
-              <span
-                style={{
-                  fontFamily: "var(--mono)",
-                  fontSize: "0.68rem",
-                  fontWeight: 600,
-                  color: t.accent,
-                  textTransform: "uppercase",
-                  letterSpacing: "0.06em",
-                }}
-              >
-                AI fix suggestion
-              </span>
-            </div>
-
-            {!aiFix && !aiLoading && !aiError && (
-              <button
-                onClick={handleGetFix}
-                style={{
-                  padding: "0.5rem 1rem",
-                  borderRadius: 7,
-                  border: `1.5px solid ${t.accent}`,
-                  background: "none",
-                  color: t.accent,
-                  fontFamily: "var(--body)",
-                  fontSize: "0.82rem",
-                  fontWeight: 600,
-                  cursor: "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "0.4rem",
-                }}
-              >
-                <Sparkles size={14} /> Generate fix with Claude
-              </button>
-            )}
-
-            {aiLoading && (
               <div
                 style={{
                   display: "flex",
                   alignItems: "center",
-                  gap: "0.5rem",
-                  color: t.accent,
-                  fontSize: "0.82rem",
+                  gap: "0.4rem",
+                  marginBottom: "0.6rem",
                 }}
               >
-                <Loader2 size={15} className="xsbl-spin" /> Generating fix...
+                <Sparkles size={15} color={t.accent} />
+                <span
+                  style={{
+                    fontFamily: "var(--mono)",
+                    fontSize: "0.68rem",
+                    fontWeight: 600,
+                    color: t.accent,
+                    textTransform: "uppercase",
+                    letterSpacing: "0.06em",
+                  }}
+                >
+                  AI fix suggestion
+                </span>
               </div>
-            )}
 
-            {aiError && (
-              <div style={{ color: t.red, fontSize: "0.82rem" }}>
-                {aiError}
+              {!aiFix && !aiLoading && !aiError && (
                 <button
                   onClick={handleGetFix}
                   style={{
-                    marginLeft: "0.5rem",
-                    color: t.accent,
+                    padding: "0.5rem 1rem",
+                    borderRadius: 7,
+                    border: `1.5px solid ${t.accent}`,
                     background: "none",
-                    border: "none",
-                    cursor: "pointer",
+                    color: t.accent,
+                    fontFamily: "var(--body)",
                     fontSize: "0.82rem",
                     fontWeight: 600,
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "0.4rem",
                   }}
                 >
-                  Retry
+                  <Sparkles size={14} /> Generate fix with Claude
                 </button>
-              </div>
-            )}
+              )}
 
-            {aiFix && (
-              <div>
-                <p
+              {aiLoading && (
+                <div
                   style={{
-                    fontSize: "0.84rem",
-                    color: t.ink,
-                    lineHeight: 1.6,
-                    marginBottom: "0.8rem",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "0.5rem",
+                    color: t.accent,
+                    fontSize: "0.82rem",
                   }}
                 >
-                  {aiFix.explanation}
-                </p>
-                {aiFix.code && (
-                  <div style={{ position: "relative" }}>
-                    <code
-                      style={{
-                        display: "block",
-                        fontFamily: "var(--mono)",
-                        fontSize: "0.72rem",
-                        color: t.green,
-                        padding: "0.8rem 1rem",
-                        background: t.codeBg,
-                        borderRadius: 8,
-                        overflowX: "auto",
-                        whiteSpace: "pre-wrap",
-                        lineHeight: 1.7,
-                      }}
-                    >
-                      {aiFix.code}
-                    </code>
-                    <button
-                      onClick={() => handleCopy(aiFix.code)}
-                      style={{
-                        position: "absolute",
-                        top: 8,
-                        right: 8,
-                        background: t.ink08,
-                        border: "none",
-                        borderRadius: 5,
-                        padding: "0.25rem 0.45rem",
-                        cursor: "pointer",
-                        color: t.ink50,
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "0.2rem",
-                        fontFamily: "var(--mono)",
-                        fontSize: "0.58rem",
-                      }}
-                    >
-                      {copied ? (
-                        <Check size={11} color={t.green} />
-                      ) : (
-                        <Copy size={11} />
-                      )}
-                      {copied ? "Copied" : "Copy"}
-                    </button>
-                  </div>
-                )}
-                {aiFix.confidence && (
-                  <div
+                  <Loader2 size={15} className="xsbl-spin" /> Generating fix...
+                </div>
+              )}
+
+              {aiError && (
+                <div style={{ color: t.red, fontSize: "0.82rem" }}>
+                  {aiError}
+                  <button
+                    onClick={handleGetFix}
                     style={{
-                      marginTop: "0.5rem",
-                      fontFamily: "var(--mono)",
-                      fontSize: "0.62rem",
-                      color: t.ink50,
+                      marginLeft: "0.5rem",
+                      color: t.accent,
+                      background: "none",
+                      border: "none",
+                      cursor: "pointer",
+                      fontSize: "0.82rem",
+                      fontWeight: 600,
                     }}
                   >
-                    Confidence: {Math.round(aiFix.confidence * 100)}%
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
+                    Retry
+                  </button>
+                </div>
+              )}
+
+              {aiFix && (
+                <div>
+                  <p
+                    style={{
+                      fontSize: "0.84rem",
+                      color: t.ink,
+                      lineHeight: 1.6,
+                      marginBottom: "0.8rem",
+                    }}
+                  >
+                    {aiFix.explanation}
+                  </p>
+                  {aiFix.code && (
+                    <div style={{ position: "relative" }}>
+                      <code
+                        style={{
+                          display: "block",
+                          fontFamily: "var(--mono)",
+                          fontSize: "0.72rem",
+                          color: t.green,
+                          padding: "0.8rem 1rem",
+                          background: t.codeBg,
+                          borderRadius: 8,
+                          overflowX: "auto",
+                          whiteSpace: "pre-wrap",
+                          lineHeight: 1.7,
+                        }}
+                      >
+                        {aiFix.code}
+                      </code>
+                      <button
+                        onClick={() => handleCopy(aiFix.code)}
+                        style={{
+                          position: "absolute",
+                          top: 8,
+                          right: 8,
+                          background: t.ink08,
+                          border: "none",
+                          borderRadius: 5,
+                          padding: "0.25rem 0.45rem",
+                          cursor: "pointer",
+                          color: t.ink50,
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "0.2rem",
+                          fontFamily: "var(--mono)",
+                          fontSize: "0.58rem",
+                        }}
+                      >
+                        {copied ? (
+                          <Check size={11} color={t.green} />
+                        ) : (
+                          <Copy size={11} />
+                        )}
+                        {copied ? "Copied" : "Copy"}
+                      </button>
+                    </div>
+                  )}
+                  {aiFix.confidence && (
+                    <div
+                      style={{
+                        marginTop: "0.5rem",
+                        fontFamily: "var(--mono)",
+                        fontSize: "0.62rem",
+                        color: t.ink50,
+                      }}
+                    >
+                      Confidence: {Math.round(aiFix.confidence * 100)}%
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* AI alt text for image issues */}
-          <PlanGate
-            currentPlan={plan}
-            requiredPlan="pro"
-            feature="AI alt text generation"
-          >
-            <AltTextGenerator issue={issue} />
-          </PlanGate>
+          {!readOnly && (
+            <PlanGate
+              currentPlan={plan}
+              requiredPlan="pro"
+              feature="AI alt text generation"
+            >
+              <AltTextGenerator issue={issue} />
+            </PlanGate>
+          )}
 
           {/* GitHub PR button — only shows when site has GitHub connected */}
-          <CreatePRButton issue={issue} site={site} />
+          {!readOnly && <CreatePRButton issue={issue} site={site} />}
 
           {/* Status */}
           <div style={{ marginTop: "1.2rem" }}>
@@ -624,33 +653,185 @@ export default function IssueDetailModal({ issue, site, onClose, onUpdate }) {
             >
               Status
             </div>
-            <div style={{ display: "flex", gap: "0.3rem", flexWrap: "wrap" }}>
-              {STATUS_OPTIONS.map(({ value, label }) => (
+            {readOnly ? (
+              <span
+                style={{
+                  padding: "0.35rem 0.7rem",
+                  borderRadius: 6,
+                  fontSize: "0.76rem",
+                  fontWeight: 600,
+                  background:
+                    status === "open"
+                      ? t.red + "12"
+                      : status === "fixed"
+                      ? t.greenBg || t.ink04
+                      : t.ink04,
+                  color:
+                    status === "open"
+                      ? t.red
+                      : status === "fixed"
+                      ? t.green
+                      : t.ink50,
+                  textTransform: "capitalize",
+                }}
+              >
+                {status}
+              </span>
+            ) : (
+              <div style={{ display: "flex", gap: "0.3rem", flexWrap: "wrap" }}>
+                {STATUS_OPTIONS.map(({ value, label }) => (
+                  <button
+                    key={value}
+                    onClick={() => handleStatusChange(value)}
+                    disabled={statusSaving}
+                    style={{
+                      padding: "0.35rem 0.7rem",
+                      borderRadius: 6,
+                      fontSize: "0.76rem",
+                      fontFamily: "var(--body)",
+                      fontWeight: 500,
+                      cursor: "pointer",
+                      border: `1.5px solid ${
+                        status === value ? t.accent : t.ink08
+                      }`,
+                      background: status === value ? t.accentBg : "transparent",
+                      color: status === value ? t.accent : t.ink50,
+                      opacity: statusSaving ? 0.5 : 1,
+                      transition: "all 0.15s",
+                    }}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Auditor notes */}
+          {!readOnly && (
+            <div style={{ marginTop: "1.2rem" }}>
+              <div
+                style={{
+                  fontFamily: "var(--mono)",
+                  fontSize: "0.62rem",
+                  color: t.ink50,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.06em",
+                  marginBottom: "0.4rem",
+                }}
+              >
+                Auditor notes
+              </div>
+              <textarea
+                value={notes}
+                onChange={function (e) {
+                  setNotes(e.target.value);
+                  setNotesSaved(false);
+                }}
+                placeholder="Add WCAG compliance notes, remediation guidance, or audit observations..."
+                rows={3}
+                style={{
+                  width: "100%",
+                  padding: "0.5rem 0.6rem",
+                  borderRadius: 6,
+                  border: "1.5px solid " + t.ink08,
+                  background: t.paper,
+                  color: t.ink,
+                  fontFamily: "var(--body)",
+                  fontSize: "0.78rem",
+                  lineHeight: 1.6,
+                  resize: "vertical",
+                  outline: "none",
+                  boxSizing: "border-box",
+                }}
+                onFocus={function (e) {
+                  e.target.style.borderColor = t.accent + "40";
+                }}
+                onBlur={function (e) {
+                  e.target.style.borderColor = t.ink08;
+                }}
+              />
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.4rem",
+                  marginTop: "0.3rem",
+                }}
+              >
                 <button
-                  key={value}
-                  onClick={() => handleStatusChange(value)}
-                  disabled={statusSaving}
+                  onClick={handleNotesSave}
+                  disabled={
+                    notesSaving || notes === (issue.auditor_notes || "")
+                  }
                   style={{
-                    padding: "0.35rem 0.7rem",
-                    borderRadius: 6,
-                    fontSize: "0.76rem",
-                    fontFamily: "var(--body)",
-                    fontWeight: 500,
-                    cursor: "pointer",
-                    border: `1.5px solid ${
-                      status === value ? t.accent : t.ink08
-                    }`,
-                    background: status === value ? t.accentBg : "transparent",
-                    color: status === value ? t.accent : t.ink50,
-                    opacity: statusSaving ? 0.5 : 1,
-                    transition: "all 0.15s",
+                    padding: "0.3rem 0.6rem",
+                    borderRadius: 5,
+                    border: "none",
+                    background: notesSaved ? t.green : t.accent,
+                    color: "white",
+                    fontFamily: "var(--mono)",
+                    fontSize: "0.65rem",
+                    fontWeight: 600,
+                    cursor:
+                      notesSaving || notes === (issue.auditor_notes || "")
+                        ? "not-allowed"
+                        : "pointer",
+                    opacity:
+                      notesSaving || notes === (issue.auditor_notes || "")
+                        ? 0.4
+                        : 1,
                   }}
                 >
-                  {label}
+                  {notesSaving
+                    ? "Saving..."
+                    : notesSaved
+                    ? "Saved"
+                    : "Save notes"}
                 </button>
-              ))}
+                {issue.auditor_notes && (
+                  <span
+                    style={{
+                      fontFamily: "var(--mono)",
+                      fontSize: "0.55rem",
+                      color: t.ink50,
+                    }}
+                  >
+                    Notes attached
+                  </span>
+                )}
+              </div>
             </div>
-          </div>
+          )}
+          {readOnly && issue.auditor_notes && (
+            <div style={{ marginTop: "1.2rem" }}>
+              <div
+                style={{
+                  fontFamily: "var(--mono)",
+                  fontSize: "0.62rem",
+                  color: t.ink50,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.06em",
+                  marginBottom: "0.4rem",
+                }}
+              >
+                Auditor notes
+              </div>
+              <div
+                style={{
+                  padding: "0.5rem 0.6rem",
+                  borderRadius: 6,
+                  background: t.ink04,
+                  fontSize: "0.78rem",
+                  color: t.ink,
+                  lineHeight: 1.6,
+                  whiteSpace: "pre-wrap",
+                }}
+              >
+                {issue.auditor_notes}
+              </div>
+            </div>
+          )}
         </div>
       </div>
       <style>{`@keyframes xsbl-spin { to { transform: rotate(360deg); } } .xsbl-spin { animation: xsbl-spin 0.6s linear infinite; }`}</style>

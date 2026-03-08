@@ -18,7 +18,7 @@ function ComplianceCard({ icon, title, desc, delay }) {
         <span className="icon-box" style={{ marginBottom: "0.9rem" }}>
           {Icon && <Icon size={20} color={t.accent} strokeWidth={1.8} />}
         </span>
-        <h4 className="compliance-card__title">{title}</h4>
+        <h3 className="compliance-card__title">{title}</h3>
         <p className="compliance-card__desc">{desc}</p>
       </div>
     </FadeIn>

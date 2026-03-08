@@ -28,6 +28,7 @@ import {
   Calendar,
   Key,
   Copy,
+  Globe,
 } from "lucide-react";
 
 /* ── Editable field ── */
@@ -445,6 +446,392 @@ function InviteForm({ orgId, onInvited }) {
         If they don't have an account yet, they'll be added automatically when
         they sign up.
       </p>
+    </div>
+  );
+}
+
+/* ── Client Access (Agency) ── */
+function ClientAccessPanel({ org }) {
+  const { t } = useTheme();
+  const [clients, setClients] = useState([]);
+  const [pendingInvites, setPendingInvites] = useState([]);
+  const [sites, setSites] = useState([]);
+  const [loadingClients, setLoadingClients] = useState(true);
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteSiteIds, setInviteSiteIds] = useState([]);
+  const [sending, setSending] = useState(false);
+  const [sent, setSent] = useState(false);
+
+  if (!org) return null;
+
+  var loadClients = async function () {
+    var {
+      data: { session },
+    } = await supabase.auth.getSession();
+    var { data } = await supabase.functions.invoke(
+      "client-access?action=list",
+      {
+        headers: { Authorization: "Bearer " + (session?.access_token || "") },
+      }
+    );
+    if (data) {
+      setClients(data.clients || []);
+      setPendingInvites(data.pending_invites || []);
+    }
+    setLoadingClients(false);
+  };
+
+  var loadSites = async function () {
+    var { data } = await supabase
+      .from("sites")
+      .select("id, domain, display_name")
+      .eq("org_id", org.id);
+    setSites(data || []);
+  };
+
+  useEffect(function () {
+    loadClients();
+    loadSites();
+  }, []);
+
+  var toggleSite = function (siteId) {
+    setInviteSiteIds(function (p) {
+      return p.indexOf(siteId) !== -1
+        ? p.filter(function (id) {
+            return id !== siteId;
+          })
+        : p.concat([siteId]);
+    });
+  };
+
+  var handleInvite = async function () {
+    if (!inviteEmail.trim() || inviteSiteIds.length === 0) return;
+    setSending(true);
+    var {
+      data: { session },
+    } = await supabase.auth.getSession();
+    var { data, error } = await supabase.functions.invoke(
+      "client-access?action=invite",
+      {
+        body: { email: inviteEmail.trim(), site_ids: inviteSiteIds },
+        headers: { Authorization: "Bearer " + (session?.access_token || "") },
+      }
+    );
+    setSending(false);
+    if (data && (data.ok || data.updated)) {
+      setSent(true);
+      setInviteEmail("");
+      setInviteSiteIds([]);
+      setTimeout(function () {
+        setSent(false);
+      }, 3000);
+      loadClients();
+    }
+  };
+
+  var handleRemove = async function (userId) {
+    var {
+      data: { session },
+    } = await supabase.auth.getSession();
+    await supabase.functions.invoke("client-access?action=remove", {
+      body: { user_id: userId },
+      headers: { Authorization: "Bearer " + (session?.access_token || "") },
+    });
+    loadClients();
+  };
+
+  return (
+    <div
+      style={{
+        padding: "1.5rem",
+        borderRadius: 12,
+        border: "1px solid " + t.ink08,
+        background: t.cardBg,
+        marginBottom: "1rem",
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: "0.5rem",
+          marginBottom: "0.6rem",
+        }}
+      >
+        <Users size={17} color={t.accent} strokeWidth={1.8} />
+        <h3
+          style={{
+            fontSize: "0.95rem",
+            fontWeight: 600,
+            color: t.ink,
+            margin: 0,
+          }}
+        >
+          Client Access
+        </h3>
+        <span
+          style={{
+            fontFamily: "var(--mono)",
+            fontSize: "0.52rem",
+            fontWeight: 600,
+            padding: "0.08rem 0.3rem",
+            borderRadius: 3,
+            background: t.ink04,
+            color: t.ink50,
+          }}
+        >
+          {clients.length} client{clients.length !== 1 ? "s" : ""}
+        </span>
+      </div>
+      <p
+        style={{
+          fontSize: "0.76rem",
+          color: t.ink50,
+          marginBottom: "1rem",
+          lineHeight: 1.6,
+        }}
+      >
+        Invite clients to view read-only dashboards for specific sites. They can
+        see scores, issues, and reports but cannot modify anything.
+      </p>
+
+      {/* Invite form */}
+      <div
+        style={{
+          padding: "1rem",
+          borderRadius: 8,
+          background: t.ink04,
+          marginBottom: "1rem",
+        }}
+      >
+        <div
+          style={{
+            fontFamily: "var(--mono)",
+            fontSize: "0.58rem",
+            textTransform: "uppercase",
+            letterSpacing: "0.06em",
+            color: t.ink50,
+            marginBottom: "0.4rem",
+          }}
+        >
+          Invite a client
+        </div>
+        <input
+          value={inviteEmail}
+          onChange={function (e) {
+            setInviteEmail(e.target.value);
+          }}
+          placeholder="client@example.com"
+          style={{
+            width: "100%",
+            padding: "0.45rem 0.7rem",
+            borderRadius: 6,
+            border: "1.5px solid " + t.ink08,
+            background: t.paper,
+            color: t.ink,
+            fontFamily: "var(--mono)",
+            fontSize: "0.74rem",
+            outline: "none",
+            boxSizing: "border-box",
+            marginBottom: "0.5rem",
+          }}
+        />
+        <div
+          style={{
+            fontFamily: "var(--mono)",
+            fontSize: "0.55rem",
+            color: t.ink50,
+            marginBottom: "0.3rem",
+          }}
+        >
+          Sites to share:
+        </div>
+        <div
+          style={{
+            display: "flex",
+            flexWrap: "wrap",
+            gap: "0.25rem",
+            marginBottom: "0.6rem",
+          }}
+        >
+          {sites.map(function (s) {
+            var selected = inviteSiteIds.indexOf(s.id) !== -1;
+            return (
+              <button
+                key={s.id}
+                onClick={function () {
+                  toggleSite(s.id);
+                }}
+                style={{
+                  padding: "0.25rem 0.5rem",
+                  borderRadius: 5,
+                  fontSize: "0.68rem",
+                  fontFamily: "var(--mono)",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  border: "1.5px solid " + (selected ? t.accent : t.ink08),
+                  background: selected ? t.accentBg : "transparent",
+                  color: selected ? t.accent : t.ink50,
+                }}
+              >
+                {s.display_name || s.domain}
+              </button>
+            );
+          })}
+        </div>
+        <button
+          onClick={handleInvite}
+          disabled={
+            !inviteEmail.trim() || inviteSiteIds.length === 0 || sending
+          }
+          style={{
+            padding: "0.4rem 0.8rem",
+            borderRadius: 6,
+            border: "none",
+            background: t.accent,
+            color: "white",
+            fontFamily: "var(--mono)",
+            fontSize: "0.72rem",
+            fontWeight: 600,
+            cursor:
+              !inviteEmail.trim() || inviteSiteIds.length === 0 || sending
+                ? "not-allowed"
+                : "pointer",
+            opacity:
+              !inviteEmail.trim() || inviteSiteIds.length === 0 || sending
+                ? 0.5
+                : 1,
+            display: "flex",
+            alignItems: "center",
+            gap: "0.25rem",
+          }}
+        >
+          {sending ? (
+            <Loader2 size={12} className="xsbl-spin" />
+          ) : (
+            <Mail size={12} />
+          )}
+          {sent ? "Invite sent" : "Send invite"}
+        </button>
+      </div>
+
+      {/* Active clients */}
+      {loadingClients ? (
+        <div style={{ textAlign: "center", padding: "1rem" }}>
+          <Loader2 size={18} className="xsbl-spin" color={t.accent} />
+        </div>
+      ) : clients.length === 0 && pendingInvites.length === 0 ? (
+        <div
+          style={{
+            textAlign: "center",
+            padding: "1rem",
+            fontSize: "0.78rem",
+            color: t.ink50,
+          }}
+        >
+          No clients invited yet.
+        </div>
+      ) : (
+        <div
+          style={{ display: "flex", flexDirection: "column", gap: "0.3rem" }}
+        >
+          {clients.map(function (c) {
+            return (
+              <div
+                key={c.user_id}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.5rem",
+                  padding: "0.6rem 0.7rem",
+                  borderRadius: 7,
+                  border: "1px solid " + t.ink08,
+                  background: t.paper,
+                }}
+              >
+                <Users size={14} color={t.ink50} />
+                <div style={{ flex: 1 }}>
+                  <div
+                    style={{
+                      fontSize: "0.8rem",
+                      fontWeight: 600,
+                      color: t.ink,
+                    }}
+                  >
+                    {c.display_name || c.email}
+                  </div>
+                  <div
+                    style={{
+                      fontFamily: "var(--mono)",
+                      fontSize: "0.6rem",
+                      color: t.ink50,
+                    }}
+                  >
+                    {c.sites.length} site{c.sites.length !== 1 ? "s" : ""}:{" "}
+                    {c.sites
+                      .map(function (s) {
+                        return s.domain || s.display_name;
+                      })
+                      .join(", ")}
+                  </div>
+                </div>
+                <button
+                  onClick={function () {
+                    handleRemove(c.user_id);
+                  }}
+                  style={{
+                    padding: "0.2rem 0.5rem",
+                    borderRadius: 4,
+                    border: "1px solid " + t.red + "30",
+                    background: "none",
+                    color: t.red,
+                    fontFamily: "var(--mono)",
+                    fontSize: "0.6rem",
+                    fontWeight: 600,
+                    cursor: "pointer",
+                  }}
+                >
+                  Remove
+                </button>
+              </div>
+            );
+          })}
+          {pendingInvites.map(function (inv) {
+            return (
+              <div
+                key={inv.id}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.5rem",
+                  padding: "0.5rem 0.7rem",
+                  borderRadius: 7,
+                  border: "1px dashed " + t.ink08,
+                  opacity: 0.6,
+                }}
+              >
+                <Mail size={14} color={t.ink50} />
+                <span style={{ fontSize: "0.76rem", color: t.ink50 }}>
+                  {inv.email}
+                </span>
+                <span
+                  style={{
+                    fontFamily: "var(--mono)",
+                    fontSize: "0.52rem",
+                    padding: "0.05rem 0.25rem",
+                    borderRadius: 3,
+                    background: t.amber + "15",
+                    color: t.amber,
+                    fontWeight: 600,
+                  }}
+                >
+                  PENDING
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
@@ -1600,6 +1987,16 @@ export default function SettingsPage() {
     );
   }
 
+  var [settingsTab, setSettingsTab] = useState("general");
+
+  var settingsTabs = [
+    { id: "general", label: "General", icon: User },
+    { id: "team", label: "Team", icon: Users },
+    { id: "alerts", label: "Alerts", icon: Bell },
+    { id: "integrations", label: "Integrations", icon: Key },
+    { id: "account", label: "Account", icon: Trash2 },
+  ];
+
   return (
     <div>
       <h1
@@ -1613,147 +2010,94 @@ export default function SettingsPage() {
       >
         Settings
       </h1>
-      <p style={{ color: t.ink50, fontSize: "0.88rem", marginBottom: "2rem" }}>
+      <p
+        style={{ color: t.ink50, fontSize: "0.88rem", marginBottom: "1.2rem" }}
+      >
         Account, team, and notification settings.
       </p>
 
-      {/* Profile */}
+      {/* Tab bar */}
       <div
         style={{
-          padding: "1.5rem",
-          borderRadius: 12,
-          border: `1px solid ${t.ink08}`,
-          background: t.cardBg,
-          marginBottom: "1rem",
+          display: "flex",
+          gap: "0.2rem",
+          marginBottom: "1.5rem",
+          borderBottom: "1px solid " + t.ink08,
+          paddingBottom: "0",
+          overflowX: "auto",
         }}
       >
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "0.5rem",
-            marginBottom: "1.2rem",
-          }}
-        >
-          <User size={17} color={t.accent} strokeWidth={1.8} />
-          <h3
-            style={{
-              fontSize: "0.95rem",
-              fontWeight: 600,
-              color: t.ink,
-              margin: 0,
-            }}
-          >
-            Profile
-          </h3>
-        </div>
-        <div style={{ marginBottom: "0.7rem" }}>
-          <div
-            style={{
-              fontFamily: "var(--mono)",
-              fontSize: "0.62rem",
-              color: t.ink50,
-              textTransform: "uppercase",
-              letterSpacing: "0.06em",
-              marginBottom: "0.15rem",
-            }}
-          >
-            Name
-          </div>
-          <div style={{ fontSize: "0.88rem", color: t.ink }}>
-            {user?.user_metadata?.full_name || "Not set"}
-          </div>
-        </div>
-        <div style={{ marginBottom: "0.7rem" }}>
-          <div
-            style={{
-              fontFamily: "var(--mono)",
-              fontSize: "0.62rem",
-              color: t.ink50,
-              textTransform: "uppercase",
-              letterSpacing: "0.06em",
-              marginBottom: "0.15rem",
-            }}
-          >
-            Email
-          </div>
-          <div
-            style={{
-              fontSize: "0.88rem",
-              color: t.ink,
-              display: "flex",
-              alignItems: "center",
-              gap: "0.3rem",
-            }}
-          >
-            <Mail size={14} color={t.ink50} /> {user?.email}
-          </div>
-        </div>
-        <div>
-          <div
-            style={{
-              fontFamily: "var(--mono)",
-              fontSize: "0.62rem",
-              color: t.ink50,
-              textTransform: "uppercase",
-              letterSpacing: "0.06em",
-              marginBottom: "0.15rem",
-            }}
-          >
-            Auth provider
-          </div>
-          <div
-            style={{
-              fontSize: "0.88rem",
-              color: t.ink,
-              textTransform: "capitalize",
-            }}
-          >
-            {user?.app_metadata?.provider || "email"}
-          </div>
-        </div>
-      </div>
-
-      {/* Workspace */}
-      {org && (
-        <div
-          style={{
-            padding: "1.5rem",
-            borderRadius: 12,
-            border: `1px solid ${t.ink08}`,
-            background: t.cardBg,
-            marginBottom: "1rem",
-          }}
-        >
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "0.5rem",
-              marginBottom: "1.2rem",
-            }}
-          >
-            <Shield size={17} color={t.accent} strokeWidth={1.8} />
-            <h3
+        {settingsTabs.map(function (tab) {
+          var Icon = tab.icon;
+          var active = settingsTab === tab.id;
+          var isAccount = tab.id === "account";
+          return (
+            <button
+              key={tab.id}
+              onClick={function () {
+                setSettingsTab(tab.id);
+              }}
               style={{
-                fontSize: "0.95rem",
-                fontWeight: 600,
-                color: t.ink,
-                margin: 0,
+                display: "flex",
+                alignItems: "center",
+                gap: "0.35rem",
+                padding: "0.55rem 0.8rem",
+                border: "none",
+                borderBottom:
+                  "2px solid " +
+                  (active ? (isAccount ? t.red : t.accent) : "transparent"),
+                background: "none",
+                color: active ? (isAccount ? t.red : t.accent) : t.ink50,
+                fontFamily: "var(--body)",
+                fontSize: "0.82rem",
+                fontWeight: active ? 600 : 500,
+                cursor: "pointer",
+                transition: "all 0.15s",
+                whiteSpace: "nowrap",
+                marginBottom: "-1px",
               }}
             >
-              Workspace
-            </h3>
-          </div>
-          {isOwner ? (
-            <EditableField
-              label="Name"
-              value={org.name}
-              onSave={handleOrgNameSave}
-              placeholder="Workspace name"
-            />
-          ) : (
-            <div style={{ marginBottom: "1rem" }}>
+              <Icon size={14} strokeWidth={1.8} />
+              {tab.label}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* ═══ General tab ═══ */}
+      {settingsTab === "general" && (
+        <>
+          {/* Profile */}
+          <div
+            style={{
+              padding: "1.5rem",
+              borderRadius: 12,
+              border: `1px solid ${t.ink08}`,
+              background: t.cardBg,
+              marginBottom: "1rem",
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "0.5rem",
+                marginBottom: "1.2rem",
+              }}
+            >
+              <User size={17} color={t.accent} strokeWidth={1.8} />
+              <h3
+                style={{
+                  fontSize: "0.95rem",
+                  fontWeight: 600,
+                  color: t.ink,
+                  margin: 0,
+                }}
+              >
+                Profile
+              </h3>
+            </div>
+            <div style={{ marginBottom: "0.7rem" }}>
               <div
                 style={{
                   fontFamily: "var(--mono)",
@@ -1767,88 +2111,543 @@ export default function SettingsPage() {
                 Name
               </div>
               <div style={{ fontSize: "0.88rem", color: t.ink }}>
-                {org.name}
+                {user?.user_metadata?.full_name || "Not set"}
+              </div>
+            </div>
+            <div style={{ marginBottom: "0.7rem" }}>
+              <div
+                style={{
+                  fontFamily: "var(--mono)",
+                  fontSize: "0.62rem",
+                  color: t.ink50,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.06em",
+                  marginBottom: "0.15rem",
+                }}
+              >
+                Email
+              </div>
+              <div
+                style={{
+                  fontSize: "0.88rem",
+                  color: t.ink,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.3rem",
+                }}
+              >
+                <Mail size={14} color={t.ink50} /> {user?.email}
+              </div>
+            </div>
+            <div>
+              <div
+                style={{
+                  fontFamily: "var(--mono)",
+                  fontSize: "0.62rem",
+                  color: t.ink50,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.06em",
+                  marginBottom: "0.15rem",
+                }}
+              >
+                Auth provider
+              </div>
+              <div
+                style={{
+                  fontSize: "0.88rem",
+                  color: t.ink,
+                  textTransform: "capitalize",
+                }}
+              >
+                {user?.app_metadata?.provider || "email"}
+              </div>
+            </div>
+          </div>
+
+          {/* Workspace */}
+          {org && (
+            <div
+              style={{
+                padding: "1.5rem",
+                borderRadius: 12,
+                border: `1px solid ${t.ink08}`,
+                background: t.cardBg,
+                marginBottom: "1rem",
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.5rem",
+                  marginBottom: "1.2rem",
+                }}
+              >
+                <Shield size={17} color={t.accent} strokeWidth={1.8} />
+                <h3
+                  style={{
+                    fontSize: "0.95rem",
+                    fontWeight: 600,
+                    color: t.ink,
+                    margin: 0,
+                  }}
+                >
+                  Workspace
+                </h3>
+              </div>
+              {isOwner ? (
+                <EditableField
+                  label="Name"
+                  value={org.name}
+                  onSave={handleOrgNameSave}
+                  placeholder="Workspace name"
+                />
+              ) : (
+                <div style={{ marginBottom: "1rem" }}>
+                  <div
+                    style={{
+                      fontFamily: "var(--mono)",
+                      fontSize: "0.62rem",
+                      color: t.ink50,
+                      textTransform: "uppercase",
+                      letterSpacing: "0.06em",
+                      marginBottom: "0.15rem",
+                    }}
+                  >
+                    Name
+                  </div>
+                  <div style={{ fontSize: "0.88rem", color: t.ink }}>
+                    {org.name}
+                  </div>
+                </div>
+              )}
+              <div style={{ marginBottom: "0.7rem" }}>
+                <div
+                  style={{
+                    fontFamily: "var(--mono)",
+                    fontSize: "0.62rem",
+                    color: t.ink50,
+                    textTransform: "uppercase",
+                    letterSpacing: "0.06em",
+                    marginBottom: "0.15rem",
+                  }}
+                >
+                  Plan
+                </div>
+                <div
+                  style={{
+                    fontFamily: "var(--mono)",
+                    fontSize: "0.88rem",
+                    color: t.accent,
+                    fontWeight: 600,
+                    textTransform: "capitalize",
+                  }}
+                >
+                  {org.plan}
+                </div>
+              </div>
+              <div>
+                <div
+                  style={{
+                    fontFamily: "var(--mono)",
+                    fontSize: "0.62rem",
+                    color: t.ink50,
+                    textTransform: "uppercase",
+                    letterSpacing: "0.06em",
+                    marginBottom: "0.15rem",
+                  }}
+                >
+                  Your role
+                </div>
+                <div
+                  style={{
+                    fontSize: "0.88rem",
+                    color: t.ink,
+                    textTransform: "capitalize",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "0.3rem",
+                  }}
+                >
+                  {org.role === "owner" && <Crown size={14} color={t.accent} />}{" "}
+                  {org.role}
+                </div>
               </div>
             </div>
           )}
-          <div style={{ marginBottom: "0.7rem" }}>
+
+          {/* Public Status Page */}
+          {org && isOwner && (
             <div
               style={{
-                fontFamily: "var(--mono)",
-                fontSize: "0.62rem",
-                color: t.ink50,
-                textTransform: "uppercase",
-                letterSpacing: "0.06em",
-                marginBottom: "0.15rem",
+                padding: "1.5rem",
+                borderRadius: 12,
+                border: "1px solid " + t.ink08,
+                background: t.cardBg,
+                marginBottom: "1rem",
               }}
             >
-              Plan
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.5rem",
+                  marginBottom: "0.6rem",
+                }}
+              >
+                <Shield size={17} color={t.accent} strokeWidth={1.8} />
+                <h3
+                  style={{
+                    fontSize: "0.95rem",
+                    fontWeight: 600,
+                    color: t.ink,
+                    margin: 0,
+                  }}
+                >
+                  Public Status Page
+                </h3>
+              </div>
+              <p
+                style={{
+                  fontSize: "0.76rem",
+                  color: t.ink50,
+                  marginBottom: "0.8rem",
+                  lineHeight: 1.6,
+                }}
+              >
+                Share a public page showing your accessibility scores. Only
+                verified sites are shown.
+              </p>
+              <div
+                style={{ display: "flex", alignItems: "center", gap: "0.8rem" }}
+              >
+                <label
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "0.4rem",
+                    cursor: "pointer",
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={!!org.status_page_enabled}
+                    onChange={async function (e) {
+                      var enabled = e.target.checked;
+                      await supabase
+                        .from("organizations")
+                        .update({ status_page_enabled: enabled })
+                        .eq("id", org.id);
+                      await refreshOrg?.();
+                      logAudit({
+                        action: "settings.updated",
+                        resourceType: "settings",
+                        description:
+                          "Status page " + (enabled ? "enabled" : "disabled"),
+                        metadata: { status_page_enabled: enabled },
+                      });
+                      toast.success(
+                        enabled ? "Status page enabled" : "Status page disabled"
+                      );
+                    }}
+                    style={{ accentColor: t.accent }}
+                  />
+                  <span
+                    style={{
+                      fontSize: "0.82rem",
+                      fontWeight: 500,
+                      color: t.ink,
+                    }}
+                  >
+                    Enable public status page
+                  </span>
+                </label>
+              </div>
+              {org.status_page_enabled && org.slug && (
+                <div
+                  style={{
+                    marginTop: "0.6rem",
+                    padding: "0.5rem 0.7rem",
+                    borderRadius: 6,
+                    background: t.ink04,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "0.4rem",
+                  }}
+                >
+                  <Globe size={12} color={t.ink50} />
+                  <a
+                    href={"/status/" + org.slug}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{
+                      fontFamily: "var(--mono)",
+                      fontSize: "0.72rem",
+                      color: t.accent,
+                      textDecoration: "none",
+                      fontWeight: 600,
+                    }}
+                  >
+                    {window.location.origin}/status/{org.slug}
+                  </a>
+                </div>
+              )}
             </div>
-            <div
-              style={{
-                fontFamily: "var(--mono)",
-                fontSize: "0.88rem",
-                color: t.accent,
-                fontWeight: 600,
-                textTransform: "capitalize",
-              }}
-            >
-              {org.plan}
-            </div>
-          </div>
-          <div>
-            <div
-              style={{
-                fontFamily: "var(--mono)",
-                fontSize: "0.62rem",
-                color: t.ink50,
-                textTransform: "uppercase",
-                letterSpacing: "0.06em",
-                marginBottom: "0.15rem",
-              }}
-            >
-              Your role
-            </div>
-            <div
-              style={{
-                fontSize: "0.88rem",
-                color: t.ink,
-                textTransform: "capitalize",
-                display: "flex",
-                alignItems: "center",
-                gap: "0.3rem",
-              }}
-            >
-              {org.role === "owner" && <Crown size={14} color={t.accent} />}{" "}
-              {org.role}
-            </div>
-          </div>
-        </div>
+          )}
+        </>
       )}
 
-      {/* Team */}
-      {org && (
-        <div
-          style={{
-            padding: "1.5rem",
-            borderRadius: 12,
-            border: `1px solid ${t.ink08}`,
-            background: t.cardBg,
-            marginBottom: "1rem",
-          }}
-        >
+      {/* ═══ Team tab ═══ */}
+      {settingsTab === "team" && (
+        <>
+          {/* Team */}
+          {org && (
+            <div
+              style={{
+                padding: "1.5rem",
+                borderRadius: 12,
+                border: `1px solid ${t.ink08}`,
+                background: t.cardBg,
+                marginBottom: "1rem",
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  marginBottom: "1rem",
+                }}
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "0.5rem",
+                  }}
+                >
+                  <Users size={17} color={t.accent} strokeWidth={1.8} />
+                  <h3
+                    style={{
+                      fontSize: "0.95rem",
+                      fontWeight: 600,
+                      color: t.ink,
+                      margin: 0,
+                    }}
+                  >
+                    Team members
+                  </h3>
+                </div>
+                <span
+                  style={{
+                    fontFamily: "var(--mono)",
+                    fontSize: "0.68rem",
+                    color: t.ink50,
+                  }}
+                >
+                  {members.length} member{members.length !== 1 ? "s" : ""}
+                </span>
+              </div>
+
+              {loadingMembers ? (
+                <p style={{ color: t.ink50, fontSize: "0.82rem" }}>Loading…</p>
+              ) : (
+                <div
+                  style={{ marginBottom: isOwner && canInvite ? "1.2rem" : 0 }}
+                >
+                  {members.map((m) => (
+                    <MemberRow
+                      key={m.user_id}
+                      member={m}
+                      isCurrentUser={m.user_id === user?.id}
+                      isOwner={isOwner}
+                      onRemove={handleRemoveMember}
+                    />
+                  ))}
+
+                  {/* Pending invites */}
+                  {pendingInvites.length > 0 && (
+                    <div style={{ marginTop: "0.5rem" }}>
+                      <div
+                        style={{
+                          fontFamily: "var(--mono)",
+                          fontSize: "0.58rem",
+                          color: t.ink50,
+                          textTransform: "uppercase",
+                          letterSpacing: "0.06em",
+                          marginBottom: "0.3rem",
+                          marginTop: "0.6rem",
+                        }}
+                      >
+                        Pending invites
+                      </div>
+                      {pendingInvites.map(function (inv) {
+                        return (
+                          <div
+                            key={inv.id}
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "space-between",
+                              padding: "0.55rem 0.7rem",
+                              borderRadius: 6,
+                              border: "1px dashed " + t.ink08,
+                              marginBottom: "0.3rem",
+                              opacity: 0.7,
+                            }}
+                          >
+                            <div
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: "0.5rem",
+                              }}
+                            >
+                              <div
+                                style={{
+                                  width: 28,
+                                  height: 28,
+                                  borderRadius: "50%",
+                                  background: t.ink04,
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                  fontFamily: "var(--mono)",
+                                  fontSize: "0.62rem",
+                                  color: t.ink50,
+                                }}
+                              >
+                                ?
+                              </div>
+                              <div>
+                                <div
+                                  style={{
+                                    fontSize: "0.82rem",
+                                    color: t.ink50,
+                                  }}
+                                >
+                                  {inv.email}
+                                </div>
+                                <div
+                                  style={{
+                                    fontFamily: "var(--mono)",
+                                    fontSize: "0.6rem",
+                                    color: t.ink50,
+                                  }}
+                                >
+                                  <span
+                                    style={{
+                                      padding: "0.05rem 0.3rem",
+                                      borderRadius: 3,
+                                      background: t.amber + "12",
+                                      color: t.amber,
+                                      fontWeight: 600,
+                                      fontSize: "0.55rem",
+                                    }}
+                                  >
+                                    PENDING
+                                  </span>
+                                  {" · "}
+                                  {inv.role}
+                                </div>
+                              </div>
+                            </div>
+                            {isOwner && (
+                              <button
+                                onClick={async function () {
+                                  await supabase
+                                    .from("pending_invites")
+                                    .delete()
+                                    .eq("id", inv.id);
+                                  setPendingInvites(function (prev) {
+                                    return prev.filter(function (p) {
+                                      return p.id !== inv.id;
+                                    });
+                                  });
+                                }}
+                                style={{
+                                  background: "none",
+                                  border: "none",
+                                  color: t.red,
+                                  cursor: "pointer",
+                                  fontFamily: "var(--mono)",
+                                  fontSize: "0.62rem",
+                                  fontWeight: 500,
+                                  padding: "0.2rem 0.4rem",
+                                }}
+                              >
+                                Cancel
+                              </button>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {isOwner && canInvite && (
+                <div style={{ paddingTop: "0.8rem" }}>
+                  <div
+                    style={{
+                      fontFamily: "var(--mono)",
+                      fontSize: "0.62rem",
+                      color: t.ink50,
+                      textTransform: "uppercase",
+                      letterSpacing: "0.06em",
+                      marginBottom: "0.5rem",
+                    }}
+                  >
+                    Invite a team member
+                  </div>
+                  <InviteForm orgId={org.id} onInvited={loadMembers} />
+                </div>
+              )}
+
+              {isOwner && !canInvite && (
+                <div
+                  style={{
+                    paddingTop: "0.8rem",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "0.4rem",
+                    fontSize: "0.78rem",
+                    color: t.ink50,
+                    fontStyle: "italic",
+                  }}
+                >
+                  <Lock size={13} color={t.ink50} /> Team invites available on
+                  Pro and Agency plans.
+                </div>
+              )}
+            </div>
+          )}
+        </>
+      )}
+
+      {/* ═══ Alerts tab ═══ */}
+      {settingsTab === "alerts" && (
+        <>
+          {/* Notifications */}
           <div
             style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
+              padding: "1.5rem",
+              borderRadius: 12,
+              border: `1px solid ${t.ink08}`,
+              background: t.cardBg,
               marginBottom: "1rem",
             }}
           >
             <div
-              style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "0.5rem",
+                marginBottom: "0.6rem",
+              }}
             >
-              <Users size={17} color={t.accent} strokeWidth={1.8} />
+              <Bell size={17} color={t.accent} strokeWidth={1.8} />
               <h3
                 style={{
                   fontSize: "0.95rem",
@@ -1857,367 +2656,177 @@ export default function SettingsPage() {
                   margin: 0,
                 }}
               >
-                Team members
+                Notifications
               </h3>
             </div>
-            <span
+            <p
               style={{
-                fontFamily: "var(--mono)",
-                fontSize: "0.68rem",
+                fontSize: "0.76rem",
                 color: t.ink50,
+                marginBottom: "0.8rem",
+                lineHeight: 1.6,
               }}
             >
-              {members.length} member{members.length !== 1 ? "s" : ""}
-            </span>
-          </div>
-
-          {loadingMembers ? (
-            <p style={{ color: t.ink50, fontSize: "0.82rem" }}>Loading…</p>
-          ) : (
-            <div style={{ marginBottom: isOwner && canInvite ? "1.2rem" : 0 }}>
-              {members.map((m) => (
-                <MemberRow
-                  key={m.user_id}
-                  member={m}
-                  isCurrentUser={m.user_id === user?.id}
-                  isOwner={isOwner}
-                  onRemove={handleRemoveMember}
-                />
-              ))}
-
-              {/* Pending invites */}
-              {pendingInvites.length > 0 && (
-                <div style={{ marginTop: "0.5rem" }}>
-                  <div
-                    style={{
-                      fontFamily: "var(--mono)",
-                      fontSize: "0.58rem",
-                      color: t.ink50,
-                      textTransform: "uppercase",
-                      letterSpacing: "0.06em",
-                      marginBottom: "0.3rem",
-                      marginTop: "0.6rem",
-                    }}
-                  >
-                    Pending invites
-                  </div>
-                  {pendingInvites.map(function (inv) {
-                    return (
-                      <div
-                        key={inv.id}
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "space-between",
-                          padding: "0.55rem 0.7rem",
-                          borderRadius: 6,
-                          border: "1px dashed " + t.ink08,
-                          marginBottom: "0.3rem",
-                          opacity: 0.7,
-                        }}
-                      >
-                        <div
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "0.5rem",
-                          }}
-                        >
-                          <div
-                            style={{
-                              width: 28,
-                              height: 28,
-                              borderRadius: "50%",
-                              background: t.ink04,
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              fontFamily: "var(--mono)",
-                              fontSize: "0.62rem",
-                              color: t.ink50,
-                            }}
-                          >
-                            ?
-                          </div>
-                          <div>
-                            <div
-                              style={{ fontSize: "0.82rem", color: t.ink50 }}
-                            >
-                              {inv.email}
-                            </div>
-                            <div
-                              style={{
-                                fontFamily: "var(--mono)",
-                                fontSize: "0.6rem",
-                                color: t.ink50,
-                              }}
-                            >
-                              <span
-                                style={{
-                                  padding: "0.05rem 0.3rem",
-                                  borderRadius: 3,
-                                  background: t.amber + "12",
-                                  color: t.amber,
-                                  fontWeight: 600,
-                                  fontSize: "0.55rem",
-                                }}
-                              >
-                                PENDING
-                              </span>
-                              {" · "}
-                              {inv.role}
-                            </div>
-                          </div>
-                        </div>
-                        {isOwner && (
-                          <button
-                            onClick={async function () {
-                              await supabase
-                                .from("pending_invites")
-                                .delete()
-                                .eq("id", inv.id);
-                              setPendingInvites(function (prev) {
-                                return prev.filter(function (p) {
-                                  return p.id !== inv.id;
-                                });
-                              });
-                            }}
-                            style={{
-                              background: "none",
-                              border: "none",
-                              color: t.red,
-                              cursor: "pointer",
-                              fontFamily: "var(--mono)",
-                              fontSize: "0.62rem",
-                              fontWeight: 500,
-                              padding: "0.2rem 0.4rem",
-                            }}
-                          >
-                            Cancel
-                          </button>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          )}
-
-          {isOwner && canInvite && (
-            <div style={{ paddingTop: "0.8rem" }}>
-              <div
-                style={{
-                  fontFamily: "var(--mono)",
-                  fontSize: "0.62rem",
-                  color: t.ink50,
-                  textTransform: "uppercase",
-                  letterSpacing: "0.06em",
-                  marginBottom: "0.5rem",
-                }}
-              >
-                Invite a team member
-              </div>
-              <InviteForm orgId={org.id} onInvited={loadMembers} />
-            </div>
-          )}
-
-          {isOwner && !canInvite && (
+              Control which alerts you receive by email and Slack after scans
+              complete.
+            </p>
             <div
               style={{
-                paddingTop: "0.8rem",
                 display: "flex",
-                alignItems: "center",
-                gap: "0.4rem",
-                fontSize: "0.78rem",
-                color: t.ink50,
-                fontStyle: "italic",
+                flexDirection: "column",
+                gap: "0.15rem",
+                marginBottom: "1rem",
               }}
             >
-              <Lock size={13} color={t.ink50} /> Team invites available on Pro
-              and Agency plans.
+              <Toggle
+                checked={notifScans}
+                onChange={setNotifScans}
+                label="Scan complete"
+              />
+              <Toggle
+                checked={notifIssues}
+                onChange={setNotifIssues}
+                label="New critical issues found"
+              />
+              <Toggle
+                checked={notifWeekly}
+                onChange={setNotifWeekly}
+                label="Weekly digest"
+              />
             </div>
-          )}
-        </div>
+            <button
+              onClick={handleNotifSave}
+              disabled={notifSaving}
+              style={{
+                padding: "0.45rem 0.9rem",
+                borderRadius: 6,
+                border: "none",
+                background: t.accent,
+                color: "white",
+                fontFamily: "var(--body)",
+                fontSize: "0.8rem",
+                fontWeight: 600,
+                cursor: notifSaving ? "not-allowed" : "pointer",
+                opacity: notifSaving ? 0.5 : 1,
+                display: "flex",
+                alignItems: "center",
+                gap: "0.3rem",
+              }}
+            >
+              {notifSaving ? (
+                <Loader2 size={13} className="xsbl-spin" />
+              ) : (
+                <Save size={13} />
+              )}{" "}
+              Save preferences
+            </button>
+          </div>
+
+          {/* Integrations — Slack + Email */}
+          <PlanGate
+            currentPlan={org?.plan || "free"}
+            requiredPlan="pro"
+            feature="Slack & email alerts"
+          >
+            <AlertIntegrations org={org} />
+          </PlanGate>
+        </>
       )}
 
-      {/* Notifications */}
-      <div
-        style={{
-          padding: "1.5rem",
-          borderRadius: 12,
-          border: `1px solid ${t.ink08}`,
-          background: t.cardBg,
-          marginBottom: "1rem",
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "0.5rem",
-            marginBottom: "0.6rem",
-          }}
-        >
-          <Bell size={17} color={t.accent} strokeWidth={1.8} />
-          <h3
+      {/* ═══ Integrations tab ═══ */}
+      {settingsTab === "integrations" && (
+        <>
+          {/* API Keys — Pro+ */}
+          <PlanGate
+            currentPlan={org?.plan || "free"}
+            requiredPlan="pro"
+            feature="API keys"
+          >
+            <ApiKeysPanel org={org} />
+          </PlanGate>
+
+          {/* Scheduled Reports — Agency only */}
+          <PlanGate
+            currentPlan={org?.plan || "free"}
+            requiredPlan="agency"
+            feature="Scheduled PDF reports to clients"
+          >
+            <ScheduledReports org={org} />
+          </PlanGate>
+
+          {/* Client Access — Agency only */}
+          <PlanGate
+            currentPlan={org?.plan || "free"}
+            requiredPlan="agency"
+            feature="Client read-only dashboards"
+          >
+            <ClientAccessPanel org={org} />
+          </PlanGate>
+        </>
+      )}
+
+      {/* ═══ Account tab ═══ */}
+      {settingsTab === "account" && (
+        <>
+          {/* Danger zone */}
+          <div
             style={{
-              fontSize: "0.95rem",
-              fontWeight: 600,
-              color: t.ink,
-              margin: 0,
+              padding: "1.5rem",
+              borderRadius: 12,
+              border: `1px solid ${t.red}20`,
+              background: `${t.red}04`,
             }}
           >
-            Notifications
-          </h3>
-        </div>
-        <p
-          style={{
-            fontSize: "0.76rem",
-            color: t.ink50,
-            marginBottom: "0.8rem",
-            lineHeight: 1.6,
-          }}
-        >
-          Control which alerts you receive by email and Slack after scans
-          complete.
-        </p>
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: "0.15rem",
-            marginBottom: "1rem",
-          }}
-        >
-          <Toggle
-            checked={notifScans}
-            onChange={setNotifScans}
-            label="Scan complete"
-          />
-          <Toggle
-            checked={notifIssues}
-            onChange={setNotifIssues}
-            label="New critical issues found"
-          />
-          <Toggle
-            checked={notifWeekly}
-            onChange={setNotifWeekly}
-            label="Weekly digest"
-          />
-        </div>
-        <button
-          onClick={handleNotifSave}
-          disabled={notifSaving}
-          style={{
-            padding: "0.45rem 0.9rem",
-            borderRadius: 6,
-            border: "none",
-            background: t.accent,
-            color: "white",
-            fontFamily: "var(--body)",
-            fontSize: "0.8rem",
-            fontWeight: 600,
-            cursor: notifSaving ? "not-allowed" : "pointer",
-            opacity: notifSaving ? 0.5 : 1,
-            display: "flex",
-            alignItems: "center",
-            gap: "0.3rem",
-          }}
-        >
-          {notifSaving ? (
-            <Loader2 size={13} className="xsbl-spin" />
-          ) : (
-            <Save size={13} />
-          )}{" "}
-          Save preferences
-        </button>
-      </div>
-
-      {/* Integrations — Slack + Email */}
-      <PlanGate
-        currentPlan={org?.plan || "free"}
-        requiredPlan="pro"
-        feature="Slack & email alerts"
-      >
-        <AlertIntegrations org={org} />
-      </PlanGate>
-
-      {/* API Keys — Pro+ */}
-      <PlanGate
-        currentPlan={org?.plan || "free"}
-        requiredPlan="pro"
-        feature="API keys"
-      >
-        <ApiKeysPanel org={org} />
-      </PlanGate>
-
-      {/* Scheduled Reports — Agency only */}
-      <PlanGate
-        currentPlan={org?.plan || "free"}
-        requiredPlan="agency"
-        feature="Scheduled PDF reports to clients"
-      >
-        <ScheduledReports org={org} />
-      </PlanGate>
-
-      {/* Danger zone */}
-      <div
-        style={{
-          padding: "1.5rem",
-          borderRadius: 12,
-          border: `1px solid ${t.red}20`,
-          background: `${t.red}04`,
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "0.5rem",
-            marginBottom: "0.6rem",
-          }}
-        >
-          <Trash2 size={17} color={t.red} strokeWidth={1.8} />
-          <h3
-            style={{
-              fontSize: "0.95rem",
-              fontWeight: 600,
-              color: t.red,
-              margin: 0,
-            }}
-          >
-            Danger zone
-          </h3>
-        </div>
-        <p
-          style={{
-            fontSize: "0.82rem",
-            color: t.ink50,
-            marginBottom: "0.8rem",
-            lineHeight: 1.6,
-          }}
-        >
-          Deleting your account removes all sites, scans, and issues
-          permanently. This cannot be undone.
-        </p>
-        <button
-          onClick={handleDeleteAccount}
-          style={{
-            padding: "0.45rem 0.9rem",
-            borderRadius: 6,
-            border: `1.5px solid ${t.red}`,
-            background: "none",
-            color: t.red,
-            fontFamily: "var(--body)",
-            fontSize: "0.8rem",
-            fontWeight: 600,
-            cursor: "pointer",
-          }}
-        >
-          Delete account
-        </button>
-      </div>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "0.5rem",
+                marginBottom: "0.6rem",
+              }}
+            >
+              <Trash2 size={17} color={t.red} strokeWidth={1.8} />
+              <h3
+                style={{
+                  fontSize: "0.95rem",
+                  fontWeight: 600,
+                  color: t.red,
+                  margin: 0,
+                }}
+              >
+                Danger zone
+              </h3>
+            </div>
+            <p
+              style={{
+                fontSize: "0.82rem",
+                color: t.ink50,
+                marginBottom: "0.8rem",
+                lineHeight: 1.6,
+              }}
+            >
+              Deleting your account removes all sites, scans, and issues
+              permanently. This cannot be undone.
+            </p>
+            <button
+              onClick={handleDeleteAccount}
+              style={{
+                padding: "0.45rem 0.9rem",
+                borderRadius: 6,
+                border: `1.5px solid ${t.red}`,
+                background: "none",
+                color: t.red,
+                fontFamily: "var(--body)",
+                fontSize: "0.8rem",
+                fontWeight: 600,
+                cursor: "pointer",
+              }}
+            >
+              Delete account
+            </button>
+          </div>
+        </>
+      )}
 
       <style>{`@keyframes xsbl-spin { to { transform: rotate(360deg); } } .xsbl-spin { animation: xsbl-spin 0.6s linear infinite; }`}</style>
     </div>

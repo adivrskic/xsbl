@@ -37,7 +37,7 @@ function FeatureCard({ icon, title, desc, delay }) {
           <span className="feature-card__icon">
             {Icon && <Icon size={16} color={t.accent} strokeWidth={2} />}
           </span>
-          <h4 className="feature-card__title">{title}</h4>
+          <h3 className="feature-card__title">{title}</h3>
         </div>
         <p className="feature-card__desc">{desc}</p>
       </div>
@@ -53,7 +53,7 @@ export default function AgentSection() {
       </FadeIn>
       <FadeIn delay={0.05}>
         <H2>
-          Everything you need to <Italic>fix accessibility</Italic>
+          Everything you need to <Italic>actually</Italic> fix accessibility
         </H2>
       </FadeIn>
       <FadeIn delay={0.1}>

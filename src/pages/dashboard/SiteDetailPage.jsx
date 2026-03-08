@@ -5,6 +5,10 @@ import { useAuth } from "../../context/AuthContext";
 import { supabase } from "../../lib/supabase";
 import { invalidateSitesCache } from "./SitesPage";
 import {
+  useKeyboardShortcuts,
+  ShortcutHelpOverlay,
+} from "../../components/ui/KeyboardShortcuts";
+import {
   AlertTriangle,
   Play,
   Trash2,
@@ -1650,9 +1654,11 @@ export default function SiteDetailPage() {
   const [showScanConfig, setShowScanConfig] = useState(false);
   const [selectedForFix, setSelectedForFix] = useState([]);
   const [viewMode, setViewMode] = useState("grouped");
+  const [groupBy, setGroupBy] = useState("rule");
   const [showSimulator, setShowSimulator] = useState(false);
   const [expandedGroups, setExpandedGroups] = useState({});
   const [showScoreExplainer, setShowScoreExplainer] = useState(false);
+  const [showShortcutHelp, setShowShortcutHelp] = useState(false);
 
   // Module-level cache for site detail data
   const cacheRef = useRef({ id: null, site: null, scans: null, issues: null });
@@ -1799,26 +1805,53 @@ export default function SiteDetailPage() {
   // Group issues by rule_id + description (deduplication)
   var groupedIssues = [];
   var groupMap = {};
-  for (var gi = 0; gi < sortedIssues.length; gi++) {
-    var iss = sortedIssues[gi];
-    var key = iss.rule_id + "||" + (iss.description || "");
-    if (!groupMap[key]) {
-      groupMap[key] = {
-        rule_id: iss.rule_id,
-        description: iss.description,
-        impact: iss.impact,
-        wcag_tags: iss.wcag_tags,
-        instances: [],
-        pages: new Set(),
-        expanded: false,
-      };
-      groupedIssues.push(groupMap[key]);
+
+  if (groupBy === "page") {
+    // Group by page_url
+    for (var gi = 0; gi < sortedIssues.length; gi++) {
+      var iss = sortedIssues[gi];
+      var key = iss.page_url || "(unknown page)";
+      if (!groupMap[key]) {
+        groupMap[key] = {
+          rule_id: key,
+          description: null,
+          label: key.replace(/^https?:\/\/[^/]+/, "").replace(/\/$/, "") || "/",
+          impact: iss.impact,
+          wcag_tags: [],
+          instances: [],
+          pages: new Set(),
+          expanded: false,
+          isPageGroup: true,
+        };
+        groupedIssues.push(groupMap[key]);
+      }
+      groupMap[key].instances.push(iss);
+      groupMap[key].pages.add(iss.page_url);
+      if (impactOrder[iss.impact] < impactOrder[groupMap[key].impact])
+        groupMap[key].impact = iss.impact;
     }
-    groupMap[key].instances.push(iss);
-    if (iss.page_url) groupMap[key].pages.add(iss.page_url);
-    // Use the worst impact
-    if (impactOrder[iss.impact] < impactOrder[groupMap[key].impact])
-      groupMap[key].impact = iss.impact;
+  } else {
+    // Group by rule_id (default)
+    for (var gi = 0; gi < sortedIssues.length; gi++) {
+      var iss = sortedIssues[gi];
+      var key = iss.rule_id + "||" + (iss.description || "");
+      if (!groupMap[key]) {
+        groupMap[key] = {
+          rule_id: iss.rule_id,
+          description: iss.description,
+          impact: iss.impact,
+          wcag_tags: iss.wcag_tags,
+          instances: [],
+          pages: new Set(),
+          expanded: false,
+        };
+        groupedIssues.push(groupMap[key]);
+      }
+      groupMap[key].instances.push(iss);
+      if (iss.page_url) groupMap[key].pages.add(iss.page_url);
+      if (impactOrder[iss.impact] < impactOrder[groupMap[key].impact])
+        groupMap[key].impact = iss.impact;
+    }
   }
   // Convert Sets to counts
   for (var gk = 0; gk < groupedIssues.length; gk++) {
@@ -1828,6 +1861,108 @@ export default function SiteDetailPage() {
       return i.id;
     });
   }
+
+  // ── Keyboard shortcuts ──
+  var shortcutDefs = [
+    {
+      key: "?",
+      description: "Show keyboard shortcuts",
+      category: "General",
+      handler: function () {
+        setShowShortcutHelp(true);
+      },
+    },
+    {
+      key: "s",
+      description: "Quick scan",
+      category: "Actions",
+      handler: function () {
+        if (!scanning && !isClient && site) handleScan();
+      },
+    },
+    {
+      key: "1",
+      description: "Overview tab",
+      category: "Navigation",
+      handler: function () {
+        setTab("overview");
+      },
+    },
+    {
+      key: "2",
+      description: "Issues tab",
+      category: "Navigation",
+      handler: function () {
+        setTab("issues");
+      },
+    },
+    {
+      key: "3",
+      description: "Scans tab",
+      category: "Navigation",
+      handler: function () {
+        setTab("scans");
+      },
+    },
+    {
+      key: "4",
+      description: "Settings tab",
+      category: "Navigation",
+      handler: function () {
+        if (!isClient) setTab("settings");
+      },
+    },
+    {
+      key: "j",
+      description: "Next issue",
+      category: "Issues",
+      handler: function () {
+        if (tab !== "issues" || sortedIssues.length === 0) return;
+        var currentIdx = selectedIssue
+          ? sortedIssues.findIndex(function (i) {
+              return i.id === selectedIssue.id;
+            })
+          : -1;
+        var nextIdx = Math.min(currentIdx + 1, sortedIssues.length - 1);
+        setSelectedIssue(sortedIssues[nextIdx]);
+      },
+    },
+    {
+      key: "k",
+      description: "Previous issue",
+      category: "Issues",
+      handler: function () {
+        if (tab !== "issues" || sortedIssues.length === 0) return;
+        var currentIdx = selectedIssue
+          ? sortedIssues.findIndex(function (i) {
+              return i.id === selectedIssue.id;
+            })
+          : 0;
+        var prevIdx = Math.max(currentIdx - 1, 0);
+        setSelectedIssue(sortedIssues[prevIdx]);
+      },
+    },
+    {
+      key: "escape",
+      description: "Close modal / deselect",
+      category: "General",
+      handler: function () {
+        if (showShortcutHelp) {
+          setShowShortcutHelp(false);
+          return;
+        }
+        if (selectedIssue) {
+          setSelectedIssue(null);
+          return;
+        }
+        if (showScanConfig) {
+          setShowScanConfig(false);
+          return;
+        }
+      },
+    },
+  ];
+  useKeyboardShortcuts(shortcutDefs);
 
   if (loading)
     return (
@@ -1965,8 +2100,8 @@ export default function SiteDetailPage() {
       label: `Issues (${issues.filter((i) => i.status === "open").length})`,
     },
     { id: "scans", label: "Scans" },
-    { id: "settings", label: "Settings" },
-  ];
+    !isClient && { id: "settings", label: "Settings" },
+  ].filter(Boolean);
 
   const openCount = issues.filter((i) => i.status === "open").length;
   const criticalCount = issues.filter(
@@ -1974,6 +2109,7 @@ export default function SiteDetailPage() {
   ).length;
 
   var plan = org?.plan || "free";
+  var isClient = org?.role === "client";
 
   var ISSUES_PER_PR = { free: 1, starter: 5, pro: 10, agency: 20 };
   var maxPerPr = ISSUES_PER_PR[plan] || 1;
@@ -2105,199 +2241,206 @@ export default function SiteDetailPage() {
       {/* ── Overview ── */}
       {tab === "overview" && (
         <div>
-          {/* ── Scan panel ── */}
-          <div
-            style={{
-              padding: "1.2rem 1.4rem",
-              borderRadius: 12,
-              border: "1px solid " + t.accent + "25",
-              background: t.accentBg,
-              marginBottom: "1.5rem",
-            }}
-          >
+          {/* ── Scan panel (hidden for client users) ── */}
+          {!isClient && (
             <div
               style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                flexWrap: "wrap",
-                gap: "0.8rem",
+                padding: "1.2rem 1.4rem",
+                borderRadius: 12,
+                border: "1px solid " + t.accent + "25",
+                background: t.accentBg,
+                marginBottom: "1.5rem",
               }}
             >
-              <div>
-                <h3
-                  style={{
-                    fontFamily: "var(--serif)",
-                    fontSize: "1rem",
-                    fontWeight: 700,
-                    color: t.ink,
-                    margin: "0 0 0.15rem",
-                  }}
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  flexWrap: "wrap",
+                  gap: "0.8rem",
+                }}
+              >
+                <div>
+                  <h3
+                    style={{
+                      fontFamily: "var(--serif)",
+                      fontSize: "1rem",
+                      fontWeight: 700,
+                      color: t.ink,
+                      margin: "0 0 0.15rem",
+                    }}
+                  >
+                    Run a scan
+                  </h3>
+                  <p
+                    style={{
+                      fontFamily: "var(--body)",
+                      fontSize: "0.78rem",
+                      color: t.ink50,
+                      margin: 0,
+                    }}
+                  >
+                    {site.last_scan_at
+                      ? "Last scanned " +
+                        new Date(site.last_scan_at).toLocaleDateString(
+                          "en-US",
+                          {
+                            month: "short",
+                            day: "numeric",
+                            hour: "numeric",
+                            minute: "2-digit",
+                          }
+                        )
+                      : "No scans yet"}
+                  </p>
+                </div>
+                <div
+                  style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}
                 >
-                  Run a scan
-                </h3>
-                <p
-                  style={{
-                    fontFamily: "var(--body)",
-                    fontSize: "0.78rem",
-                    color: t.ink50,
-                    margin: 0,
-                  }}
-                >
-                  {site.last_scan_at
-                    ? "Last scanned " +
-                      new Date(site.last_scan_at).toLocaleDateString("en-US", {
-                        month: "short",
-                        day: "numeric",
-                        hour: "numeric",
-                        minute: "2-digit",
-                      })
-                    : "No scans yet"}
-                </p>
+                  <button
+                    onClick={() => handleScan()}
+                    disabled={scanning}
+                    style={{
+                      padding: "0.6rem 1.4rem",
+                      borderRadius: 8,
+                      border: "none",
+                      background: t.accent,
+                      color: "white",
+                      fontFamily: "var(--body)",
+                      fontSize: "0.88rem",
+                      fontWeight: 600,
+                      cursor: scanning ? "not-allowed" : "pointer",
+                      opacity: scanning ? 0.6 : 1,
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "0.5rem",
+                    }}
+                  >
+                    {scanning ? (
+                      <Loader2 size={15} className="xsbl-spin" />
+                    ) : (
+                      <Play size={15} fill="white" />
+                    )}
+                    {scanning ? "Scanning\u2026" : "Quick scan"}
+                  </button>
+                  <button
+                    onClick={() => setShowScanConfig(true)}
+                    disabled={scanning}
+                    style={{
+                      padding: "0.6rem 1.2rem",
+                      borderRadius: 8,
+                      border: "1.5px solid " + t.ink20,
+                      background: "none",
+                      color: t.ink,
+                      fontFamily: "var(--body)",
+                      fontSize: "0.85rem",
+                      fontWeight: 500,
+                      cursor: scanning ? "not-allowed" : "pointer",
+                      opacity: scanning ? 0.6 : 1,
+                    }}
+                  >
+                    Configure scan
+                  </button>
+                  {scans.length > 0 && (
+                    <PlanGate
+                      currentPlan={plan}
+                      requiredPlan="pro"
+                      feature="PDF reports"
+                      compact
+                    >
+                      <ReportButton site={site} scan={scans[0]} />
+                    </PlanGate>
+                  )}
+                  {scans.length > 0 && (
+                    <PlanGate
+                      currentPlan={plan}
+                      requiredPlan="starter"
+                      feature="Simulator"
+                      compact
+                    >
+                      <button
+                        onClick={function () {
+                          setShowSimulator(true);
+                        }}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "0.4rem",
+                          padding: "0.5rem 1rem",
+                          borderRadius: 7,
+                          border: "1.5px solid " + t.accent + "40",
+                          background: "transparent",
+                          color: t.accent,
+                          fontFamily: "var(--body)",
+                          fontSize: "0.82rem",
+                          fontWeight: 600,
+                          cursor: "pointer",
+                          transition: "all 0.2s",
+                        }}
+                        onMouseEnter={function (e) {
+                          e.currentTarget.style.background = t.accent;
+                          e.currentTarget.style.color = "white";
+                        }}
+                        onMouseLeave={function (e) {
+                          e.currentTarget.style.background = "transparent";
+                          e.currentTarget.style.color = t.accent;
+                        }}
+                      >
+                        <Eye size={14} /> Simulate vision
+                      </button>
+                    </PlanGate>
+                  )}
+                </div>
               </div>
-              <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
-                <button
-                  onClick={() => handleScan()}
-                  disabled={scanning}
+
+              {/* Progress + error below buttons */}
+              {scanProgress && (
+                <div
                   style={{
-                    padding: "0.6rem 1.4rem",
+                    marginTop: "0.8rem",
+                    padding: "0.5rem 0.8rem",
                     borderRadius: 8,
-                    border: "none",
-                    background: t.accent,
-                    color: "white",
-                    fontFamily: "var(--body)",
-                    fontSize: "0.88rem",
-                    fontWeight: 600,
-                    cursor: scanning ? "not-allowed" : "pointer",
-                    opacity: scanning ? 0.6 : 1,
+                    background: t.cardBg,
+                    border: "1px solid " + t.ink08,
                     display: "flex",
                     alignItems: "center",
                     gap: "0.5rem",
+                    fontFamily: "var(--mono)",
+                    fontSize: "0.75rem",
+                    color: t.accent,
                   }}
                 >
-                  {scanning ? (
-                    <Loader2 size={15} className="xsbl-spin" />
-                  ) : (
-                    <Play size={15} fill="white" />
-                  )}
-                  {scanning ? "Scanning\u2026" : "Quick scan"}
-                </button>
-                <button
-                  onClick={() => setShowScanConfig(true)}
-                  disabled={scanning}
+                  <Loader2 size={13} className="xsbl-spin" />
+                  {scanProgress}
+                </div>
+              )}
+              {scanError && (
+                <div
                   style={{
-                    padding: "0.6rem 1.2rem",
+                    marginTop: "0.6rem",
+                    padding: "0.55rem 0.9rem",
                     borderRadius: 8,
-                    border: "1.5px solid " + t.ink20,
-                    background: "none",
-                    color: t.ink,
-                    fontFamily: "var(--body)",
-                    fontSize: "0.85rem",
-                    fontWeight: 500,
-                    cursor: scanning ? "not-allowed" : "pointer",
-                    opacity: scanning ? 0.6 : 1,
+                    background: t.red + "08",
+                    border: "1px solid " + t.red + "20",
+                    color: t.red,
+                    fontSize: "0.82rem",
+                    lineHeight: 1.5,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "0.4rem",
                   }}
                 >
-                  Configure scan
-                </button>
-                {scans.length > 0 && (
-                  <PlanGate
-                    currentPlan={plan}
-                    requiredPlan="pro"
-                    feature="PDF reports"
-                    compact
-                  >
-                    <ReportButton site={site} scan={scans[0]} />
-                  </PlanGate>
-                )}
-                {scans.length > 0 && (
-                  <PlanGate
-                    currentPlan={plan}
-                    requiredPlan="starter"
-                    feature="Simulator"
-                    compact
-                  >
-                    <button
-                      onClick={function () {
-                        setShowSimulator(true);
-                      }}
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "0.4rem",
-                        padding: "0.5rem 1rem",
-                        borderRadius: 7,
-                        border: "1.5px solid " + t.accent + "40",
-                        background: "transparent",
-                        color: t.accent,
-                        fontFamily: "var(--body)",
-                        fontSize: "0.82rem",
-                        fontWeight: 600,
-                        cursor: "pointer",
-                        transition: "all 0.2s",
-                      }}
-                      onMouseEnter={function (e) {
-                        e.currentTarget.style.background = t.accent;
-                        e.currentTarget.style.color = "white";
-                      }}
-                      onMouseLeave={function (e) {
-                        e.currentTarget.style.background = "transparent";
-                        e.currentTarget.style.color = t.accent;
-                      }}
-                    >
-                      <Eye size={14} /> Simulate vision
-                    </button>
-                  </PlanGate>
-                )}
-              </div>
+                  <AlertTriangle
+                    size={14}
+                    strokeWidth={2}
+                    style={{ flexShrink: 0 }}
+                  />
+                  {scanError}
+                </div>
+              )}
             </div>
-
-            {/* Progress + error below buttons */}
-            {scanProgress && (
-              <div
-                style={{
-                  marginTop: "0.8rem",
-                  padding: "0.5rem 0.8rem",
-                  borderRadius: 8,
-                  background: t.cardBg,
-                  border: "1px solid " + t.ink08,
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "0.5rem",
-                  fontFamily: "var(--mono)",
-                  fontSize: "0.75rem",
-                  color: t.accent,
-                }}
-              >
-                <Loader2 size={13} className="xsbl-spin" />
-                {scanProgress}
-              </div>
-            )}
-            {scanError && (
-              <div
-                style={{
-                  marginTop: "0.6rem",
-                  padding: "0.55rem 0.9rem",
-                  borderRadius: 8,
-                  background: t.red + "08",
-                  border: "1px solid " + t.red + "20",
-                  color: t.red,
-                  fontSize: "0.82rem",
-                  lineHeight: 1.5,
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "0.4rem",
-                }}
-              >
-                <AlertTriangle
-                  size={14}
-                  strokeWidth={2}
-                  style={{ flexShrink: 0 }}
-                />
-                {scanError}
-              </div>
-            )}
-          </div>
+          )}
 
           {/* Stats row */}
           <div
@@ -2427,6 +2570,43 @@ export default function SiteDetailPage() {
             ))}
           </div>
 
+          {/* Powered by badge — free tier only */}
+          {plan === "free" && site.score != null && (
+            <div style={{ textAlign: "center", marginBottom: "1rem" }}>
+              <a
+                href="https://xsbl.io"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "0.35rem",
+                  padding: "0.3rem 0.7rem",
+                  borderRadius: 6,
+                  border: "1px solid " + t.ink08,
+                  background: t.ink04,
+                  textDecoration: "none",
+                  fontFamily: "var(--mono)",
+                  fontSize: "0.58rem",
+                  color: t.ink50,
+                  transition: "all 0.15s",
+                }}
+                onMouseEnter={function (e) {
+                  e.currentTarget.style.borderColor = t.accent;
+                  e.currentTarget.style.color = t.accent;
+                }}
+                onMouseLeave={function (e) {
+                  e.currentTarget.style.borderColor = t.ink08;
+                  e.currentTarget.style.color = t.ink50;
+                }}
+              >
+                Scanned by{" "}
+                <span style={{ fontWeight: 600, color: t.ink }}>xsbl</span>
+                <span style={{ color: t.accent }}>.</span>
+              </a>
+            </div>
+          )}
+
           {/* Page breakdown from latest scan */}
           {scans.length > 0 && scans[0].summary_json?.pages?.length > 1 && (
             <PlanGate
@@ -2487,30 +2667,38 @@ export default function SiteDetailPage() {
                 }}
               >
                 {[
-                  { v: "grouped", l: "Grouped" },
+                  { v: "rule", l: "By rule" },
+                  { v: "page", l: "By page" },
                   { v: "flat", l: "Flat" },
                 ].map(function (opt) {
+                  var isActive =
+                    opt.v === "flat"
+                      ? viewMode === "flat"
+                      : viewMode === "grouped" && groupBy === opt.v;
                   return (
                     <button
                       key={opt.v}
                       onClick={function () {
-                        setViewMode(opt.v);
+                        if (opt.v === "flat") {
+                          setViewMode("flat");
+                        } else {
+                          setViewMode("grouped");
+                          setGroupBy(opt.v);
+                        }
                       }}
                       style={{
                         padding: "0.25rem 0.6rem",
                         borderRadius: 5,
                         border: "none",
-                        background:
-                          viewMode === opt.v ? t.cardBg : "transparent",
-                        color: viewMode === opt.v ? t.ink : t.ink50,
+                        background: isActive ? t.cardBg : "transparent",
+                        color: isActive ? t.ink : t.ink50,
                         fontFamily: "var(--mono)",
                         fontSize: "0.6rem",
                         fontWeight: 600,
                         cursor: "pointer",
-                        boxShadow:
-                          viewMode === opt.v
-                            ? "0 1px 3px rgba(0,0,0,0.08)"
-                            : "none",
+                        boxShadow: isActive
+                          ? "0 1px 3px rgba(0,0,0,0.08)"
+                          : "none",
                       }}
                     >
                       {opt.l}
@@ -2555,7 +2743,7 @@ export default function SiteDetailPage() {
             </div>
           </div>
 
-          {sortedIssues.length > 0 && site.github_repo && (
+          {sortedIssues.length > 0 && site.github_repo && !isClient && (
             <div
               style={{
                 display: "flex",
@@ -2788,7 +2976,7 @@ export default function SiteDetailPage() {
                           e.currentTarget.style.borderColor = t.ink08;
                       }}
                     >
-                      {site.github_repo && (
+                      {site.github_repo && !isClient && (
                         <div
                           onClick={function (e) {
                             e.stopPropagation();
@@ -2864,14 +3052,15 @@ export default function SiteDetailPage() {
                               fontSize: "0.7rem",
                               color: t.accent,
                               fontWeight: 600,
-                              width: 140,
+                              width: groupBy === "page" ? "auto" : 140,
+                              maxWidth: groupBy === "page" ? 240 : 140,
                               flexShrink: 0,
                               overflow: "hidden",
                               textOverflow: "ellipsis",
                               whiteSpace: "nowrap",
                             }}
                           >
-                            {group.rule_id}
+                            {group.isPageGroup ? group.label : group.rule_id}
                           </span>
                           <span
                             style={{
@@ -2882,7 +3071,11 @@ export default function SiteDetailPage() {
                               whiteSpace: "nowrap",
                             }}
                           >
-                            {group.description}
+                            {group.isPageGroup
+                              ? group.instances.length +
+                                " issue" +
+                                (group.instances.length !== 1 ? "s" : "")
+                              : group.description}
                           </span>
                         </div>
                       </div>
@@ -2920,7 +3113,15 @@ export default function SiteDetailPage() {
                             textAlign: "center",
                           }}
                         >
-                          {group.pageCount} pg
+                          {group.isPageGroup
+                            ? [
+                                ...new Set(
+                                  group.instances.map(function (i) {
+                                    return i.rule_id;
+                                  })
+                                ),
+                              ].length + " rules"
+                            : group.pageCount + " pg"}
                         </span>
                         <ChevronDown
                           size={14}
@@ -2971,7 +3172,7 @@ export default function SiteDetailPage() {
                                 opacity: inst.status !== "open" ? 0.5 : 1,
                               }}
                             >
-                              {site.github_repo && (
+                              {site.github_repo && !isClient && (
                                 <div
                                   onClick={function (e) {
                                     e.stopPropagation();
@@ -3127,7 +3328,7 @@ export default function SiteDetailPage() {
                         e.currentTarget.style.borderColor = t.ink08;
                     }}
                   >
-                    {site.github_repo && (
+                    {site.github_repo && !isClient && (
                       <div
                         onClick={function (e) {
                           e.stopPropagation();
@@ -3272,20 +3473,22 @@ export default function SiteDetailPage() {
             </div>
           )}
 
-          <BulkFixBar
-            selectedIds={selectedForFix}
-            issues={issues}
-            site={site}
-            maxPerPr={maxPerPr}
-            plan={plan}
-            onClear={function () {
-              setSelectedForFix([]);
-            }}
-            onFixed={function () {
-              setSelectedForFix([]);
-              loadData(true);
-            }}
-          />
+          {!isClient && (
+            <BulkFixBar
+              selectedIds={selectedForFix}
+              issues={issues}
+              site={site}
+              maxPerPr={maxPerPr}
+              plan={plan}
+              onClear={function () {
+                setSelectedForFix([]);
+              }}
+              onFixed={function () {
+                setSelectedForFix([]);
+                loadData(true);
+              }}
+            />
+          )}
         </div>
       )}
       {/* ── Scans ── */}
@@ -3444,6 +3647,7 @@ export default function SiteDetailPage() {
           site={site}
           onClose={() => setSelectedIssue(null)}
           onUpdate={handleIssueUpdate}
+          readOnly={isClient}
         />
       )}
 
@@ -3480,6 +3684,52 @@ export default function SiteDetailPage() {
           }}
         />
       )}
+
+      {/* Keyboard shortcuts help */}
+      {showShortcutHelp && (
+        <ShortcutHelpOverlay
+          shortcuts={shortcutDefs}
+          onClose={function () {
+            setShowShortcutHelp(false);
+          }}
+        />
+      )}
+
+      {/* Shortcut hint */}
+      <button
+        onClick={function () {
+          setShowShortcutHelp(true);
+        }}
+        title="Keyboard shortcuts (?)"
+        style={{
+          position: "fixed",
+          bottom: 16,
+          right: 16,
+          width: 28,
+          height: 28,
+          borderRadius: 6,
+          border: "1px solid " + t.ink08,
+          background: t.cardBg,
+          color: t.ink50,
+          fontFamily: "var(--mono)",
+          fontSize: "0.72rem",
+          fontWeight: 700,
+          cursor: "pointer",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+          zIndex: 20,
+        }}
+        onMouseEnter={function (e) {
+          e.currentTarget.style.color = t.accent;
+        }}
+        onMouseLeave={function (e) {
+          e.currentTarget.style.color = t.ink50;
+        }}
+      >
+        ?
+      </button>
     </div>
   );
 }

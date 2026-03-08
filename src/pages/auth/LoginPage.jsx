@@ -1,7 +1,13 @@
 import { useState } from "react";
-import { Link, useNavigate, useLocation } from "react-router-dom";
+import {
+  Link,
+  useNavigate,
+  useLocation,
+  useSearchParams,
+} from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { useTheme } from "../../context/ThemeContext";
+import { supabase } from "../../lib/supabase";
 import XsblBull from "../../components/landing/XsblBull";
 import "../../styles/auth.css";
 
@@ -47,6 +53,8 @@ export default function LoginPage() {
   const { signIn, signInWithOAuth, resetPassword } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const [searchParams] = useSearchParams();
+  const inviteId = searchParams.get("invite");
   const from = location.state?.from?.pathname || "/dashboard";
 
   const [email, setEmail] = useState("");
@@ -64,7 +72,23 @@ export default function LoginPage() {
     if (err) {
       setError(err.message);
       setLoading(false);
-    } else navigate(from, { replace: true });
+    } else {
+      // Accept client invite if present
+      if (inviteId) {
+        try {
+          var {
+            data: { session: s },
+          } = await supabase.auth.getSession();
+          await supabase.functions.invoke("client-access?action=accept", {
+            body: { invite_id: inviteId },
+            headers: { Authorization: "Bearer " + (s?.access_token || "") },
+          });
+        } catch (e) {
+          console.log("[login] Invite accept failed:", e);
+        }
+      }
+      navigate(from, { replace: true });
+    }
   };
 
   const handleForgotSubmit = async (e) => {
@@ -99,8 +123,14 @@ export default function LoginPage() {
           xsbl<span className="auth-logo__dot">.</span>
         </Link>
 
-        <h1 className="auth-title">Welcome back</h1>
-        <p className="auth-subtitle">Sign in to your xsbl dashboard.</p>
+        <h1 className="auth-title">
+          {inviteId ? "Accept invitation" : "Welcome back"}
+        </h1>
+        <p className="auth-subtitle">
+          {inviteId
+            ? "Sign in to view the accessibility dashboard shared with you."
+            : "Sign in to your xsbl dashboard."}
+        </p>
 
         <div className="auth-oauth-group">
           <button
