@@ -541,7 +541,7 @@
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 0.4rem;
-  margin-top: 1rem;
+  margin-top: 3rem;
 }
 
 .gh-step {

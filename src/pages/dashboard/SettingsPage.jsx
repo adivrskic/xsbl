@@ -283,6 +283,7 @@ function MemberRow({ member, isCurrentUser, isOwner, onRemove }) {
 /* ── Invite form ── */
 function InviteForm({ orgId, onInvited }) {
   const { t } = useTheme();
+  const { session } = useAuth();
   const toast = useToast();
   const [email, setEmail] = useState("");
   const [role, setRole] = useState("member");
@@ -335,12 +336,11 @@ function InviteForm({ orgId, onInvited }) {
 
         // Try to send invite email if Resend is configured
         try {
-          var {
-            data: { session: s },
-          } = await supabase.auth.getSession();
           await supabase.functions.invoke("send-invite-email", {
             body: { email: cleanEmail, org_id: orgId, role: role },
-            headers: { Authorization: "Bearer " + (s ? s.access_token : "") },
+            headers: {
+              Authorization: "Bearer " + (session ? session.access_token : ""),
+            },
           });
         } catch (emailErr) {
           // Email sending is optional — invite is saved regardless
@@ -453,6 +453,7 @@ function InviteForm({ orgId, onInvited }) {
 /* ── Client Access (Agency) ── */
 function ClientAccessPanel({ org }) {
   const { t } = useTheme();
+  const { session } = useAuth();
   const [clients, setClients] = useState([]);
   const [pendingInvites, setPendingInvites] = useState([]);
   const [sites, setSites] = useState([]);
@@ -465,9 +466,6 @@ function ClientAccessPanel({ org }) {
   if (!org) return null;
 
   var loadClients = async function () {
-    var {
-      data: { session },
-    } = await supabase.auth.getSession();
     var { data } = await supabase.functions.invoke(
       "client-access?action=list",
       {
@@ -507,9 +505,6 @@ function ClientAccessPanel({ org }) {
   var handleInvite = async function () {
     if (!inviteEmail.trim() || inviteSiteIds.length === 0) return;
     setSending(true);
-    var {
-      data: { session },
-    } = await supabase.auth.getSession();
     var { data, error } = await supabase.functions.invoke(
       "client-access?action=invite",
       {
@@ -530,9 +525,6 @@ function ClientAccessPanel({ org }) {
   };
 
   var handleRemove = async function (userId) {
-    var {
-      data: { session },
-    } = await supabase.auth.getSession();
     await supabase.functions.invoke("client-access?action=remove", {
       body: { user_id: userId },
       headers: { Authorization: "Bearer " + (session?.access_token || "") },
@@ -839,6 +831,7 @@ function ClientAccessPanel({ org }) {
 /* ── API Keys Panel (Pro+) ── */
 function ApiKeysPanel({ org }) {
   const { t } = useTheme();
+  const { session } = useAuth();
   const [keys, setKeys] = useState([]);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
@@ -850,9 +843,6 @@ function ApiKeysPanel({ org }) {
   if (!org) return null;
 
   var loadKeys = async function () {
-    var {
-      data: { session },
-    } = await supabase.auth.getSession();
     var { data, error } = await supabase.functions.invoke(
       "api-keys?action=list",
       {
@@ -870,9 +860,6 @@ function ApiKeysPanel({ org }) {
   var handleCreate = async function () {
     if (!newKeyName.trim()) return;
     setCreating(true);
-    var {
-      data: { session },
-    } = await supabase.auth.getSession();
     var { data, error } = await supabase.functions.invoke(
       "api-keys?action=create",
       {
@@ -896,9 +883,6 @@ function ApiKeysPanel({ org }) {
 
   var handleRevoke = async function (keyId, keyName) {
     setRevoking(keyId);
-    var {
-      data: { session },
-    } = await supabase.auth.getSession();
     await supabase.functions.invoke("api-keys?action=revoke", {
       body: { id: keyId },
       headers: { Authorization: "Bearer " + (session?.access_token || "") },
@@ -1572,12 +1556,9 @@ function AlertIntegrations({ org }) {
     setTesting(true);
     setTestResult(null);
     try {
-      var {
-        data: { session: s },
-      } = await supabase.auth.getSession();
       var { data, error } = await supabase.functions.invoke("test-slack", {
         body: { webhook_url: slackUrl.trim() },
-        headers: { Authorization: "Bearer " + s?.access_token },
+        headers: { Authorization: "Bearer " + session?.access_token },
       });
       if (error) throw error;
       setTestResult(data?.ok ? "success" : "error");
@@ -1764,7 +1745,7 @@ function AlertIntegrations({ org }) {
 /* ── Main ── */
 export default function SettingsPage() {
   const { t } = useTheme();
-  const { user, org, refreshOrg } = useAuth();
+  const { user, org, session, refreshOrg } = useAuth();
   const toast = useToast();
   const confirm = useConfirm();
   const [members, setMembers] = useState([]);
@@ -1923,9 +1904,6 @@ export default function SettingsPage() {
 
     toast.info("Deleting account...");
     try {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
       const { data, error } = await supabase.functions.invoke(
         "delete-account",
         {

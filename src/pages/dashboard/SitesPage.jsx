@@ -10,10 +10,6 @@ import { Globe, Plus, Trash2, Lock } from "lucide-react";
 
 const SITE_LIMITS = { free: 1, starter: 1, pro: 999, agency: 999 };
 
-// Module-level cache — persists across component mounts
-var _sitesCache = { orgId: null, data: null };
-
-/* Allow other pages to invalidate the sites cache (e.g. after verification) */
 export function invalidateSitesCache() {
   _sitesCache = { orgId: null, data: null };
 }
@@ -272,15 +268,21 @@ function AddSiteModal({ onClose, onAdded }) {
 
 export default function SitesPage() {
   const { t } = useTheme();
-  const { org } = useAuth();
+  const {
+    org,
+    sites: contextSites,
+    refreshSites,
+    addSiteLocal,
+    removeSiteLocal,
+  } = useAuth();
   const toast = useToast();
   const confirm = useConfirm();
-  const [sites, setSites] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showAdd, setShowAdd] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
 
   var isClient = org?.role === "client";
+  var sites = contextSites || [];
 
   // Auto-open add modal when navigated with ?add=true
   useEffect(() => {
@@ -290,50 +292,14 @@ export default function SitesPage() {
     }
   }, [searchParams]);
 
+  // Mark loading done once context sites are available
+  useEffect(() => {
+    if (contextSites !== null) setLoading(false);
+  }, [contextSites]);
+
   const plan = org?.plan || "free";
   const siteLimit = SITE_LIMITS[plan] || 1;
   const atLimit = sites.length >= siteLimit;
-
-  const loadedOrgId = useRef(null);
-
-  useEffect(() => {
-    if (!org) return;
-    if (_sitesCache.orgId === org.id && _sitesCache.data && !isClient) {
-      setSites(_sitesCache.data);
-      setLoading(false);
-      return;
-    }
-    if (isClient) {
-      // Clients: load only permitted sites
-      supabase
-        .from("client_site_access")
-        .select("site_id, sites(*)")
-        .eq("org_id", org.id)
-        .then(({ data }) => {
-          var result = (data || [])
-            .filter(function (a) {
-              return a.sites;
-            })
-            .map(function (a) {
-              return a.sites;
-            });
-          setSites(result);
-          setLoading(false);
-        });
-    } else {
-      supabase
-        .from("sites")
-        .select("*")
-        .eq("org_id", org.id)
-        .order("created_at", { ascending: false })
-        .then(({ data }) => {
-          var result = data || [];
-          _sitesCache = { orgId: org.id, data: result };
-          setSites(result);
-          setLoading(false);
-        });
-    }
-  }, [org?.id]);
 
   const handleAddClick = () => {
     if (atLimit) {
@@ -363,11 +329,7 @@ export default function SitesPage() {
       description: "Removed site " + domain,
       metadata: { domain: domain },
     });
-    setSites((p) => {
-      var updated = p.filter((s) => s.id !== id);
-      _sitesCache.data = updated;
-      return updated;
-    });
+    removeSiteLocal(id);
     toast.success(`${domain} removed`);
   };
 
@@ -676,11 +638,7 @@ export default function SitesPage() {
         <AddSiteModal
           onClose={() => setShowAdd(false)}
           onAdded={(s) => {
-            setSites((p) => {
-              var updated = [s, ...p];
-              _sitesCache.data = updated;
-              return updated;
-            });
+            addSiteLocal(s);
             toast.success(`${s.domain} added`);
           }}
         />

@@ -132,7 +132,7 @@
   padding: 0.7rem 1.5rem;
   border-radius: 8px;
   border: none;
-  background: var(--accent);
+  background: var(--accent-btn);
   color: white;
   font-family: var(--body);
   font-size: 0.9rem;

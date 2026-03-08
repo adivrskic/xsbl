@@ -260,7 +260,7 @@
 
 .dash-btn-sm--accent {
   border: none;
-  background: var(--accent);
+  background: var(--accent-btn);
   color: white;
   font-weight: 600;
 }

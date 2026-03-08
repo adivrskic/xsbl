@@ -182,7 +182,7 @@
 
 /* ── ADD SITE BUTTON ── */
 .dash-add-btn {
-  background: var(--accent);
+  background: var(--accent-btn);
   color: white;
   padding: 0.55rem 1.2rem;
   border-radius: 8px;

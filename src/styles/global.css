@@ -26,12 +26,12 @@
 }
 
 .btn-primary:hover {
-  background: var(--accent);
+  background: var(--accent-btn);
   transform: translateY(-1px);
 }
 
 .btn-accent {
-  background: var(--accent);
+  background: var(--accent-btn);
   color: white;
   font-size: 0.9rem;
   padding: 0.72rem 1.6rem;
@@ -60,7 +60,7 @@
 }
 
 .btn-danger {
-  background: var(--red);
+  background: var(--red-btn);
   color: white;
   font-family: var(--body);
   font-size: 0.84rem;

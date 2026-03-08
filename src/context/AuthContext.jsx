@@ -20,7 +20,9 @@ export function AuthProvider({ children }) {
 
   // Cache timestamps to prevent redundant fetches
   const lastFetch = useRef({ org: 0, usage: 0, sites: 0 });
+  const sessionRef = useRef(null);
   const CACHE_TTL = 30000; // 30 seconds
+  const initializedRef = useRef(false);
 
   const fetchOrg = useCallback(async (userId, force) => {
     var now = Date.now();
@@ -55,9 +57,8 @@ export function AuthProvider({ children }) {
       return usage;
 
     try {
-      var {
-        data: { session: s },
-      } = await supabase.auth.getSession();
+      // Use cached session ref instead of calling getSession()
+      var s = sessionRef.current;
       if (!s || !s.access_token) return null;
 
       var { data } = await supabase.functions.invoke("check-usage", {
@@ -83,7 +84,6 @@ export function AuthProvider({ children }) {
     try {
       var result = [];
       if (role === "client") {
-        // Clients: only fetch sites they have explicit access to
         var { data: accessData } = await supabase
           .from("client_site_access")
           .select(
@@ -114,34 +114,30 @@ export function AuthProvider({ children }) {
     return null;
   }, []);
 
-  // Initial load
+  // Single initialization via onAuthStateChange — no separate getSession call
   useEffect(() => {
-    supabase.auth.getSession().then(function ({ data: { session: s } }) {
-      setSession(s);
-      setUser(s && s.user ? s.user : null);
-      if (s && s.user) {
-        fetchOrg(s.user.id, true).then(function (orgData) {
-          if (orgData) {
-            fetchUsage(true);
-            fetchSites(orgData.id, true, orgData.role);
-          }
-        });
-      }
-      setLoading(false);
-    });
-
     var {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(function (_event, s) {
+      sessionRef.current = s;
       setSession(s);
       setUser(s && s.user ? s.user : null);
+
       if (s && s.user) {
-        fetchOrg(s.user.id, true).then(function (orgData) {
-          if (orgData) {
-            fetchUsage(true);
-            fetchSites(orgData.id, true, orgData.role);
-          }
-        });
+        // Only fetch data on first load or actual auth changes (not INITIAL_SESSION duplicates)
+        if (
+          !initializedRef.current ||
+          _event === "SIGNED_IN" ||
+          _event === "TOKEN_REFRESHED"
+        ) {
+          initializedRef.current = true;
+          fetchOrg(s.user.id, true).then(function (orgData) {
+            if (orgData) {
+              fetchUsage(true);
+              fetchSites(orgData.id, true, orgData.role);
+            }
+          });
+        }
       } else {
         setOrg(null);
         setUsage(null);

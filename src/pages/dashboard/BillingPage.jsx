@@ -232,7 +232,13 @@ function DowngradeModal({ t, targetPlan, sitesUsed, siteLimit, onClose }) {
 
 export default function BillingPage() {
   const { t } = useTheme();
-  const { org, refreshOrg } = useAuth();
+  const {
+    org,
+    session,
+    usage: cachedUsage,
+    refreshOrg,
+    fetchUsage,
+  } = useAuth();
   const [searchParams] = useSearchParams();
   const [usage, setUsage] = useState(null);
   const [loadingPlan, setLoadingPlan] = useState(null);
@@ -254,8 +260,6 @@ export default function BillingPage() {
   }, [searchParams, refreshOrg]);
 
   // Fetch usage
-  const cachedUsage = useAuth().usage;
-  const { fetchUsage } = useAuth();
   useEffect(() => {
     if (!org) return;
     if (cachedUsage) {
@@ -271,14 +275,11 @@ export default function BillingPage() {
     if (planKey === "free") return;
     setLoadingPlan(planKey);
     try {
-      const {
-        data: { session: s },
-      } = await supabase.auth.getSession();
       const { data, error } = await supabase.functions.invoke(
         "create-checkout",
         {
           body: { plan: planKey },
-          headers: { Authorization: `Bearer ${s?.access_token}` },
+          headers: { Authorization: `Bearer ${session?.access_token}` },
         }
       );
       if (error) throw new Error(error.message);
@@ -292,13 +293,10 @@ export default function BillingPage() {
   const handlePortal = async () => {
     setPortalLoading(true);
     try {
-      const {
-        data: { session: ps },
-      } = await supabase.auth.getSession();
       const { data, error } = await supabase.functions.invoke(
         "customer-portal",
         {
-          headers: { Authorization: `Bearer ${ps?.access_token}` },
+          headers: { Authorization: `Bearer ${session?.access_token}` },
         }
       );
       if (error) throw new Error(error.message);

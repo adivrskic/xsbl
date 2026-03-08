@@ -34,7 +34,7 @@ export default function IssueDetailModal({
   readOnly,
 }) {
   const { t } = useTheme();
-  const { org } = useAuth();
+  const { org, session } = useAuth();
   var plan = org?.plan || "free";
   const [copied, setCopied] = useState(false);
   const [aiFix, setAiFix] = useState(null);
@@ -95,11 +95,8 @@ export default function IssueDetailModal({
     setAiLoading(true);
     setAiError(null);
     try {
-      const {
-        data: { session: fixSession },
-      } = await supabase.auth.getSession();
       const res = await supabase.functions.invoke("suggest-fix", {
-        headers: { Authorization: `Bearer ${fixSession?.access_token}` },
+        headers: { Authorization: `Bearer ${session?.access_token}` },
         body: {
           rule_id: issue.rule_id,
           description: issue.description,

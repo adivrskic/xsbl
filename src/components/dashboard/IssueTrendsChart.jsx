@@ -23,13 +23,13 @@ function formatWeekLabel(dateStr) {
 
 export default function IssueTrendsChart() {
   var { t } = useTheme();
-  var { org } = useAuth();
+  var { org, sites: contextSites } = useAuth();
   var [weeks, setWeeks] = useState([]);
   var [loading, setLoading] = useState(true);
 
   useEffect(
     function () {
-      if (!org) return;
+      if (!org || !contextSites) return;
       setLoading(true);
 
       var now = new Date();
@@ -46,56 +46,50 @@ export default function IssueTrendsChart() {
         buckets[key] = { week: key, opened: 0, fixed: 0 };
       }
 
-      // Fetch all site IDs for this org
-      supabase
-        .from("sites")
-        .select("id")
-        .eq("org_id", org.id)
-        .then(function (sitesRes) {
-          var siteIds = (sitesRes.data || []).map(function (s) {
-            return s.id;
-          });
-          if (siteIds.length === 0) {
-            setWeeks(Object.values(buckets));
-            setLoading(false);
-            return;
-          }
+      // Use site IDs from context instead of querying
+      var siteIds = contextSites.map(function (s) {
+        return s.id;
+      });
+      if (siteIds.length === 0) {
+        setWeeks(Object.values(buckets));
+        setLoading(false);
+        return;
+      }
 
-          // Fetch issues created in range (opened)
-          var openedP = supabase
-            .from("issues")
-            .select("created_at")
-            .in("site_id", siteIds)
-            .gte("created_at", cutoff);
+      // Fetch issues created in range (opened)
+      var openedP = supabase
+        .from("issues")
+        .select("created_at")
+        .in("site_id", siteIds)
+        .gte("created_at", cutoff);
 
-          // Fetch issues that were fixed in range (status=fixed, updated in range)
-          var fixedP = supabase
-            .from("issues")
-            .select("updated_at")
-            .in("site_id", siteIds)
-            .eq("status", "fixed")
-            .gte("updated_at", cutoff);
+      // Fetch issues that were fixed in range (status=fixed, updated in range)
+      var fixedP = supabase
+        .from("issues")
+        .select("updated_at")
+        .in("site_id", siteIds)
+        .eq("status", "fixed")
+        .gte("updated_at", cutoff);
 
-          Promise.all([openedP, fixedP]).then(function (results) {
-            var openedData = results[0].data || [];
-            var fixedData = results[1].data || [];
+      Promise.all([openedP, fixedP]).then(function (results) {
+        var openedData = results[0].data || [];
+        var fixedData = results[1].data || [];
 
-            openedData.forEach(function (i) {
-              var key = weekStart(i.created_at);
-              if (buckets[key]) buckets[key].opened++;
-            });
-
-            fixedData.forEach(function (i) {
-              var key = weekStart(i.updated_at);
-              if (buckets[key]) buckets[key].fixed++;
-            });
-
-            setWeeks(Object.values(buckets));
-            setLoading(false);
-          });
+        openedData.forEach(function (i) {
+          var key = weekStart(i.created_at);
+          if (buckets[key]) buckets[key].opened++;
         });
+
+        fixedData.forEach(function (i) {
+          var key = weekStart(i.updated_at);
+          if (buckets[key]) buckets[key].fixed++;
+        });
+
+        setWeeks(Object.values(buckets));
+        setLoading(false);
+      });
     },
-    [org?.id]
+    [org?.id, contextSites]
   );
 
   if (loading) {
