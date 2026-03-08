@@ -445,36 +445,6 @@ function StepScan({ site, scanResult, scanning, onFinish }) {
                 Issues
               </div>
             </div>
-            <div
-              style={{
-                padding: "0.8rem",
-                borderRadius: 8,
-                background: t.cardBg,
-                border: `1px solid ${t.ink08}`,
-                textAlign: "center",
-              }}
-            >
-              <div
-                style={{
-                  fontFamily: "var(--serif)",
-                  fontSize: "1.4rem",
-                  fontWeight: 700,
-                  color: t.ink,
-                }}
-              >
-                {scanResult.violations_count}
-              </div>
-              <div
-                style={{
-                  fontFamily: "var(--mono)",
-                  fontSize: "0.55rem",
-                  color: t.ink50,
-                  textTransform: "uppercase",
-                }}
-              >
-                Rules
-              </div>
-            </div>
           </div>
 
           <button

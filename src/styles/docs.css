@@ -111,6 +111,12 @@
   scroll-margin-top: 100px;
 }
 
+@media (max-width: 768px) {
+  .docs-section {
+    scroll-margin-top: 140px;
+  }
+}
+
 .docs-section__header {
   display: flex;
   align-items: center;

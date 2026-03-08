@@ -5,6 +5,8 @@ import { Eyebrow, H2, SubText, Italic } from "./Typography";
 import "./PricingSection.css";
 
 function PriceCard({ tier, price, blurb, features, popular, cta, delay }) {
+  var isAgency = tier.toLowerCase() === "agency";
+  var href = isAgency ? "/agency" : "/signup";
   return (
     <FadeIn delay={delay}>
       <div className={"price-card" + (popular ? " price-card--popular" : "")}>
@@ -29,7 +31,7 @@ function PriceCard({ tier, price, blurb, features, popular, cta, delay }) {
           ))}
         </ul>
 
-        <a href="/signup" className="price-card__cta">
+        <a href={href} className="price-card__cta">
           {cta}
         </a>
       </div>

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { blogArticles } from "../../data/blogArticles";
 import { ArrowRight } from "lucide-react";
+import FadeIn from "../../components/landing/FadeIn";
 import "../../styles/blog.css";
 
 function CategoryPill({ label, active, onClick }) {
@@ -87,55 +88,63 @@ export default function BlogPage() {
   return (
     <div>
       <div className="blog-page">
-        <div className="blog-header">
-          <div className="blog-header__eyebrow">
-            <span className="blog-header__eyebrow-line" aria-hidden="true" />{" "}
-            Blog
+        <FadeIn>
+          <div className="blog-header">
+            <div className="blog-header__eyebrow">
+              <span className="blog-header__eyebrow-line" aria-hidden="true" />{" "}
+              Blog
+            </div>
+            <h1 className="blog-header__title">Accessibility insights</h1>
+            <p className="blog-header__desc">
+              Guides, industry news, and practical advice for building an
+              accessible web.
+            </p>
           </div>
-          <h1 className="blog-header__title">Accessibility insights</h1>
-          <p className="blog-header__desc">
-            Guides, industry news, and practical advice for building an
-            accessible web.
-          </p>
-        </div>
+        </FadeIn>
 
-        <div
-          className="blog-categories"
-          role="group"
-          aria-label="Filter articles by category"
-        >
-          {categories.map(function (cat) {
-            return (
-              <CategoryPill
-                key={cat}
-                label={cat}
-                active={category === cat}
-                onClick={function () {
-                  setCategory(cat);
-                }}
-              />
-            );
-          })}
-        </div>
-
-        {category === "All" && featured.length > 0 && (
+        <FadeIn delay={0.05}>
           <div
-            className={
-              "blog-featured-grid" +
-              (featured.length <= 1 ? " blog-featured-grid--single" : "")
-            }
+            className="blog-categories"
+            role="group"
+            aria-label="Filter articles by category"
           >
-            {featured.map(function (a) {
-              return <FeaturedCard key={a.slug} article={a} />;
+            {categories.map(function (cat) {
+              return (
+                <CategoryPill
+                  key={cat}
+                  label={cat}
+                  active={category === cat}
+                  onClick={function () {
+                    setCategory(cat);
+                  }}
+                />
+              );
             })}
           </div>
+        </FadeIn>
+
+        {category === "All" && featured.length > 0 && (
+          <FadeIn delay={0.1}>
+            <div
+              className={
+                "blog-featured-grid" +
+                (featured.length <= 1 ? " blog-featured-grid--single" : "")
+              }
+            >
+              {featured.map(function (a) {
+                return <FeaturedCard key={a.slug} article={a} />;
+              })}
+            </div>
+          </FadeIn>
         )}
 
-        <div className="blog-list" aria-live="polite">
-          {(category === "All" ? nonFeatured : filtered).map(function (a) {
-            return <ArticleRow key={a.slug} article={a} />;
-          })}
-        </div>
+        <FadeIn delay={0.15}>
+          <div className="blog-list" aria-live="polite">
+            {(category === "All" ? nonFeatured : filtered).map(function (a) {
+              return <ArticleRow key={a.slug} article={a} />;
+            })}
+          </div>
+        </FadeIn>
 
         {filtered.length === 0 && (
           <div className="blog-empty" role="status">

@@ -16,6 +16,7 @@ import {
   ChevronUp,
 } from "lucide-react";
 import { Link } from "react-router-dom";
+import FadeIn from "../components/landing/FadeIn";
 import "../styles/docs.css";
 
 function CodeBlock({ code, lang }) {
@@ -51,11 +52,15 @@ function Sec({ id, icon: Icon, title, children }) {
   var { t } = useTheme();
   return (
     <section id={id} className="docs-section">
-      <div className="docs-section__header">
-        <Icon size={20} color={t.accent} strokeWidth={1.8} />
-        <h2 className="docs-section__title">{title}</h2>
-      </div>
-      <div className="docs-section__body">{children}</div>
+      <FadeIn>
+        <div className="docs-section__header">
+          <Icon size={20} color={t.accent} strokeWidth={1.8} />
+          <h2 className="docs-section__title">{title}</h2>
+        </div>
+      </FadeIn>
+      <FadeIn delay={0.05}>
+        <div className="docs-section__body">{children}</div>
+      </FadeIn>
     </section>
   );
 }
@@ -160,19 +165,29 @@ export default function DocsPage() {
     activeSectionRef.current = id;
     setActiveSection(id);
     setTocOpen(false);
-    var el = document.getElementById(id);
-    if (el) {
-      el.scrollIntoView({ behavior: "smooth", block: "start" });
-      // Move focus to the section heading for keyboard users
-      var heading = el.querySelector("h2");
-      if (heading) {
-        heading.setAttribute("tabindex", "-1");
-        heading.focus({ preventScroll: true });
-      }
-    }
+
+    // Delay to let TOC collapse before calculating scroll position
     setTimeout(function () {
-      isClickScrolling.current = false;
-    }, 800);
+      var el = document.getElementById(id);
+      if (el) {
+        // Manual offset: nav height + sticky sidebar height on mobile
+        var sidebarEl = document.querySelector(".docs-sidebar");
+        var sidebarH = sidebarEl ? sidebarEl.getBoundingClientRect().height : 0;
+        var navH = 64;
+        var offset = navH + sidebarH + 16;
+        var top = el.getBoundingClientRect().top + window.scrollY - offset;
+        window.scrollTo({ top: top, behavior: "smooth" });
+
+        var heading = el.querySelector("h2");
+        if (heading) {
+          heading.setAttribute("tabindex", "-1");
+          heading.focus({ preventScroll: true });
+        }
+      }
+      setTimeout(function () {
+        isClickScrolling.current = false;
+      }, 800);
+    }, 60);
   };
 
   var groups = [];
@@ -250,17 +265,22 @@ export default function DocsPage() {
         </aside>
 
         <main className="docs-main">
-          <div className="docs-header">
-            <div className="docs-header__eyebrow">
-              <span className="docs-header__eyebrow-line" aria-hidden="true" />
-              Documentation
+          <FadeIn>
+            <div className="docs-header">
+              <div className="docs-header__eyebrow">
+                <span
+                  className="docs-header__eyebrow-line"
+                  aria-hidden="true"
+                />
+                Documentation
+              </div>
+              <h1 className="docs-header__title">xsbl Docs</h1>
+              <p>
+                Guides, API reference, and integration setup for xsbl
+                accessibility scanning.
+              </p>
             </div>
-            <h1 className="docs-header__title">xsbl Docs</h1>
-            <p>
-              Guides, API reference, and integration setup for xsbl
-              accessibility scanning.
-            </p>
-          </div>
+          </FadeIn>
 
           {/* ═══ GUIDES ═══ */}
 

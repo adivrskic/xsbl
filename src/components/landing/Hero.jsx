@@ -14,9 +14,24 @@ export default function Hero() {
 
   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 
+  var URL_REGEX =
+    /^https?:\/\/[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?(\.[a-zA-Z]{2,})+([\/\w\-.~:?#[\]@!$&'()*+,;=%]*)?$/;
+
   const handleScan = async (e) => {
     e.preventDefault();
-    if (!url.trim()) return;
+    var trimmed = url.trim();
+    if (!trimmed) return;
+
+    // Auto-prepend https:// if missing protocol
+    if (!/^https?:\/\//i.test(trimmed)) {
+      trimmed = "https://" + trimmed;
+      setUrl(trimmed);
+    }
+
+    if (!URL_REGEX.test(trimmed)) {
+      setError("Please enter a valid URL (e.g. https://example.com)");
+      return;
+    }
 
     setScanning(true);
     setError(null);
@@ -26,7 +41,7 @@ export default function Hero() {
       const res = await fetch(`${supabaseUrl}/functions/v1/quick-scan`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url: url.trim() }),
+        body: JSON.stringify({ url: trimmed }),
       });
 
       if (!res.ok) {
@@ -92,7 +107,7 @@ export default function Hero() {
               className="hero__scan-btn"
             >
               {scanning && <span className="hero__spinner" />}
-              {scanning ? "Scanning\u2026" : "Scan free"}
+              {scanning ? "Scanning\u2026" : "Scan free \u2192"}
             </button>
           </div>
         </FadeIn>

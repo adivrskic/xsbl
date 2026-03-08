@@ -2575,43 +2575,6 @@ export default function SiteDetailPage() {
             ))}
           </div>
 
-          {/* Powered by badge — free tier only */}
-          {plan === "free" && site.score != null && (
-            <div style={{ textAlign: "center", marginBottom: "1rem" }}>
-              <a
-                href="https://xsbl.io"
-                target="_blank"
-                rel="noopener noreferrer"
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: "0.35rem",
-                  padding: "0.3rem 0.7rem",
-                  borderRadius: 6,
-                  border: "1px solid " + t.ink08,
-                  background: t.ink04,
-                  textDecoration: "none",
-                  fontFamily: "var(--mono)",
-                  fontSize: "0.58rem",
-                  color: t.ink50,
-                  transition: "all 0.15s",
-                }}
-                onMouseEnter={function (e) {
-                  e.currentTarget.style.borderColor = t.accent;
-                  e.currentTarget.style.color = t.accent;
-                }}
-                onMouseLeave={function (e) {
-                  e.currentTarget.style.borderColor = t.ink08;
-                  e.currentTarget.style.color = t.ink50;
-                }}
-              >
-                Scanned by{" "}
-                <span style={{ fontWeight: 600, color: t.ink }}>xsbl</span>
-                <span style={{ color: t.accent }}>.</span>
-              </a>
-            </div>
-          )}
-
           {/* Page breakdown from latest scan */}
           {scans.length > 0 && scans[0].summary_json?.pages?.length > 1 && (
             <PlanGate

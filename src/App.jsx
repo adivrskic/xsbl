@@ -30,6 +30,7 @@ import DocsPage from "./pages/DocsPage";
 import BlogPage from "./pages/blog/BlogPage";
 import BlogArticlePage from "./pages/blog/BlogArticlePage";
 import ContactPage from "./pages/ContactPage";
+import AgencyPage from "./pages/AgencyPage";
 import StatusPage from "./pages/StatusPage";
 
 // Dashboard
@@ -93,6 +94,7 @@ const PAGE_TITLES = {
   "/docs": "Documentation — xsbl",
   "/blog": "Blog — xsbl",
   "/contact": "Contact — xsbl",
+  "/agency": "Agency plan — xsbl",
   "/dashboard": "Dashboard — xsbl",
   "/dashboard/sites": "Sites — xsbl",
   "/dashboard/settings": "Settings — xsbl",
@@ -188,8 +190,8 @@ export default function App() {
         transition: "background 0.4s, color 0.4s",
       }}
     >
-      <ErrorBoundary>
-        <BrowserRouter>
+      <BrowserRouter>
+        <ErrorBoundary>
           <PageTitle />
           <ScrollToHash />
           <ToastProvider>
@@ -231,15 +233,16 @@ export default function App() {
                     </PublicLayout>
                   }
                 />
-
                 <Route
-                  path="/status/:slug"
+                  path="/agency"
                   element={
                     <PublicLayout>
-                      <StatusPage />
+                      <AgencyPage />
                     </PublicLayout>
                   }
                 />
+
+                <Route path="/status/:slug" element={<StatusPage />} />
 
                 {/* Onboarding */}
                 <Route
@@ -273,8 +276,8 @@ export default function App() {
               </Routes>
             </ConfirmProvider>
           </ToastProvider>
-        </BrowserRouter>
-      </ErrorBoundary>
+        </ErrorBoundary>
+      </BrowserRouter>
     </div>
   );
 }
