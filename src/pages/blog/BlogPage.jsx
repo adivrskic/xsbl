@@ -2,7 +2,6 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { blogArticles } from "../../data/blogArticles";
 import { ArrowRight } from "lucide-react";
-import FadeIn from "../../components/landing/FadeIn";
 import "../../styles/blog.css";
 
 function CategoryPill({ label, active, onClick }) {
@@ -10,10 +9,19 @@ function CategoryPill({ label, active, onClick }) {
     <button
       onClick={onClick}
       className={"blog-cat-pill" + (active ? " blog-cat-pill--active" : "")}
+      aria-pressed={active}
     >
       {label}
     </button>
   );
+}
+
+function formatDate(dateStr) {
+  return new Date(dateStr).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
 }
 
 function FeaturedCard({ article }) {
@@ -37,18 +45,14 @@ function FeaturedCard({ article }) {
 function ArticleRow({ article }) {
   return (
     <Link to={"/blog/" + article.slug} className="blog-row">
-      <div style={{ flex: 1, minWidth: 0 }}>
+      <div className="blog-row__content">
         <div className="blog-row__meta">
           <span className="blog-cat-badge blog-cat-badge--muted">
             {article.category}
           </span>
-          <span className="blog-mono-xs">
-            {new Date(article.date).toLocaleDateString("en-US", {
-              month: "short",
-              day: "numeric",
-              year: "numeric",
-            })}
-          </span>
+          <time className="blog-mono-xs" dateTime={article.date}>
+            {formatDate(article.date)}
+          </time>
         </div>
         <h3 className="blog-row__title">{article.title}</h3>
         <p className="blog-row__sub">{article.subtitle}</p>
@@ -83,74 +87,58 @@ export default function BlogPage() {
   return (
     <div>
       <div className="blog-page">
-        <FadeIn>
-          <div className="blog-header">
-            <div className="blog-header__eyebrow">
-              <span className="blog-header__eyebrow-line" /> Blog
-            </div>
-            <h1 className="blog-header__title">Accessibility insights</h1>
-            <p className="blog-header__desc">
-              Guides, industry news, and practical advice for building an
-              accessible web.
-            </p>
+        <div className="blog-header">
+          <div className="blog-header__eyebrow">
+            <span className="blog-header__eyebrow-line" aria-hidden="true" />{" "}
+            Blog
           </div>
-        </FadeIn>
-
-        <FadeIn delay={0.05}>
-          <div className="blog-categories">
-            {categories.map(function (cat) {
-              return (
-                <CategoryPill
-                  key={cat}
-                  label={cat}
-                  active={category === cat}
-                  onClick={function () {
-                    setCategory(cat);
-                  }}
-                />
-              );
-            })}
-          </div>
-        </FadeIn>
-
-        {category === "All" && featured.length > 0 && (
-          <FadeIn delay={0.1}>
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: featured.length > 1 ? "1fr 1fr" : "1fr",
-                gap: "1rem",
-                marginBottom: "2rem",
-              }}
-              className="grid-1-mobile"
-            >
-              {featured.map(function (a) {
-                return <FeaturedCard key={a.slug} article={a} />;
-              })}
-            </div>
-          </FadeIn>
-        )}
+          <h1 className="blog-header__title">Accessibility insights</h1>
+          <p className="blog-header__desc">
+            Guides, industry news, and practical advice for building an
+            accessible web.
+          </p>
+        </div>
 
         <div
-          style={{ display: "flex", flexDirection: "column", gap: "0.4rem" }}
+          className="blog-categories"
+          role="group"
+          aria-label="Filter articles by category"
         >
-          {(category === "All" ? nonFeatured : filtered).map(function (a, i) {
+          {categories.map(function (cat) {
             return (
-              <FadeIn key={a.slug} delay={0.05 + i * 0.03}>
-                <ArticleRow article={a} />
-              </FadeIn>
+              <CategoryPill
+                key={cat}
+                label={cat}
+                active={category === cat}
+                onClick={function () {
+                  setCategory(cat);
+                }}
+              />
             );
           })}
         </div>
 
-        {filtered.length === 0 && (
+        {category === "All" && featured.length > 0 && (
           <div
-            style={{
-              padding: "3rem",
-              textAlign: "center",
-              color: "var(--ink50)",
-            }}
+            className={
+              "blog-featured-grid" +
+              (featured.length <= 1 ? " blog-featured-grid--single" : "")
+            }
           >
+            {featured.map(function (a) {
+              return <FeaturedCard key={a.slug} article={a} />;
+            })}
+          </div>
+        )}
+
+        <div className="blog-list" aria-live="polite">
+          {(category === "All" ? nonFeatured : filtered).map(function (a) {
+            return <ArticleRow key={a.slug} article={a} />;
+          })}
+        </div>
+
+        {filtered.length === 0 && (
+          <div className="blog-empty" role="status">
             No articles in this category yet.
           </div>
         )}

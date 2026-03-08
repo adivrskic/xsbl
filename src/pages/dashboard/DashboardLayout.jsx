@@ -25,6 +25,7 @@ import {
   Shield,
   Package,
   Code,
+  Book,
 } from "lucide-react";
 import XsblBull from "../../components/landing/XsblBull";
 import HelpSearch from "../../components/ui/HelpSearch";
@@ -510,6 +511,7 @@ export default function DashboardLayout() {
             {[
               { label: "Home", href: "/", icon: Home },
               { label: "Blog", href: "/blog", icon: BookOpen },
+              { label: "Docs", href: "/docs", icon: Book },
               { label: "Contact", href: "/contact", icon: Mail },
             ].map(function (link) {
               return (

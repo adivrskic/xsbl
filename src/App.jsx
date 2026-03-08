@@ -84,18 +84,18 @@ function PublicLayout({ children }) {
 }
 
 const PAGE_TITLES = {
-  "/": "xsbl — make your web accessible",
-  "/login": "Sign in — xsbl",
-  "/signup": "Sign up — xsbl",
-  "/reset-password": "Reset password — xsbl",
-  "/docs": "Documentation — xsbl",
-  "/blog": "Blog — xsbl",
-  "/contact": "Contact — xsbl",
-  "/dashboard": "Dashboard — xsbl",
-  "/dashboard/sites": "Sites — xsbl",
-  "/dashboard/settings": "Settings — xsbl",
-  "/dashboard/billing": "Billing — xsbl",
-  "/dashboard/onboarding": "Get started — xsbl",
+  "/": "xsbl | Make Your Web Accessible",
+  "/login": "Sign in | xsbl",
+  "/signup": "Sign up | xsbl",
+  "/reset-password": "Reset password | xsbl",
+  "/docs": "Documentation | xsbl",
+  "/blog": "Blog | xsbl",
+  "/contact": "Contact | xsbl",
+  "/dashboard": "Dashboard | xsbl",
+  "/dashboard/sites": "Sites | xsbl",
+  "/dashboard/settings": "Settings | xsbl",
+  "/dashboard/billing": "Billing | xsbl",
+  "/dashboard/onboarding": "Get started | xsbl",
 };
 
 function PageTitle() {

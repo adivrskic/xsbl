@@ -12,13 +12,14 @@ import {
   Eye,
   FileText,
   Terminal,
+  List,
+  ChevronUp,
 } from "lucide-react";
 import { Link } from "react-router-dom";
-import FadeIn from "../components/landing/FadeIn";
+import "../styles/docs.css";
 
 function CodeBlock({ code, lang }) {
-  const { t } = useTheme();
-  const [copied, setCopied] = useState(false);
+  var [copied, setCopied] = useState(false);
   var handleCopy = function () {
     navigator.clipboard.writeText(code);
     setCopied(true);
@@ -27,144 +28,44 @@ function CodeBlock({ code, lang }) {
     }, 2000);
   };
   return (
-    <div
-      style={{
-        position: "relative",
-        borderRadius: 10,
-        overflow: "hidden",
-        marginBottom: "1.2rem",
-      }}
-    >
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          padding: "0.5rem 1rem",
-          background: "rgba(255,255,255,0.03)",
-          borderBottom: "1px solid rgba(255,255,255,0.05)",
-        }}
-      >
-        <span
-          style={{
-            fontFamily: "var(--mono)",
-            fontSize: "0.62rem",
-            color: "rgba(255,255,255,0.3)",
-          }}
-        >
-          {lang}
-        </span>
+    <div className="docs-code-block">
+      <div className="docs-code-block__bar">
+        <span className="docs-code-block__lang">{lang}</span>
         <button
           onClick={handleCopy}
-          style={{
-            background: "none",
-            border: "none",
-            fontFamily: "var(--mono)",
-            fontSize: "0.6rem",
-            color: copied ? "#34d399" : "rgba(255,255,255,0.3)",
-            cursor: "pointer",
-          }}
+          className={
+            "docs-code-block__copy" +
+            (copied ? " docs-code-block__copy--copied" : "")
+          }
+          aria-label={copied ? "Copied to clipboard" : "Copy code to clipboard"}
         >
-          {copied ? "copied!" : "copy"}
+          <span aria-live="polite">{copied ? "copied!" : "copy"}</span>
         </button>
       </div>
-      <pre
-        style={{
-          padding: "1rem 1.2rem",
-          background: t.codeBg,
-          fontFamily: "var(--mono)",
-          fontSize: "0.74rem",
-          color: "#a3a3a3",
-          overflowX: "auto",
-          margin: 0,
-          lineHeight: 1.8,
-          whiteSpace: "pre-wrap",
-          wordBreak: "break-all",
-        }}
-      >
-        {code}
-      </pre>
+      <pre aria-label={lang + " code example"}>{code}</pre>
     </div>
   );
 }
 
 function Sec({ id, icon: Icon, title, children }) {
-  const { t } = useTheme();
+  var { t } = useTheme();
   return (
-    <FadeIn>
-      <section
-        id={id}
-        style={{ marginBottom: "3.5rem", scrollMarginTop: "100px" }}
-      >
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "0.5rem",
-            marginBottom: "1rem",
-          }}
-        >
-          <Icon size={20} color={t.accent} strokeWidth={1.8} />
-          <h2
-            style={{
-              fontFamily: "var(--serif)",
-              fontSize: "1.5rem",
-              fontWeight: 700,
-              color: t.ink,
-              margin: 0,
-            }}
-          >
-            {title}
-          </h2>
-        </div>
-        <div style={{ fontSize: "0.92rem", color: t.ink50, lineHeight: 1.8 }}>
-          {children}
-        </div>
-      </section>
-    </FadeIn>
+    <section id={id} className="docs-section">
+      <div className="docs-section__header">
+        <Icon size={20} color={t.accent} strokeWidth={1.8} />
+        <h2 className="docs-section__title">{title}</h2>
+      </div>
+      <div className="docs-section__body">{children}</div>
+    </section>
   );
 }
 
-function P({ children }) {
-  return <p style={{ marginBottom: "0.8rem" }}>{children}</p>;
-}
-function B({ children }) {
-  var { t } = useTheme();
-  return <strong style={{ color: t.ink }}>{children}</strong>;
-}
 function Note({ children }) {
-  var { t } = useTheme();
-  return (
-    <div
-      style={{
-        padding: "0.7rem 1rem",
-        borderRadius: 8,
-        background: t.accentBg,
-        border: "1px solid " + t.accent + "20",
-        fontSize: "0.84rem",
-        color: t.ink,
-        marginBottom: "1rem",
-        lineHeight: 1.6,
-      }}
-    >
-      {children}
-    </div>
-  );
+  return <div className="docs-note">{children}</div>;
 }
+
 function Mono({ children }) {
-  var { t } = useTheme();
-  return (
-    <code
-      style={{
-        fontFamily: "var(--mono)",
-        background: t.ink04,
-        padding: "0.1rem 0.4rem",
-        borderRadius: 3,
-        fontSize: "0.84rem",
-      }}
-    >
-      {children}
-    </code>
-  );
+  return <code className="docs-mono">{children}</code>;
 }
 
 var sidebar = [
@@ -189,17 +90,17 @@ var sidebar = [
 ];
 
 export default function DocsPage() {
-  const { t } = useTheme();
-  const [activeSection, setActiveSection] = useState("getting-started");
-  const activeSectionRef = useRef(activeSection);
-  const isClickScrolling = useRef(false);
+  var { t } = useTheme();
+  var [activeSection, setActiveSection] = useState("getting-started");
+  var [tocOpen, setTocOpen] = useState(false);
+  var activeSectionRef = useRef(activeSection);
+  var isClickScrolling = useRef(false);
 
   // Scroll spy using IntersectionObserver
   useEffect(function () {
     var sectionIds = sidebar.map(function (s) {
       return s.id;
     });
-    var lastId = sectionIds[sectionIds.length - 1];
     var visibleSections = {};
 
     var observer = new IntersectionObserver(
@@ -208,7 +109,6 @@ export default function DocsPage() {
         entries.forEach(function (entry) {
           visibleSections[entry.target.id] = entry.isIntersecting;
         });
-        // Pick the first visible section in document order
         for (var i = 0; i < sectionIds.length; i++) {
           if (visibleSections[sectionIds[i]]) {
             if (activeSectionRef.current !== sectionIds[i]) {
@@ -227,21 +127,30 @@ export default function DocsPage() {
       if (el) observer.observe(el);
     });
 
-    // When scrolled to the bottom, force-select the last section
+    return function () {
+      observer.disconnect();
+    };
+  }, []);
+
+  // When scrolled to bottom, select the last section
+  useEffect(function () {
+    var sectionIds = sidebar.map(function (s) {
+      return s.id;
+    });
+    var lastId = sectionIds[sectionIds.length - 1];
+
     var handleScroll = function () {
       if (isClickScrolling.current) return;
       var atBottom =
-        window.innerHeight + window.scrollY >=
-        document.documentElement.scrollHeight - 40;
+        window.innerHeight + window.scrollY >= document.body.scrollHeight - 40;
       if (atBottom && activeSectionRef.current !== lastId) {
         activeSectionRef.current = lastId;
         setActiveSection(lastId);
       }
     };
-    window.addEventListener("scroll", handleScroll, { passive: true });
 
+    window.addEventListener("scroll", handleScroll, { passive: true });
     return function () {
-      observer.disconnect();
       window.removeEventListener("scroll", handleScroll);
     };
   }, []);
@@ -250,10 +159,17 @@ export default function DocsPage() {
     isClickScrolling.current = true;
     activeSectionRef.current = id;
     setActiveSection(id);
-    document
-      .getElementById(id)
-      ?.scrollIntoView({ behavior: "smooth", block: "start" });
-    // Re-enable observer after scroll settles
+    setTocOpen(false);
+    var el = document.getElementById(id);
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "start" });
+      // Move focus to the section heading for keyboard users
+      var heading = el.querySelector("h2");
+      if (heading) {
+        heading.setAttribute("tabindex", "-1");
+        heading.focus({ preventScroll: true });
+      }
+    }
     setTimeout(function () {
       isClickScrolling.current = false;
     }, 800);
@@ -269,148 +185,104 @@ export default function DocsPage() {
     groups[groups.length - 1].items.push(sidebar[i]);
   }
 
-  var BASE = "https://YOUR_PROJECT.supabase.co";
+  var BASE =
+    import.meta.env.VITE_SUPABASE_URL || "https://YOUR_PROJECT.supabase.co";
 
   return (
     <div>
-      <div
-        style={{
-          maxWidth: 1100,
-          margin: "0 auto",
-          padding: "6rem clamp(1.5rem, 3vw, 3rem) 4rem",
-          display: "flex",
-          gap: "3rem",
-        }}
-      >
-        <aside
-          className="hide-mobile"
-          style={{
-            width: 200,
-            flexShrink: 0,
-            position: "sticky",
-            top: 80,
-            alignSelf: "flex-start",
-          }}
-        >
-          {groups.map(function (g) {
-            return (
-              <div key={g.name} style={{ marginBottom: "1rem" }}>
-                <div
-                  style={{
-                    fontFamily: "var(--mono)",
-                    fontSize: "0.58rem",
-                    color: t.ink50,
-                    textTransform: "uppercase",
-                    letterSpacing: "0.08em",
-                    marginBottom: "0.4rem",
-                    fontWeight: 600,
-                    padding: "0 0.6rem",
-                  }}
-                >
-                  {g.name}
+      <div className="docs-page">
+        {/* Sidebar navigation */}
+        <aside className="docs-sidebar">
+          {/* Mobile TOC toggle */}
+          <button
+            className="docs-toc-toggle"
+            onClick={function () {
+              setTocOpen(!tocOpen);
+            }}
+            aria-expanded={tocOpen}
+            aria-controls="docs-toc-nav"
+          >
+            {tocOpen ? <ChevronUp size={16} /> : <List size={16} />}
+            <span>{tocOpen ? "Hide" : "On this page"}</span>
+            <span className="docs-toc-toggle__active">
+              {
+                sidebar.find(function (s) {
+                  return s.id === activeSection;
+                })?.label
+              }
+            </span>
+          </button>
+
+          <nav
+            id="docs-toc-nav"
+            className={"docs-toc-nav" + (tocOpen ? " docs-toc-nav--open" : "")}
+            aria-label="Documentation sections"
+          >
+            {groups.map(function (g) {
+              return (
+                <div key={g.name} className="docs-sidebar__group">
+                  <div className="docs-sidebar__group-label">{g.name}</div>
+                  <div className="docs-sidebar__links" role="list">
+                    {g.items.map(function (item) {
+                      var isActive = activeSection === item.id;
+                      return (
+                        <button
+                          key={item.id}
+                          role="listitem"
+                          onClick={function () {
+                            scrollTo(item.id);
+                          }}
+                          className={
+                            "docs-sidebar__link" +
+                            (isActive ? " docs-sidebar__link--active" : "")
+                          }
+                          aria-current={isActive ? "true" : undefined}
+                        >
+                          {item.label}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
-                <div
-                  style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: "0.1rem",
-                  }}
-                >
-                  {g.items.map(function (item) {
-                    return (
-                      <button
-                        key={item.id}
-                        onClick={function () {
-                          scrollTo(item.id);
-                        }}
-                        style={{
-                          background:
-                            activeSection === item.id ? t.accentBg : "none",
-                          border: "none",
-                          padding: "0.35rem 0.6rem",
-                          borderRadius: 5,
-                          cursor: "pointer",
-                          fontFamily: "var(--body)",
-                          fontSize: "0.78rem",
-                          fontWeight: 500,
-                          color: activeSection === item.id ? t.accent : t.ink50,
-                          textAlign: "left",
-                        }}
-                      >
-                        {item.label}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            );
-          })}
+              );
+            })}
+          </nav>
         </aside>
 
-        <main style={{ flex: 1, minWidth: 0 }}>
-          <FadeIn>
-            <div style={{ marginBottom: "2.5rem" }}>
-              <div
-                style={{
-                  fontFamily: "var(--mono)",
-                  fontSize: "0.68rem",
-                  color: t.accent,
-                  textTransform: "uppercase",
-                  letterSpacing: "0.1em",
-                  fontWeight: 600,
-                  marginBottom: "0.5rem",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "0.4rem",
-                }}
-              >
-                <span
-                  style={{ width: 20, height: 1.5, background: t.accent }}
-                />{" "}
-                Documentation
-              </div>
-              <h1
-                style={{
-                  fontFamily: "var(--serif)",
-                  fontSize: "clamp(2rem, 3.5vw, 2.6rem)",
-                  fontWeight: 700,
-                  color: t.ink,
-                  lineHeight: 1.15,
-                  marginBottom: "0.8rem",
-                }}
-              >
-                xsbl Docs
-              </h1>
-              <P>
-                Guides, API reference, and integration setup for xsbl
-                accessibility scanning.
-              </P>
+        <main className="docs-main">
+          <div className="docs-header">
+            <div className="docs-header__eyebrow">
+              <span className="docs-header__eyebrow-line" aria-hidden="true" />
+              Documentation
             </div>
-          </FadeIn>
+            <h1 className="docs-header__title">xsbl Docs</h1>
+            <p>
+              Guides, API reference, and integration setup for xsbl
+              accessibility scanning.
+            </p>
+          </div>
 
           {/* ═══ GUIDES ═══ */}
 
           <Sec id="getting-started" icon={Book} title="Getting started">
-            <P>
+            <p>
               xsbl scans websites for WCAG 2.2 accessibility violations using
               axe-core in a real browser. There are three ways to use it:
-            </P>
-            <P>
-              <B>1. Dashboard</B> — add sites, run scans, view issues, and
-              generate reports at{" "}
-              <Link to="/dashboard" style={{ color: t.accent }}>
-                xsbl.io/dashboard
-              </Link>
-              .
-            </P>
-            <P>
-              <B>2. GitHub integration</B> — connect your repo, select issues,
-              and xsbl creates a pull request with AI-generated code fixes.
-            </P>
-            <P>
-              <B>3. API & CI/CD</B> — trigger scans from your deployment
-              pipeline using API keys.
-            </P>
+            </p>
+            <p>
+              <strong>1. Dashboard</strong> — add sites, run scans, view issues,
+              and generate reports at{" "}
+              <Link to="/dashboard">xsbl.dev/dashboard</Link>.
+            </p>
+            <p>
+              <strong>2. GitHub integration</strong> — connect your repo, select
+              issues, and xsbl creates a pull request with AI-generated code
+              fixes.
+            </p>
+            <p>
+              <strong>3. API & CI/CD</strong> — trigger scans from your
+              deployment pipeline using API keys.
+            </p>
             <Note>
               All plans include the dashboard and scanning. GitHub PRs, API
               keys, and CI/CD require Pro or Agency.
@@ -418,79 +290,74 @@ export default function DocsPage() {
           </Sec>
 
           <Sec id="github-setup" icon={GitBranch} title="GitHub integration">
-            <P>
+            <p>
               Connect a GitHub repo to enable one-click PR creation for
               accessibility fixes.
-            </P>
-            <P>
-              <B>Step 1:</B> Go to your site → Settings → GitHub Integration.
-            </P>
-            <P>
-              <B>Step 2:</B> Enter your repo (e.g. <Mono>acme/website</Mono>)
-              and a Personal Access Token with <Mono>repo</Mono> scope.
-            </P>
-            <P>
-              <B>Step 3:</B> Click Test to verify, then Save.
-            </P>
+            </p>
+            <p>
+              <strong>Step 1:</strong> Go to your site → Settings → GitHub
+              Integration.
+            </p>
+            <p>
+              <strong>Step 2:</strong> Enter your repo (e.g.{" "}
+              <Mono>acme/website</Mono>) and a Personal Access Token with{" "}
+              <Mono>repo</Mono> scope.
+            </p>
+            <p>
+              <strong>Step 3:</strong> Click Test to verify, then Save.
+            </p>
             <Note>
               Create a token at{" "}
               <a
                 href="https://github.com/settings/tokens/new?scopes=repo&description=xsbl-fixes"
                 target="_blank"
                 rel="noopener noreferrer"
-                style={{ color: t.accent }}
               >
                 github.com/settings/tokens
               </a>{" "}
               — select the "repo" scope.
             </Note>
-            <P>
-              <B>Single fix:</B> Open any issue → click "Create fix PR" → xsbl
-              reads your source code, generates a fix, and opens a PR.
-            </P>
-            <P>
-              <B>Bulk fix:</B> On the Issues tab, check multiple issues (or use
-              quick-select buttons like "All critical"), then click "Create fix
-              PR" in the floating bar. One PR with all fixes.
-            </P>
-            <P>
-              <B>How file discovery works:</B> xsbl fetches your repo's file
-              tree, scores files by relevance (matching page URLs to file names,
-              component names, CSS selectors), fetches the top source files,
-              sends them to the AI along with the issues, and commits the fixed
-              files to a new branch.
-            </P>
+            <p>
+              <strong>Single fix:</strong> Open any issue → click "Create fix
+              PR" → xsbl reads your source code, generates a fix with Claude,
+              and opens a PR.
+            </p>
+            <p>
+              <strong>Bulk fix:</strong> On the Issues tab, check multiple
+              issues (or use quick-select buttons like "All critical"), then
+              click "Create fix PR" in the floating bar. One PR with all fixes.
+            </p>
+            <p>
+              <strong>How file discovery works:</strong> xsbl fetches your
+              repo's file tree, scores files by relevance (matching page URLs to
+              file names, component names, CSS selectors), fetches the top
+              source files, sends them to Claude along with the issues, and
+              commits the fixed files to a new branch.
+            </p>
           </Sec>
 
           <Sec id="cicd" icon={Terminal} title="CI/CD (GitHub Actions)">
-            <P>Run accessibility scans automatically after every deploy.</P>
-            <P>
-              <B>Step 1:</B> Create an API key in Settings → API Keys (Pro or
-              Agency required).
-            </P>
-            <P>
-              <B>Step 2:</B> Add repository secrets in GitHub:
-            </P>
-            <div
-              style={{
-                fontFamily: "var(--mono)",
-                fontSize: "0.78rem",
-                lineHeight: 2.2,
-                marginBottom: "0.8rem",
-              }}
-            >
+            <p>Run accessibility scans automatically after every deploy.</p>
+            <p>
+              <strong>Step 1:</strong> Create an API key in Settings → API Keys
+              (Pro or Agency required).
+            </p>
+            <p>
+              <strong>Step 2:</strong> Add repository secrets in GitHub:
+            </p>
+            <div className="docs-param-list">
               <div>
-                <span style={{ color: t.accent }}>XSBL_API_KEY</span> — your API
-                key
+                <span className="docs-param-list__key">XSBL_API_KEY</span> —
+                your API key
               </div>
               <div>
-                <span style={{ color: t.accent }}>XSBL_SITE_ID</span> — your
-                site UUID (from the URL in the dashboard)
+                <span className="docs-param-list__key">XSBL_SITE_ID</span> —
+                your site UUID (from the URL in the dashboard)
               </div>
             </div>
-            <P>
-              <B>Step 3:</B> Add this workflow file to your repo:
-            </P>
+            <p>
+              <strong>Step 3:</strong> Add this workflow file to your repo:
+            </p>
             <CodeBlock
               lang=".github/workflows/xsbl-a11y.yml"
               code={`name: Accessibility Scan
@@ -521,49 +388,48 @@ jobs:
           # Fail build if score is below threshold:
           # if (( $(echo "$SCORE < 70" | bc -l) )); then exit 1; fi`}
             />
-            <P>
+            <p>
               The scan results appear in the GitHub Step Summary on every run.
               Uncomment the last line to fail builds when the score drops below
               your threshold.
-            </P>
+            </p>
           </Sec>
 
           <Sec id="slack-email" icon={Bell} title="Slack & email alerts">
-            <P>Get notified after every scan completes.</P>
-            <P>
-              <B>Slack:</B> Go to Settings → Alert Integrations → paste your
-              Slack webhook URL → click Test. You'll get a rich message with
-              score, issues, and a dashboard link.
-            </P>
+            <p>Get notified after every scan completes.</p>
+            <p>
+              <strong>Slack:</strong> Go to Settings → Alert Integrations →
+              paste your Slack webhook URL → click Test. You'll get a rich
+              message with score, issues, and a dashboard link.
+            </p>
             <Note>
               Create a webhook at{" "}
               <a
                 href="https://api.slack.com/messaging/webhooks"
                 target="_blank"
                 rel="noopener noreferrer"
-                style={{ color: t.accent }}
               >
                 api.slack.com/messaging/webhooks
               </a>
             </Note>
-            <P>
-              <B>Email:</B> Add email addresses in Settings → Alert
+            <p>
+              <strong>Email:</strong> Add email addresses in Settings → Alert
               Integrations, or leave blank to use team members' addresses based
               on their notification preferences.
-            </P>
+            </p>
           </Sec>
 
           {/* ═══ API REFERENCE ═══ */}
 
           <Sec id="api-keys" icon={Key} title="API keys">
-            <P>
+            <p>
               API keys let you authenticate without a user session. Available on
               Pro and Agency.
-            </P>
-            <P>
+            </p>
+            <p>
               Create keys in Settings → API Keys. Each key is shown once — copy
               it immediately.
-            </P>
+            </p>
             <CodeBlock
               lang="bash"
               code={`curl -X POST ${BASE}/functions/v1/scan-site \\
@@ -571,14 +437,14 @@ jobs:
   -H "Content-Type: application/json" \\
   -d '{"site_id": "your-site-uuid"}'`}
             />
-            <P>
+            <p>
               Keys are prefixed with <Mono>xsbl_</Mono>, 45 characters. Max 5
               active keys per org.
-            </P>
+            </p>
           </Sec>
 
           <Sec id="quick-scan-api" icon={Zap} title="Quick scan (public)">
-            <P>Scan any URL without authentication.</P>
+            <p>Scan any URL without authentication.</p>
             <CodeBlock
               lang="bash"
               code={`curl -X POST ${BASE}/functions/v1/quick-scan \\
@@ -604,7 +470,7 @@ jobs:
             icon={Globe}
             title="Scan site (authenticated)"
           >
-            <P>Trigger a multi-page scan. Returns results synchronously.</P>
+            <p>Trigger a multi-page scan. Returns results synchronously.</p>
             <CodeBlock
               lang="bash"
               code={`curl -X POST ${BASE}/functions/v1/scan-site \\
@@ -612,14 +478,15 @@ jobs:
   -H "Content-Type: application/json" \\
   -d '{"site_id": "uuid"}'`}
             />
-            <P>Pass specific URLs to scan only certain pages:</P>
+            <p>Pass specific URLs to scan only certain pages:</p>
             <CodeBlock
               lang="json"
               code={`{ "site_id": "uuid", "urls": ["https://example.com/", "https://example.com/about"] }`}
             />
-            <P>
-              <B>Page limits:</B> Free: 5, Starter: 10, Pro: 25, Agency: 50
-            </P>
+            <p>
+              <strong>Page limits:</strong> Free: 5, Starter: 10, Pro: 25,
+              Agency: 50
+            </p>
           </Sec>
 
           <Sec
@@ -627,10 +494,10 @@ jobs:
             icon={GitBranch}
             title="Bulk fix PR (authenticated)"
           >
-            <P>
+            <p>
               Create a single PR fixing multiple issues. Requires GitHub
               connected on the site.
-            </P>
+            </p>
             <CodeBlock
               lang="bash"
               code={`curl -X POST ${BASE}/functions/v1/bulk-fix-pr \\
@@ -655,10 +522,10 @@ jobs:
             icon={FileText}
             title="Generate report (authenticated)"
           >
-            <P>
+            <p>
               Generate an HTML compliance report (VPAT format). Print to PDF
               from the browser.
-            </P>
+            </p>
             <CodeBlock
               lang="bash"
               code={`curl -X POST ${BASE}/functions/v1/generate-report \\
@@ -666,9 +533,9 @@ jobs:
   -H "Content-Type: application/json" \\
   -d '{"site_id": "uuid", "format": "html"}'`}
             />
-            <P>
+            <p>
               Use <Mono>format: "json"</Mono> for raw data export.
-            </P>
+            </p>
           </Sec>
 
           <Sec
@@ -676,7 +543,9 @@ jobs:
             icon={Eye}
             title="Alt text generation (authenticated)"
           >
-            <P>Send an image URL and get Vision AI-generated alt text.</P>
+            <p>
+              Send an image URL and get AI-generated alt text via Claude Vision.
+            </p>
             <CodeBlock
               lang="bash"
               code={`curl -X POST ${BASE}/functions/v1/generate-alt-text \\
@@ -692,11 +561,11 @@ jobs:
   "confidence": 0.92
 }`}
             />
-            <P>Supports JPEG, PNG, GIF, WebP, and SVG. Max 5MB.</P>
+            <p>Supports JPEG, PNG, GIF, WebP, and SVG. Max 5MB.</p>
           </Sec>
 
           <Sec id="check-usage-api" icon={Code} title="Usage (authenticated)">
-            <P>Check current billing period usage:</P>
+            <p>Check current billing period usage:</p>
             <CodeBlock
               lang="bash"
               code={`curl ${BASE}/functions/v1/check-usage \\
@@ -715,29 +584,23 @@ jobs:
           </Sec>
 
           <Sec id="badge-api" icon={Shield} title="Badge (public)">
-            <P>Embed a dynamic accessibility score badge.</P>
+            <p>Embed a dynamic accessibility score badge.</p>
             <CodeBlock
               lang="markdown"
               code={`![accessibility](${BASE}/functions/v1/badge?domain=example.com)`}
             />
-            <div
-              style={{
-                fontFamily: "var(--mono)",
-                fontSize: "0.78rem",
-                lineHeight: 2,
-              }}
-            >
+            <div className="docs-param-list">
               <div>
-                <span style={{ color: t.accent }}>domain</span> — required
+                <span className="docs-param-list__key">domain</span> — required
               </div>
               <div>
-                <span style={{ color: t.accent }}>style</span> —{" "}
+                <span className="docs-param-list__key">style</span> —{" "}
                 <Mono>flat</Mono> (default), <Mono>plastic</Mono>,{" "}
                 <Mono>minimal</Mono>
               </div>
               <div>
-                <span style={{ color: t.accent }}>label</span> — left-side text
-                (default: "accessibility")
+                <span className="docs-param-list__key">label</span> — left-side
+                text (default: "accessibility")
               </div>
             </div>
           </Sec>
@@ -745,14 +608,7 @@ jobs:
           {/* ═══ REFERENCE ═══ */}
 
           <Sec id="rate-limits" icon={Shield} title="Rate limits">
-            <div
-              style={{
-                fontFamily: "var(--mono)",
-                fontSize: "0.78rem",
-                lineHeight: 2.2,
-                marginBottom: "0.8rem",
-              }}
-            >
+            <div className="docs-param-list">
               <div>Free — 3 scans/month, 1 site</div>
               <div>Starter ($19/mo) — 10 scans/month, 1 site</div>
               <div>
@@ -766,7 +622,7 @@ jobs:
           </Sec>
 
           <Sec id="webhooks" icon={Zap} title="Realtime events">
-            <P>Use Supabase Realtime to listen for scan completions:</P>
+            <p>Use Supabase Realtime to listen for scan completions:</p>
             <CodeBlock
               lang="javascript"
               code={`supabase.channel("scans")
@@ -779,10 +635,10 @@ jobs:
     }
   }).subscribe();`}
             />
-            <P>
+            <p>
               Slack and email alerts fire automatically after every scan —
               configure in Settings.
-            </P>
+            </p>
           </Sec>
         </main>
       </div>

@@ -188,7 +188,7 @@ export var blogArticles = [
       { type: "h2", text: "AI that reads your code" },
       {
         type: "p",
-        text: "Modern AI models can read your actual source code, understand its structure, and generate targeted fixes. When xsbl identifies a missing alt text violation, it doesn't just tell you about it — it fetches the relevant source file from your GitHub repo, identifies the exact image element, uses AI vision API to understand what the image shows, and generates a contextually accurate alt text attribute.",
+        text: "Modern AI models can read your actual source code, understand its structure, and generate targeted fixes. When xsbl identifies a missing alt text violation, it doesn't just tell you about it — it fetches the relevant source file from your GitHub repo, identifies the exact image element, uses Claude's vision API to understand what the image shows, and generates a contextually accurate alt text attribute.",
       },
       {
         type: "p",
@@ -317,6 +317,129 @@ export var blogArticles = [
       {
         type: "p",
         text: "For teams that want tighter integration, xsbl's bulk fix API can be called from CI to automatically create fix PRs when new violations are detected. Combined with Slack alerts, your team gets notified the moment a regression is introduced, along with a ready-to-merge PR that fixes it. The goal is a development workflow where accessibility is not an afterthought but an automated guardrail — like type checking or linting.",
+      },
+    ],
+  },
+  {
+    slug: "how-xsbl-scanner-works",
+    title: "Under the Hood: How xsbl's Scanner Finds What Others Miss",
+    subtitle:
+      "We don't just run axe-core and call it a day. Here's how xsbl scans your site in a real browser, crawls every page, and scores your accessibility posture.",
+    date: "2026-03-05",
+    readTime: "8 min",
+    category: "Product",
+    featured: false,
+    body: [
+      {
+        type: "p",
+        text: "Most accessibility scanners fall into one of two camps: browser extensions that check the page you're looking at, or API services that fetch your HTML and parse it statically. Both approaches miss things. Browser extensions require manual work — someone has to click through every page. Static analyzers miss JavaScript-rendered content, single-page app routing, and anything that requires user interaction to appear.",
+      },
+      {
+        type: "p",
+        text: "xsbl takes a different approach. Every scan launches a real headless Chromium browser, navigates to your site, waits for JavaScript to execute and the DOM to settle, then runs axe-core against the fully-rendered page. This is the same engine that powers Puppeteer and Playwright — the tools your own E2E tests use.",
+      },
+      { type: "h2", text: "Multi-page crawling" },
+      {
+        type: "p",
+        text: "When you trigger a scan, xsbl doesn't just check your homepage. It fetches your sitemap (or crawls your internal links), filters out non-scannable URLs like PDFs, XML feeds, and file downloads, then scans each page individually. Free plans scan up to 5 pages, Pro scans 25, and Agency scans 50. Each page gets its own axe-core run, its own score, and its own set of issues.",
+      },
+      {
+        type: "p",
+        text: "The final site score is the average across all scanned pages, weighted by issue severity. A single page with 4 critical violations will pull the overall score down more than 10 pages with minor issues. This gives you an honest picture of your site's accessibility posture, not just a cherry-picked best case.",
+      },
+      { type: "h2", text: "Timeout handling and resilience" },
+      {
+        type: "p",
+        text: "Real-world sites are messy. Some pages take 20 seconds to load. Others have infinite scroll or heavy animations. xsbl handles this with a per-page timeout of 35 seconds and a total scan budget of 120 seconds. If a page doesn't settle in time, we move on to the next one and mark it as timed out — you still get results for the pages that worked, rather than the whole scan failing.",
+      },
+      {
+        type: "p",
+        text: "We also filter out URLs that would waste your scan budget: sitemaps, RSS feeds, PDF links, and URLs with query parameters that are likely pagination or tracking variants of the same page.",
+      },
+      { type: "h2", text: "WCAG AA vs AAA" },
+      {
+        type: "p",
+        text: "The default scan checks against WCAG 2.2 Level AA — the standard that most laws and policies reference. But Pro and Agency plans also include Level AAA checks, which catch subtler issues like insufficient line spacing, text that can't be resized to 200%, and missing pronunciation hints for screen readers. AAA is aspirational for most sites, but having the data helps you prioritize.",
+      },
+      { type: "h2", text: "Scan profiles for fine-tuning" },
+      {
+        type: "p",
+        text: "Agency users can create custom scan profiles per site. This lets you exclude specific axe-core rules (useful if you've intentionally made a design decision and don't want it flagged every scan), exclude CSS selectors from scanning (like third-party widgets you can't control), and toggle best-practice rules on or off. The profile is saved to the site and applied automatically on every subsequent scan, including scheduled ones.",
+      },
+      { type: "h2", text: "What happens after the scan" },
+      {
+        type: "p",
+        text: "Every issue is stored with the element's HTML, its CSS selector, the page URL, the axe rule ID, WCAG tags, impact level, and a human-readable fix suggestion. This data powers everything downstream: the issue detail view, the AI fix generation, the GitHub PR creation, and the compliance reports. One scan feeds the entire remediation pipeline.",
+      },
+    ],
+  },
+  {
+    slug: "why-agencies-need-accessibility-tooling",
+    title: "Why Agencies Are Switching to Dedicated Accessibility Platforms",
+    subtitle:
+      "Manual audits don't scale. Here's how agencies are using xsbl to manage accessibility across dozens of client sites — with white-label reports, client dashboards, and compliance evidence.",
+    date: "2026-03-03",
+    readTime: "7 min",
+    category: "Product",
+    featured: false,
+    body: [
+      {
+        type: "p",
+        text: "If you run a web agency, accessibility is probably one of the fastest-growing line items in your client conversations. Regulations are tightening, lawsuits are increasing, and clients who never asked about WCAG before are now putting it in their RFPs. The problem: manual audits are expensive, slow, and don't scale when you're managing 20, 50, or 100 client sites.",
+      },
+      {
+        type: "p",
+        text: "Most agencies end up cobbling together a workflow from browser extensions, spreadsheets, and manual testing. It works for one or two sites. It falls apart at scale. That's the gap xsbl's Agency plan is designed to fill.",
+      },
+      { type: "h2", text: "Manage every client from one dashboard" },
+      {
+        type: "p",
+        text: "The Agency plan removes all site limits. Add every client site to your xsbl workspace and see scores, issues, and scan history in one place. Scheduled scans run automatically — weekly or daily — so you always know the current state of every property you manage without logging into each one.",
+      },
+      {
+        type: "p",
+        text: "The overview dashboard shows aggregate stats: total sites, average score, issue trends over time, and which sites need attention. When a client asks 'how are we doing on accessibility?', you have a real answer in seconds.",
+      },
+      { type: "h2", text: "Client-facing read-only dashboards" },
+      {
+        type: "p",
+        text: "One of the most requested Agency features is client access. Instead of exporting PDFs and emailing them, you invite clients directly to xsbl. They get a stripped-down read-only view showing their sites, scores, issues, and reports — but they can't change settings, trigger scans, or see other clients' data. It's like giving each client their own branded portal without building one yourself.",
+      },
+      {
+        type: "p",
+        text: "Clients see what they need to see: which issues exist, what their severity is, and whether scores are improving over time. You control what they have access to — assign specific sites to each client and update permissions at any time.",
+      },
+      { type: "h2", text: "White-label reports and scheduled delivery" },
+      {
+        type: "p",
+        text: "The Agency plan includes white-label PDF reports. Replace xsbl's branding with your own company name and deliver professional accessibility reports under your brand. Reports include the overall score, per-page breakdowns, the top 15 issues with severity and WCAG criteria, and remediation guidance.",
+      },
+      {
+        type: "p",
+        text: "Even better, set reports to deliver automatically. Configure weekly or monthly scheduled reports per site, add recipient email addresses, and xsbl generates and sends them on your behalf. Your clients get a consistent, branded accessibility update without you lifting a finger.",
+      },
+      { type: "h2", text: "Compliance evidence for audits" },
+      {
+        type: "p",
+        text: "When clients need to demonstrate compliance for SOC 2, ISO 27001, or procurement requirements, the evidence export feature pulls together everything: scan history, remediation timelines, vulnerability management data, and access controls. All structured by the relevant compliance framework's control numbers and downloadable as JSON or CSV.",
+      },
+      {
+        type: "p",
+        text: "Combined with the audit log — which tracks every scan, fix, settings change, and user action — you can show auditors a complete record of your accessibility program without assembling it manually.",
+      },
+      { type: "h2", text: "AI-powered fixes at scale" },
+      {
+        type: "p",
+        text: "The Agency plan includes 999 AI fix suggestions and 999 GitHub PRs per month — effectively unlimited. When you connect a client's repo, xsbl can generate fix pull requests that read the actual source code and write targeted patches. For agencies managing ongoing retainers, this turns accessibility remediation from a multi-hour manual task into a one-click operation.",
+      },
+      {
+        type: "p",
+        text: "Bulk fix is particularly powerful: select all critical issues on a site, click once, and get a single PR with every fix. The PR includes the issue descriptions, WCAG criteria, and exactly what changed in each file. Your developers review and merge — no manual debugging required.",
+      },
+      { type: "h2", text: "The bottom line" },
+      {
+        type: "p",
+        text: "Dedicated accessibility tooling isn't a luxury for agencies — it's becoming table stakes. The agencies that invest in scalable workflows now will be the ones winning accessibility-conscious clients in 2027. Manual audits will always have a place for complex edge cases, but the 80% of issues that are automatable should be automated. That's what xsbl is built for.",
       },
     ],
   },

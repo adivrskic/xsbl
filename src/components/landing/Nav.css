@@ -144,11 +144,12 @@
   right: 0;
   bottom: 0;
   background: var(--paper);
-  z-index: 99;
+  z-index: 100;
   padding: 1.5rem;
   flex-direction: column;
   gap: 0.3rem;
   overflow-y: auto;
+  height: fit-content;
 }
 
 .nav__mobile-menu--open {

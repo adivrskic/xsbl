@@ -5,6 +5,7 @@
   max-width: 860px;
   margin: 0 auto;
   padding: 7rem clamp(1.5rem, 3vw, 3rem) 4rem;
+  overflow: hidden;
 }
 
 .blog-article-page {
@@ -419,4 +420,149 @@
   width: 1px;
   height: 12px;
   background: var(--ink20);
+}
+
+/* ── BLOG LIST ── */
+.blog-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+/* ── FEATURED GRID ── */
+.blog-featured-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.blog-featured-grid--single {
+  grid-template-columns: 1fr;
+}
+
+/* ── ARTICLE ROW CONTENT ── */
+.blog-row__content {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+
+/* ── EMPTY STATE ── */
+.blog-empty {
+  padding: 3rem;
+  text-align: center;
+  color: var(--ink50);
+}
+
+/* ── 404 PAGE ── */
+.blog-404 {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+}
+
+.blog-404__inner {
+  text-align: center;
+}
+
+.blog-404__title {
+  font-family: var(--serif);
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--ink);
+  margin-bottom: 0.5rem;
+}
+
+.blog-404__link {
+  font-family: var(--mono);
+  font-size: 0.82rem;
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.blog-404__link:hover {
+  text-decoration: underline;
+}
+
+/* ── PREV/NEXT ALIGNMENT ── */
+.blog-nav__link--next {
+  text-align: right;
+}
+
+.blog-nav__link--next .blog-nav__label {
+  justify-content: flex-end;
+}
+
+/* ── FOCUS STYLES ── */
+.blog-featured:focus-visible,
+.blog-row:focus-visible,
+.blog-related__card:focus-visible,
+.blog-nav__link:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.blog-cat-pill:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* ── RESPONSIVE ── */
+@media (max-width: 768px) {
+  .blog-page {
+    padding-top: 5.5rem;
+  }
+
+  .blog-article-page {
+    padding-top: 5.5rem;
+  }
+
+  .blog-featured-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .blog-featured {
+    padding: 1.8rem 1.5rem;
+  }
+
+  .blog-row {
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: 1rem 1.2rem;
+  }
+
+  .blog-row__sub {
+    white-space: normal;
+  }
+
+  .blog-row__content {
+    overflow: visible;
+  }
+
+  .blog-row__time {
+    padding-top: 0;
+  }
+
+  .blog-nav {
+    flex-direction: column;
+    gap: 0.8rem;
+  }
+
+  .blog-nav__link--next {
+    text-align: left;
+  }
+
+  .blog-nav__link--next .blog-nav__label {
+    justify-content: flex-start;
+  }
+
+  .blog-related__grid {
+    grid-template-columns: 1fr;
+  }
+
+  .blog-article__body {
+    font-size: 0.95rem;
+  }
 }
