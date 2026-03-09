@@ -119,7 +119,7 @@ export const pricingPlans = [
       "Simulator preview",
       "Email support",
     ],
-    cta: "Start trial",
+    cta: "Sign up",
   },
   {
     tier: "Pro",
@@ -139,7 +139,7 @@ export const pricingPlans = [
       "PDF compliance reports",
       "WCAG 2.2 AA + AAA",
     ],
-    cta: "Start trial",
+    cta: "Sign up",
   },
   {
     tier: "Agency",

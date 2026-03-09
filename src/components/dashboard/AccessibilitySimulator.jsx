@@ -100,9 +100,9 @@ var VISION_MODES = [
     id: "blurred",
     name: "Low vision (blur)",
     icon: <Search size={14} />,
-    desc: "Simulates reduced visual acuity",
+    desc: "Simulates reduced visual acuity (~20/200)",
     category: "lowvision",
-    filter: "blur(2.5px)",
+    filter: "blur(3px) brightness(0.95)",
     matrix: null,
   },
   {
@@ -111,7 +111,7 @@ var VISION_MODES = [
     icon: <Contrast size={14} />,
     desc: "Reduced contrast sensitivity",
     category: "lowvision",
-    filter: "contrast(0.4) brightness(1.1)",
+    filter: "contrast(0.35) brightness(1.15) saturate(0.7)",
     matrix: null,
   },
   {
@@ -120,8 +120,9 @@ var VISION_MODES = [
     icon: <Cloud size={14} />,
     desc: "Yellowed, hazy vision — common in elderly",
     category: "lowvision",
-    filter: "blur(1px) sepia(0.5) brightness(0.9) contrast(0.7)",
+    filter: null,
     matrix: null,
+    special: "cataracts",
   },
   {
     id: "tunnel",
@@ -183,6 +184,11 @@ export default function AccessibilitySimulator({ site, issues, onClose }) {
   const containerRef = useRef(null);
   const splitRef = useRef(null);
   const isDragging = useRef(false);
+  const [mousePos, setMousePos] = useState({ x: 50, y: 50 });
+  const [retryCount, setRetryCount] = useState(0);
+  const [screenshotError, setScreenshotError] = useState(null);
+  const imgContainerRef = useRef(null);
+  const [nystagmusOffset, setNystagmusOffset] = useState({ x: 0, y: 0 });
 
   // Detect mobile
   const isMobile = typeof window !== "undefined" && window.innerWidth <= 768;
@@ -204,31 +210,123 @@ export default function AccessibilitySimulator({ site, issues, onClose }) {
     setCustomUrl("");
   };
 
-  // Load screenshot
+  // Load screenshot with retry and blank detection
   useEffect(
     function () {
       setLoading(true);
       setScreenshot(null);
+      setScreenshotError(null);
       var targetUrl = activeUrl || baseUrl;
-      supabase.auth.getSession().then(function (res) {
-        var session = res.data.session;
-        supabase.functions
-          .invoke("screenshot-site", {
-            body: { url: targetUrl, viewport: viewport },
-            headers: {
-              Authorization: "Bearer " + (session ? session.access_token : ""),
-            },
-          })
-          .then(function (res) {
-            if (res.data && res.data.image) setScreenshot(res.data);
-            setLoading(false);
-          })
-          .catch(function () {
-            setLoading(false);
-          });
-      });
+      var attempt = retryCount;
+
+      var fetchScreenshot = function (retryAttempt) {
+        supabase.auth.getSession().then(function (res) {
+          var session = res.data.session;
+          supabase.functions
+            .invoke("screenshot-site", {
+              body: {
+                url: targetUrl,
+                viewport: viewport,
+                // On retry, request a delay to let JS render
+                waitExtra: retryAttempt > 0,
+              },
+              headers: {
+                Authorization:
+                  "Bearer " + (session ? session.access_token : ""),
+              },
+            })
+            .then(function (res) {
+              if (res.data && res.data.image) {
+                // Detect blank/tiny screenshots by checking base64 length
+                // A blank 1440x900 PNG is typically very small (~2-5KB base64)
+                // A real page screenshot is usually >20KB
+                var b64 = res.data.image.replace("data:image/png;base64,", "");
+                var sizeKB = (b64.length * 3) / 4 / 1024;
+
+                if (sizeKB < 15 && retryAttempt < 2) {
+                  // Likely blank — retry with longer wait
+                  console.warn(
+                    "[simulator] Screenshot looks blank (" +
+                      Math.round(sizeKB) +
+                      "KB), retrying..."
+                  );
+                  setTimeout(function () {
+                    fetchScreenshot(retryAttempt + 1);
+                  }, 2000);
+                  return;
+                }
+
+                if (sizeKB < 5 && retryAttempt >= 2) {
+                  // Still blank after retries
+                  setScreenshotError(
+                    "Screenshot appears blank. The site may be blocking automated browsers or requires interaction to load."
+                  );
+                  setLoading(false);
+                  return;
+                }
+
+                setScreenshot(res.data);
+              } else {
+                if (retryAttempt < 1) {
+                  setTimeout(function () {
+                    fetchScreenshot(retryAttempt + 1);
+                  }, 1500);
+                  return;
+                }
+                setScreenshotError(
+                  "Could not capture screenshot. The site may be unreachable."
+                );
+              }
+              setLoading(false);
+            })
+            .catch(function (err) {
+              if (retryAttempt < 1) {
+                setTimeout(function () {
+                  fetchScreenshot(retryAttempt + 1);
+                }, 1500);
+                return;
+              }
+              setScreenshotError(
+                "Screenshot request failed: " + (err.message || "Unknown error")
+              );
+              setLoading(false);
+            });
+        });
+      };
+
+      fetchScreenshot(0);
     },
-    [activeUrl, baseUrl, viewport]
+    [activeUrl, baseUrl, viewport, retryCount]
+  );
+
+  // Mouse tracking for tunnel vision & macular degeneration
+  var handleMouseTrack = function (e) {
+    var el = imgContainerRef.current;
+    if (!el) return;
+    var rect = el.getBoundingClientRect();
+    var x = ((e.clientX - rect.left) / rect.width) * 100;
+    var y = ((e.clientY - rect.top) / rect.height) * 100;
+    setMousePos({
+      x: Math.max(0, Math.min(100, x)),
+      y: Math.max(0, Math.min(100, y)),
+    });
+  };
+
+  // Nystagmus-like tremor for low vision realism
+  useEffect(
+    function () {
+      if (mode !== "cataracts" && mode !== "blurred") return;
+      var interval = setInterval(function () {
+        setNystagmusOffset({
+          x: (Math.random() - 0.5) * 1.5,
+          y: (Math.random() - 0.5) * 1.0,
+        });
+      }, 150);
+      return function () {
+        clearInterval(interval);
+      };
+    },
+    [mode]
   );
 
   // Split view drag — use the image container, not the scroll area
@@ -982,316 +1080,531 @@ export default function AccessibilitySimulator({ site, issues, onClose }) {
             <div
               style={{
                 width: "100%",
-                maxWidth: 700,
-                background: t.cardBg,
-                borderRadius: 12,
-                border: "1px solid " + t.ink08,
-                overflow: "hidden",
+                maxWidth: 780,
+                display: "flex",
+                flexDirection: "column",
+                gap: "1rem",
               }}
             >
+              {/* Terminal-style screen reader output */}
               <div
                 style={{
-                  padding: "1rem 1.2rem",
-                  background: t.ink04,
-                  borderBottom: "1px solid " + t.ink08,
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "0.5rem",
+                  background: "#1a1a2e",
+                  borderRadius: 12,
+                  border: "1px solid #2a2a4a",
+                  overflow: "hidden",
+                  boxShadow: "0 8px 32px rgba(0,0,0,0.3)",
                 }}
               >
-                <Volume2 size={16} color={t.accent} />
-                <span
+                {/* Terminal title bar */}
+                <div
                   style={{
+                    padding: "0.5rem 0.8rem",
+                    background: "#12122a",
+                    borderBottom: "1px solid #2a2a4a",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "0.5rem",
+                  }}
+                >
+                  <div style={{ display: "flex", gap: "0.35rem" }}>
+                    <div
+                      style={{
+                        width: 10,
+                        height: 10,
+                        borderRadius: "50%",
+                        background: "#ff5f57",
+                      }}
+                    />
+                    <div
+                      style={{
+                        width: 10,
+                        height: 10,
+                        borderRadius: "50%",
+                        background: "#febc2e",
+                      }}
+                    />
+                    <div
+                      style={{
+                        width: 10,
+                        height: 10,
+                        borderRadius: "50%",
+                        background: "#28c840",
+                      }}
+                    />
+                  </div>
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "0.4rem",
+                      marginLeft: "0.5rem",
+                    }}
+                  >
+                    <Volume2 size={13} color="#7c7cff" />
+                    <span
+                      style={{
+                        fontFamily: "var(--mono)",
+                        fontSize: "0.68rem",
+                        color: "#8888bb",
+                        fontWeight: 600,
+                      }}
+                    >
+                      NVDA Screen Reader — {url}
+                    </span>
+                  </div>
+                  <span
+                    style={{
+                      fontFamily: "var(--mono)",
+                      fontSize: "0.55rem",
+                      color: "#555577",
+                      marginLeft: "auto",
+                    }}
+                  >
+                    Tab to navigate • Enter to activate
+                  </span>
+                </div>
+
+                {/* Sequential reading output */}
+                <div
+                  style={{
+                    padding: "1rem 1.2rem",
+                    maxHeight: "calc(100vh - 220px)",
+                    overflowY: "auto",
                     fontFamily: "var(--mono)",
                     fontSize: "0.72rem",
-                    fontWeight: 600,
-                    color: t.ink,
+                    lineHeight: 1.8,
                   }}
                 >
-                  Screen reader output
-                </span>
-                <span
-                  style={{
-                    fontFamily: "var(--mono)",
-                    fontSize: "0.6rem",
-                    color: t.ink50,
-                    marginLeft: "auto",
-                  }}
-                >
-                  Based on {pageIssues.length} open issue
-                  {pageIssues.length !== 1 ? "s" : ""}
-                </span>
-              </div>
-              <div
-                style={{
-                  padding: "1.2rem",
-                  maxHeight: "calc(100vh - 200px)",
-                  overflowY: "auto",
-                }}
-              >
-                {/* What a blind user would miss */}
-                {(function () {
-                  var missingAlt = pageIssues.filter(function (i) {
-                    return i.rule_id === "image-alt";
-                  });
-                  var missingLabels = pageIssues.filter(function (i) {
-                    return (
-                      i.rule_id === "label" || i.rule_id === "input-image-alt"
-                    );
-                  });
-                  var missingButtons = pageIssues.filter(function (i) {
-                    return i.rule_id === "button-name";
-                  });
-                  var missingLinks = pageIssues.filter(function (i) {
-                    return i.rule_id === "link-name";
-                  });
-                  var headingIssues = pageIssues.filter(function (i) {
-                    return (
-                      i.rule_id === "heading-order" ||
-                      i.rule_id === "empty-heading"
-                    );
-                  });
-                  var ariaIssues = pageIssues.filter(function (i) {
-                    return i.rule_id && i.rule_id.indexOf("aria") === 0;
-                  });
-                  var contrastIssues = pageIssues.filter(function (i) {
-                    return i.rule_id === "color-contrast";
-                  });
+                  {(function () {
+                    var missingAlt = pageIssues.filter(function (i) {
+                      return i.rule_id === "image-alt";
+                    });
+                    var missingLabels = pageIssues.filter(function (i) {
+                      return (
+                        i.rule_id === "label" || i.rule_id === "input-image-alt"
+                      );
+                    });
+                    var missingButtons = pageIssues.filter(function (i) {
+                      return i.rule_id === "button-name";
+                    });
+                    var missingLinks = pageIssues.filter(function (i) {
+                      return i.rule_id === "link-name";
+                    });
+                    var headingIssues = pageIssues.filter(function (i) {
+                      return (
+                        i.rule_id === "heading-order" ||
+                        i.rule_id === "empty-heading"
+                      );
+                    });
+                    var ariaIssues = pageIssues.filter(function (i) {
+                      return i.rule_id && i.rule_id.indexOf("aria") === 0;
+                    });
+                    var contrastIssues = pageIssues.filter(function (i) {
+                      return i.rule_id === "color-contrast";
+                    });
+                    var landmarkIssues = pageIssues.filter(function (i) {
+                      return (
+                        i.rule_id === "landmark-one-main" ||
+                        i.rule_id === "region" ||
+                        (i.rule_id && i.rule_id.indexOf("landmark") === 0)
+                      );
+                    });
+                    var docLang = pageIssues.filter(function (i) {
+                      return (
+                        i.rule_id === "html-has-lang" ||
+                        i.rule_id === "html-lang-valid"
+                      );
+                    });
 
-                  var sections = [
-                    {
-                      title: "Images without alt text",
-                      icon: <EyeOff size={14} />,
-                      items: missingAlt,
-                      color: "#c0392b",
-                      note: "Screen readers announce these as 'image' with no description — the user has no idea what's shown.",
-                    },
-                    {
-                      title: "Buttons without labels",
-                      icon: <AlertTriangle size={14} />,
-                      items: missingButtons,
-                      color: "#c0392b",
-                      note: "Announced as 'button' — the user can't tell what it does.",
-                    },
-                    {
-                      title: "Links without text",
-                      icon: <AlertTriangle size={14} />,
-                      items: missingLinks,
-                      color: "#e67e22",
-                      note: "Read as 'link' with no destination — unusable for navigation.",
-                    },
-                    {
-                      title: "Form inputs without labels",
-                      icon: <AlertTriangle size={14} />,
-                      items: missingLabels,
-                      color: "#e67e22",
-                      note: "Announced as 'edit text' with no context — users can't fill in forms.",
-                    },
-                    {
-                      title: "Heading hierarchy issues",
-                      icon: <AlertTriangle size={14} />,
-                      items: headingIssues,
-                      color: "#b45309",
-                      note: "Screen reader users navigate by headings — broken hierarchy means broken navigation.",
-                    },
-                    {
-                      title: "ARIA issues",
-                      icon: <AlertTriangle size={14} />,
-                      items: ariaIssues,
-                      color: "#b45309",
-                      note: "Incorrect ARIA attributes cause screen readers to misrepresent elements.",
-                    },
-                    {
-                      title: "Color contrast (low vision)",
-                      icon: <Contrast size={14} />,
-                      items: contrastIssues,
-                      color: "#b45309",
-                      note: "Users with partial vision and screen magnifiers rely on sufficient contrast.",
-                    },
-                  ].filter(function (s) {
-                    return s.items.length > 0;
-                  });
+                    // Build a sequential "reading" of the page
+                    var lines = [];
+                    var lineIdx = 0;
 
-                  if (sections.length === 0) {
-                    return (
-                      <div
-                        style={{
-                          textAlign: "center",
-                          padding: "3rem 1rem",
-                          color: t.ink50,
-                        }}
-                      >
-                        <Eye
-                          size={32}
-                          style={{ marginBottom: "0.5rem", opacity: 0.4 }}
-                        />
+                    var addLine = function (icon, text, type, sub) {
+                      lines.push({
+                        icon: icon,
+                        text: text,
+                        type: type,
+                        sub: sub,
+                        idx: lineIdx++,
+                      });
+                    };
+
+                    // Page load announcement
+                    addLine(
+                      "🔊",
+                      (site.domain || "Page") + " — loaded",
+                      "announce"
+                    );
+
+                    // Language issues
+                    if (docLang.length > 0) {
+                      addLine(
+                        "⚠️",
+                        "Warning: page language not set. Screen reader cannot determine pronunciation.",
+                        "error"
+                      );
+                    }
+
+                    // Landmark navigation
+                    addLine("📍", "Landmarks:", "heading");
+                    if (landmarkIssues.length > 0) {
+                      addLine(
+                        "⚠️",
+                        "No main landmark found. Screen reader users cannot skip to main content.",
+                        "error",
+                        "Users must Tab through every element from the top of the page to find content."
+                      );
+                    } else {
+                      addLine(
+                        "✓",
+                        "banner, navigation, main, contentinfo",
+                        "ok"
+                      );
+                    }
+
+                    // Heading structure
+                    addLine("📑", "Heading navigation (H key):", "heading");
+                    if (headingIssues.length > 0) {
+                      headingIssues.slice(0, 3).forEach(function (iss) {
+                        if (iss.rule_id === "empty-heading") {
+                          addLine(
+                            "⚠️",
+                            '"" — empty heading (level unknown)',
+                            "error",
+                            'Screen reader announces: "heading level 2, blank" — user hears nothing useful'
+                          );
+                        } else {
+                          addLine(
+                            "⚠️",
+                            "Heading hierarchy is broken — skipped levels detected",
+                            "error",
+                            "Users who navigate by headings will miss content sections" +
+                              (iss.element_selector
+                                ? " • " + iss.element_selector
+                                : "")
+                          );
+                        }
+                      });
+                    } else {
+                      addLine("✓", "Heading hierarchy appears correct", "ok");
+                    }
+
+                    // Tab order simulation
+                    addLine(
+                      "⌨️",
+                      "Tab order (interactive elements):",
+                      "heading"
+                    );
+
+                    // Simulate what user hears as they tab through
+                    var tabStops = [];
+                    missingButtons.slice(0, 4).forEach(function (iss) {
+                      tabStops.push({
+                        icon: "⚠️",
+                        text: '"button" — (no label)',
+                        type: "error",
+                        sub:
+                          'Screen reader announces: "button" • User has no idea what this does' +
+                          (iss.element_selector
+                            ? " • " + iss.element_selector
+                            : ""),
+                        announce: "button",
+                      });
+                    });
+                    missingLinks.slice(0, 4).forEach(function (iss) {
+                      tabStops.push({
+                        icon: "⚠️",
+                        text: '"link" — (no text)',
+                        type: "error",
+                        sub:
+                          'Screen reader announces: "link" • Could go anywhere — user must guess' +
+                          (iss.element_selector
+                            ? " • " + iss.element_selector
+                            : ""),
+                        announce: "link",
+                      });
+                    });
+                    missingLabels.slice(0, 4).forEach(function (iss) {
+                      tabStops.push({
+                        icon: "⚠️",
+                        text: '"edit" — (no label)',
+                        type: "error",
+                        sub:
+                          'Screen reader announces: "edit, blank" • User cannot tell what to type' +
+                          (iss.element_selector
+                            ? " • " + iss.element_selector
+                            : ""),
+                        announce: "edit, blank",
+                      });
+                    });
+
+                    if (tabStops.length > 0) {
+                      addLine("🔈", "Tab →", "dim");
+                      tabStops.forEach(function (stop) {
+                        addLine(stop.icon, stop.text, stop.type, stop.sub);
+                      });
+                    } else {
+                      addLine(
+                        "✓",
+                        "Interactive elements appear properly labeled",
+                        "ok"
+                      );
+                    }
+
+                    // Images
+                    if (missingAlt.length > 0) {
+                      addLine("🖼", "Images:", "heading");
+                      missingAlt.slice(0, 5).forEach(function (iss) {
+                        addLine(
+                          "⚠️",
+                          '"image" — no alt text',
+                          "error",
+                          'Screen reader announces: "graphic" or reads the filename (e.g., "IMG_3847.jpg")' +
+                            (iss.element_selector
+                              ? " • " + iss.element_selector
+                              : "")
+                        );
+                      });
+                      if (missingAlt.length > 5) {
+                        addLine(
+                          "",
+                          "...and " +
+                            (missingAlt.length - 5) +
+                            " more images without alt text",
+                          "dim"
+                        );
+                      }
+                    }
+
+                    // ARIA issues
+                    if (ariaIssues.length > 0) {
+                      addLine("🏷", "ARIA roles and attributes:", "heading");
+                      ariaIssues.slice(0, 3).forEach(function (iss) {
+                        addLine(
+                          "⚠️",
+                          "Invalid ARIA: " + iss.rule_id,
+                          "error",
+                          "Incorrect ARIA causes the screen reader to misrepresent or skip elements" +
+                            (iss.element_selector
+                              ? " • " + iss.element_selector
+                              : "")
+                        );
+                      });
+                    }
+
+                    // Contrast
+                    if (contrastIssues.length > 0) {
+                      addLine("🔆", "Visual clarity:", "heading");
+                      addLine(
+                        "⚠️",
+                        contrastIssues.length +
+                          " element" +
+                          (contrastIssues.length !== 1 ? "s" : "") +
+                          " with insufficient color contrast",
+                        "warn",
+                        "Users with low vision using screen magnifiers may not be able to read this text"
+                      );
+                    }
+
+                    // Summary
+                    var totalProblems =
+                      missingAlt.length +
+                      missingButtons.length +
+                      missingLinks.length +
+                      missingLabels.length +
+                      headingIssues.length +
+                      ariaIssues.length +
+                      landmarkIssues.length +
+                      docLang.length;
+                    addLine("", "─".repeat(50), "divider");
+                    if (totalProblems === 0) {
+                      addLine(
+                        "✅",
+                        "This page has no detected screen reader issues.",
+                        "summary-ok"
+                      );
+                    } else {
+                      addLine(
+                        "📊",
+                        totalProblems +
+                          " accessibility barrier" +
+                          (totalProblems !== 1 ? "s" : "") +
+                          " detected — this page would be " +
+                          (totalProblems > 5
+                            ? "very difficult"
+                            : "challenging") +
+                          " for a screen reader user",
+                        "summary-bad"
+                      );
+                    }
+
+                    return lines.map(function (line) {
+                      var bg = "transparent";
+                      var textColor = "#c8c8e0";
+                      var borderLeft = "3px solid transparent";
+
+                      if (line.type === "error") {
+                        bg = "rgba(248,81,73,0.06)";
+                        textColor = "#ff8888";
+                        borderLeft = "3px solid #f85149";
+                      } else if (line.type === "warn") {
+                        bg = "rgba(240,136,62,0.06)";
+                        textColor = "#f0a060";
+                        borderLeft = "3px solid #f0883e";
+                      } else if (line.type === "ok") {
+                        textColor = "#58d68d";
+                      } else if (line.type === "heading") {
+                        textColor = "#aaaadd";
+                      } else if (line.type === "announce") {
+                        textColor = "#7c7cff";
+                      } else if (line.type === "dim") {
+                        textColor = "#555577";
+                      } else if (line.type === "divider") {
+                        textColor = "#333355";
+                      } else if (line.type === "summary-ok") {
+                        textColor = "#58d68d";
+                        bg = "rgba(88,214,141,0.06)";
+                      } else if (line.type === "summary-bad") {
+                        textColor = "#ff8888";
+                        bg = "rgba(248,81,73,0.08)";
+                        borderLeft = "3px solid #f85149";
+                      }
+
+                      return (
                         <div
+                          key={line.idx}
                           style={{
-                            fontSize: "0.92rem",
-                            fontWeight: 600,
-                            color: t.ink,
-                            marginBottom: "0.3rem",
+                            padding: "0.35rem 0.6rem",
+                            borderRadius: 4,
+                            background: bg,
+                            borderLeft: borderLeft,
+                            marginBottom: "0.15rem",
+                            animation: "srFadeIn 0.3s ease forwards",
+                            animationDelay: line.idx * 0.04 + "s",
+                            opacity: 0,
                           }}
                         >
-                          No screen reader issues detected
-                        </div>
-                        <div style={{ fontSize: "0.78rem" }}>
-                          This page looks good for assistive technology users.
-                        </div>
-                      </div>
-                    );
-                  }
-
-                  return (
-                    <div>
-                      <p
-                        style={{
-                          fontSize: "0.82rem",
-                          color: t.ink50,
-                          lineHeight: 1.7,
-                          marginBottom: "1.2rem",
-                        }}
-                      >
-                        This shows how a screen reader user experiences your
-                        page. Each section below represents content that is
-                        broken, missing, or confusing for assistive technology.
-                      </p>
-
-                      {sections.map(function (sec, si) {
-                        return (
-                          <div key={si} style={{ marginBottom: "1rem" }}>
-                            <div
-                              style={{
-                                display: "flex",
-                                alignItems: "center",
-                                gap: "0.4rem",
-                                marginBottom: "0.5rem",
-                              }}
-                            >
-                              <span style={{ color: sec.color }}>
-                                {sec.icon}
-                              </span>
+                          <div
+                            style={{
+                              display: "flex",
+                              alignItems: "flex-start",
+                              gap: "0.5rem",
+                            }}
+                          >
+                            {line.icon && (
                               <span
                                 style={{
-                                  fontSize: "0.82rem",
-                                  fontWeight: 700,
-                                  color: t.ink,
+                                  fontSize: "0.72rem",
+                                  flexShrink: 0,
+                                  width: 18,
+                                  textAlign: "center",
                                 }}
                               >
-                                {sec.title}
+                                {line.icon}
                               </span>
-                              <span
-                                style={{
-                                  fontFamily: "var(--mono)",
-                                  fontSize: "0.62rem",
-                                  fontWeight: 600,
-                                  padding: "0.08rem 0.35rem",
-                                  borderRadius: 3,
-                                  background: sec.color + "15",
-                                  color: sec.color,
-                                }}
-                              >
-                                {sec.items.length}
-                              </span>
-                            </div>
-                            <p
-                              style={{
-                                fontSize: "0.74rem",
-                                color: t.ink50,
-                                lineHeight: 1.5,
-                                margin: "0 0 0.5rem",
-                                fontStyle: "italic",
-                              }}
-                            >
-                              {sec.note}
-                            </p>
-                            <div
-                              style={{
-                                display: "flex",
-                                flexDirection: "column",
-                                gap: "0.3rem",
-                              }}
-                            >
-                              {sec.items.slice(0, 5).map(function (iss, ii) {
-                                return (
-                                  <div
-                                    key={ii}
-                                    style={{
-                                      padding: "0.5rem 0.7rem",
-                                      borderRadius: 6,
-                                      background: t.ink04,
-                                      border: "1px solid " + t.ink08,
-                                      fontFamily: "var(--mono)",
-                                      fontSize: "0.7rem",
-                                    }}
-                                  >
-                                    {/* What the screen reader says */}
-                                    <div
-                                      style={{
-                                        display: "flex",
-                                        alignItems: "flex-start",
-                                        gap: "0.5rem",
-                                        marginBottom: iss.element_selector
-                                          ? "0.3rem"
-                                          : 0,
-                                      }}
-                                    >
-                                      <Volume2
-                                        size={12}
-                                        color={t.accent}
-                                        style={{ marginTop: 2, flexShrink: 0 }}
-                                      />
-                                      <span style={{ color: t.ink }}>
-                                        {iss.rule_id === "image-alt"
-                                          ? '"image"'
-                                          : iss.rule_id === "button-name"
-                                          ? '"button"'
-                                          : iss.rule_id === "link-name"
-                                          ? '"link"'
-                                          : iss.rule_id === "label"
-                                          ? '"edit text"'
-                                          : '"' +
-                                            (iss.description || iss.rule_id) +
-                                            '"'}
-                                        <span style={{ color: t.ink50 }}>
-                                          {" "}
-                                          — no context provided
-                                        </span>
-                                      </span>
-                                    </div>
-                                    {iss.element_selector && (
-                                      <div
-                                        style={{
-                                          fontSize: "0.6rem",
-                                          color: t.ink50,
-                                          paddingLeft: "1.25rem",
-                                          wordBreak: "break-all",
-                                        }}
-                                      >
-                                        {iss.element_selector}
-                                      </div>
-                                    )}
-                                  </div>
-                                );
-                              })}
-                              {sec.items.length > 5 && (
-                                <div
-                                  style={{
-                                    fontSize: "0.68rem",
-                                    color: t.ink50,
-                                    paddingLeft: "0.5rem",
-                                  }}
-                                >
-                                  + {sec.items.length - 5} more
-                                </div>
-                              )}
-                            </div>
+                            )}
+                            <span style={{ color: textColor }}>
+                              {line.text}
+                            </span>
                           </div>
-                        );
-                      })}
-                    </div>
-                  );
-                })()}
+                          {line.sub && (
+                            <div
+                              style={{
+                                marginTop: "0.2rem",
+                                paddingLeft: "1.6rem",
+                                fontSize: "0.62rem",
+                                color: "#666688",
+                                lineHeight: 1.5,
+                              }}
+                            >
+                              {line.sub}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    });
+                  })()}
+                </div>
+              </div>
+
+              {/* What this means — explanation card */}
+              <div
+                style={{
+                  background: t.cardBg,
+                  borderRadius: 10,
+                  border: "1px solid " + t.ink08,
+                  padding: "1rem 1.2rem",
+                }}
+              >
+                <div
+                  style={{
+                    fontFamily: "var(--mono)",
+                    fontSize: "0.68rem",
+                    fontWeight: 600,
+                    color: t.ink,
+                    marginBottom: "0.5rem",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "0.4rem",
+                  }}
+                >
+                  <Volume2 size={13} color={t.accent} />
+                  What you're seeing above
+                </div>
+                <div
+                  style={{
+                    fontSize: "0.74rem",
+                    color: t.ink50,
+                    lineHeight: 1.7,
+                  }}
+                >
+                  This simulates the sequential, audio-only experience of a
+                  blind or low-vision user navigating your page with NVDA or
+                  VoiceOver. Screen readers read content linearly — there's no
+                  visual layout, no colors, no spatial relationships. Users
+                  navigate by pressing{" "}
+                  <span
+                    style={{
+                      fontFamily: "var(--mono)",
+                      padding: "0.1rem 0.3rem",
+                      borderRadius: 3,
+                      background: t.ink04,
+                      fontSize: "0.65rem",
+                    }}
+                  >
+                    Tab
+                  </span>{" "}
+                  to move between interactive elements,{" "}
+                  <span
+                    style={{
+                      fontFamily: "var(--mono)",
+                      padding: "0.1rem 0.3rem",
+                      borderRadius: 3,
+                      background: t.ink04,
+                      fontSize: "0.65rem",
+                    }}
+                  >
+                    H
+                  </span>{" "}
+                  to jump between headings, and{" "}
+                  <span
+                    style={{
+                      fontFamily: "var(--mono)",
+                      padding: "0.1rem 0.3rem",
+                      borderRadius: 3,
+                      background: t.ink04,
+                      fontSize: "0.65rem",
+                    }}
+                  >
+                    D
+                  </span>{" "}
+                  to move between landmarks. When elements lack proper labels,
+                  the user hears generic words like "button" or "link" with no
+                  context — imagine navigating a building where every door is
+                  unlabeled.
+                </div>
               </div>
             </div>
           ) : loading ? (
@@ -1321,19 +1634,66 @@ export default function AccessibilitySimulator({ site, issues, onClose }) {
             </div>
           ) : !screenshot ? (
             <div
-              style={{ textAlign: "center", padding: "4rem", color: t.ink50 }}
+              style={{
+                textAlign: "center",
+                padding: "4rem",
+                color: t.ink50,
+                maxWidth: 400,
+              }}
             >
-              <div style={{ fontSize: "0.88rem", marginBottom: "0.5rem" }}>
-                Could not capture screenshot
+              <AlertTriangle
+                size={28}
+                style={{ marginBottom: "0.8rem", opacity: 0.5 }}
+              />
+              <div
+                style={{
+                  fontSize: "0.88rem",
+                  marginBottom: "0.5rem",
+                  color: t.ink,
+                  fontWeight: 600,
+                }}
+              >
+                {screenshotError || "Could not capture screenshot"}
               </div>
-              <div style={{ fontSize: "0.74rem" }}>
-                Try refreshing or check that the site is accessible
+              <div
+                style={{
+                  fontSize: "0.74rem",
+                  marginBottom: "1.2rem",
+                  lineHeight: 1.6,
+                }}
+              >
+                {!screenshotError &&
+                  "Try refreshing or check that the site is accessible."}{" "}
+                Some sites block automated browsers, require login, or have
+                aggressive bot protection.
               </div>
+              <button
+                onClick={function () {
+                  setRetryCount(retryCount + 1);
+                }}
+                style={{
+                  padding: "0.5rem 1.2rem",
+                  borderRadius: 6,
+                  border: "none",
+                  background: t.accent,
+                  color: "white",
+                  fontFamily: "var(--mono)",
+                  fontSize: "0.72rem",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "0.4rem",
+                }}
+              >
+                <RefreshCw size={13} /> Retry screenshot
+              </button>
             </div>
           ) : splitView ? (
             /* ── Split View ── */
             <div
               ref={splitRef}
+              onMouseMove={handleMouseTrack}
               style={{
                 position: "relative",
                 width: "100%",
@@ -1352,9 +1712,12 @@ export default function AccessibilitySimulator({ site, issues, onClose }) {
                   width: screenshot.width * zoom,
                   height: "auto",
                   display: "block",
-                  filter: currentMode.matrix
-                    ? "url(#filter-" + mode + ")"
-                    : currentMode.filter || "none",
+                  filter:
+                    currentMode.special === "cataracts"
+                      ? "blur(1.5px) sepia(0.45) brightness(0.85) contrast(0.65) saturate(0.8)"
+                      : currentMode.matrix
+                      ? "url(#filter-" + mode + ")"
+                      : currentMode.filter || "none",
                   pointerEvents: "none",
                 }}
               />
@@ -1366,7 +1729,12 @@ export default function AccessibilitySimulator({ site, issues, onClose }) {
                     inset: 0,
                     pointerEvents: "none",
                     background:
-                      "radial-gradient(circle at center, transparent 20%, rgba(0,0,0,0.85) 50%)",
+                      "radial-gradient(circle 120px at " +
+                      mousePos.x +
+                      "% " +
+                      mousePos.y +
+                      "%, transparent 0%, transparent 60%, rgba(0,0,0,0.6) 75%, rgba(0,0,0,0.95) 100%)",
+                    transition: "background 0.08s ease-out",
                   }}
                 />
               )}
@@ -1377,23 +1745,15 @@ export default function AccessibilitySimulator({ site, issues, onClose }) {
                     position: "absolute",
                     inset: 0,
                     pointerEvents: "none",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
+                    background:
+                      "radial-gradient(ellipse 140px 120px at " +
+                      mousePos.x +
+                      "% " +
+                      mousePos.y +
+                      "%, rgba(70,60,50,0.95) 0%, rgba(50,40,30,0.75) 30%, rgba(30,25,20,0.4) 55%, rgba(0,0,0,0.08) 70%, transparent 85%)",
+                    transition: "background 0.08s ease-out",
                   }}
-                >
-                  <div
-                    style={{
-                      width: 280,
-                      height: 280,
-                      borderRadius: "50%",
-                      background:
-                        "radial-gradient(ellipse at center, rgba(0,0,0,0.92) 0%, rgba(0,0,0,0.7) 30%, rgba(0,0,0,0.2) 60%, transparent 80%)",
-                      boxShadow: "0 0 100px 60px rgba(0,0,0,0.12)",
-                      flexShrink: 0,
-                    }}
-                  />
-                </div>
+                />
               )}
               <div
                 style={{
@@ -1508,11 +1868,18 @@ export default function AccessibilitySimulator({ site, issues, onClose }) {
           ) : (
             /* ── Single View ── */
             <div
+              ref={imgContainerRef}
+              onMouseMove={handleMouseTrack}
               style={{
                 position: "relative",
                 borderRadius: 8,
                 overflow: "hidden",
                 boxShadow: "0 4px 24px rgba(0,0,0,0.15)",
+                cursor:
+                  currentMode.special === "tunnel" ||
+                  currentMode.special === "macular"
+                    ? "none"
+                    : "default",
               }}
             >
               <img
@@ -1522,52 +1889,181 @@ export default function AccessibilitySimulator({ site, issues, onClose }) {
                   width: (screenshot.width || 1440) * zoom,
                   height: "auto",
                   display: "block",
-                  filter: currentMode.matrix
-                    ? "url(#filter-" + mode + ")"
-                    : currentMode.filter || "none",
+                  filter:
+                    currentMode.special === "cataracts"
+                      ? "blur(1.5px) sepia(0.45) brightness(0.85) contrast(0.65) saturate(0.8)"
+                      : currentMode.matrix
+                      ? "url(#filter-" + mode + ")"
+                      : currentMode.filter || "none",
                   transition: "filter 0.4s ease",
+                  transform:
+                    mode === "cataracts" || mode === "blurred"
+                      ? "translate(" +
+                        nystagmusOffset.x +
+                        "px, " +
+                        nystagmusOffset.y +
+                        "px)"
+                      : "none",
                 }}
               />
 
-              {/* Tunnel vision overlay */}
-              {currentMode.special === "tunnel" && (
-                <div
-                  style={{
-                    position: "absolute",
-                    inset: 0,
-                    pointerEvents: "none",
-                    background:
-                      "radial-gradient(circle at center, transparent 20%, rgba(0,0,0,0.85) 50%)",
-                  }}
-                />
-              )}
-
-              {/* Macular degeneration overlay — central scotoma, fixed to viewport center */}
-              {currentMode.special === "macular" && (
-                <div
-                  style={{
-                    position: "absolute",
-                    inset: 0,
-                    pointerEvents: "none",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
-                >
+              {/* Cataracts — layered realistic overlay: halos, glare, edge darkening */}
+              {currentMode.special === "cataracts" && (
+                <>
+                  {/* Yellowed haze layer */}
                   <div
                     style={{
-                      position: "sticky",
-                      top: "30%",
-                      width: 320,
-                      height: 320,
-                      borderRadius: "50%",
+                      position: "absolute",
+                      inset: 0,
+                      pointerEvents: "none",
                       background:
-                        "radial-gradient(ellipse at center, rgba(0,0,0,0.92) 0%, rgba(0,0,0,0.7) 30%, rgba(0,0,0,0.2) 60%, transparent 80%)",
-                      boxShadow: "0 0 120px 80px rgba(0,0,0,0.15)",
-                      flexShrink: 0,
+                        "radial-gradient(ellipse at 60% 30%, rgba(180,155,80,0.18) 0%, rgba(140,110,50,0.12) 50%, rgba(80,60,20,0.2) 100%)",
+                      mixBlendMode: "multiply",
                     }}
                   />
-                </div>
+                  {/* Light scatter / halo effect */}
+                  <div
+                    style={{
+                      position: "absolute",
+                      inset: 0,
+                      pointerEvents: "none",
+                      background:
+                        "radial-gradient(ellipse at 50% 40%, rgba(255,240,200,0.15) 0%, transparent 60%)",
+                      mixBlendMode: "screen",
+                    }}
+                  />
+                  {/* Edge darkening (vignette) — cataracts reduce peripheral clarity */}
+                  <div
+                    style={{
+                      position: "absolute",
+                      inset: 0,
+                      pointerEvents: "none",
+                      background:
+                        "radial-gradient(ellipse at center, transparent 40%, rgba(60,40,10,0.35) 100%)",
+                    }}
+                  />
+                  {/* Streaky glare artifacts */}
+                  <div
+                    style={{
+                      position: "absolute",
+                      inset: 0,
+                      pointerEvents: "none",
+                      background:
+                        "linear-gradient(135deg, transparent 30%, rgba(255,250,220,0.08) 45%, transparent 55%, rgba(255,250,220,0.05) 70%, transparent 80%)",
+                    }}
+                  />
+                </>
+              )}
+
+              {/* Tunnel vision overlay — follows mouse */}
+              {currentMode.special === "tunnel" && (
+                <>
+                  <div
+                    style={{
+                      position: "absolute",
+                      inset: 0,
+                      pointerEvents: "none",
+                      background:
+                        "radial-gradient(circle 120px at " +
+                        mousePos.x +
+                        "% " +
+                        mousePos.y +
+                        "%, transparent 0%, transparent 60%, rgba(0,0,0,0.6) 75%, rgba(0,0,0,0.95) 100%)",
+                      transition: "background 0.08s ease-out",
+                    }}
+                  />
+                  {/* Inner ring — slight blur at edges of visible area */}
+                  <div
+                    style={{
+                      position: "absolute",
+                      inset: 0,
+                      pointerEvents: "none",
+                      background:
+                        "radial-gradient(circle 140px at " +
+                        mousePos.x +
+                        "% " +
+                        mousePos.y +
+                        "%, transparent 55%, rgba(0,0,0,0.15) 70%, transparent 75%)",
+                      transition: "background 0.08s ease-out",
+                    }}
+                  />
+                  {/* "Move your eyes" hint */}
+                  <div
+                    style={{
+                      position: "absolute",
+                      bottom: 60,
+                      left: "50%",
+                      transform: "translateX(-50%)",
+                      padding: "0.3rem 0.8rem",
+                      borderRadius: 20,
+                      background: "rgba(0,0,0,0.6)",
+                      backdropFilter: "blur(4px)",
+                      fontFamily: "var(--mono)",
+                      fontSize: "0.6rem",
+                      color: "rgba(255,255,255,0.7)",
+                      whiteSpace: "nowrap",
+                      pointerEvents: "none",
+                    }}
+                  >
+                    Move your mouse to simulate eye movement
+                  </div>
+                </>
+              )}
+
+              {/* Macular degeneration — scotoma follows mouse (where you look, you can't see) */}
+              {currentMode.special === "macular" && (
+                <>
+                  {/* Central scotoma — follows gaze */}
+                  <div
+                    style={{
+                      position: "absolute",
+                      inset: 0,
+                      pointerEvents: "none",
+                      background:
+                        "radial-gradient(ellipse 140px 120px at " +
+                        mousePos.x +
+                        "% " +
+                        mousePos.y +
+                        "%, rgba(70,60,50,0.95) 0%, rgba(50,40,30,0.75) 30%, rgba(30,25,20,0.4) 55%, rgba(0,0,0,0.08) 70%, transparent 85%)",
+                      transition: "background 0.08s ease-out",
+                    }}
+                  />
+                  {/* Distortion ring around scotoma */}
+                  <div
+                    style={{
+                      position: "absolute",
+                      inset: 0,
+                      pointerEvents: "none",
+                      background:
+                        "radial-gradient(ellipse 180px 160px at " +
+                        mousePos.x +
+                        "% " +
+                        mousePos.y +
+                        "%, transparent 40%, rgba(80,70,50,0.12) 55%, transparent 70%)",
+                      transition: "background 0.08s ease-out",
+                    }}
+                  />
+                  <div
+                    style={{
+                      position: "absolute",
+                      bottom: 60,
+                      left: "50%",
+                      transform: "translateX(-50%)",
+                      padding: "0.3rem 0.8rem",
+                      borderRadius: 20,
+                      background: "rgba(0,0,0,0.6)",
+                      backdropFilter: "blur(4px)",
+                      fontFamily: "var(--mono)",
+                      fontSize: "0.6rem",
+                      color: "rgba(255,255,255,0.7)",
+                      whiteSpace: "nowrap",
+                      pointerEvents: "none",
+                    }}
+                  >
+                    Your central vision is lost — you see around where you look,
+                    not at it
+                  </div>
+                </>
               )}
 
               {/* Issue markers overlay */}
@@ -1722,6 +2218,10 @@ export default function AccessibilitySimulator({ site, issues, onClose }) {
         @keyframes issuePulse {
           0%, 100% { transform: scale(1); opacity: 0.5; }
           50% { transform: scale(1.8); opacity: 0; }
+        }
+        @keyframes srFadeIn {
+          from { opacity: 0; transform: translateY(4px); }
+          to { opacity: 1; transform: translateY(0); }
         }
         .show-mobile-only { display: none !important; }
         @media (max-width: 768px) {

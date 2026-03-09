@@ -13,7 +13,65 @@ import {
   Loader2,
   Check,
   Sparkles,
+  CreditCard,
+  Zap,
+  Crown,
 } from "lucide-react";
+
+var ONBOARDING_PLANS = [
+  {
+    key: "free",
+    tier: "Free",
+    price: 0,
+    blurb: "Try it out, no card needed",
+    highlights: ["1 site", "3 scans/mo", "WCAG 2.2 AA", "Basic issue list"],
+  },
+  {
+    key: "starter",
+    tier: "Starter",
+    price: 19,
+    blurb: "For indie devs & personal sites",
+    highlights: [
+      "1 site",
+      "10 scans/mo",
+      "50 AI suggestions",
+      "5 GitHub PRs/mo",
+      "Score badge",
+    ],
+  },
+  {
+    key: "pro",
+    tier: "Pro",
+    price: 69,
+    popular: true,
+    blurb: "For teams shipping accessible products",
+    highlights: [
+      "Unlimited sites",
+      "100 scans/mo",
+      "200 AI suggestions",
+      "25 GitHub PRs/mo",
+      "Scheduled scans",
+      "Slack & email alerts",
+      "PDF reports",
+      "WCAG 2.2 AAA",
+    ],
+  },
+  {
+    key: "agency",
+    tier: "Agency",
+    price: 249,
+    blurb: "For agencies managing client a11y",
+    highlights: [
+      "Everything in Pro",
+      "Unlimited AI & PRs",
+      "Client dashboards",
+      "White-label reports",
+      "VPAT generation",
+      "Compliance audit log",
+      "API access",
+    ],
+  },
+];
 
 function genToken() {
   const c = "abcdef0123456789";
@@ -188,7 +246,261 @@ function StepWorkspace({ orgName, setOrgName, onNext, saving }) {
   );
 }
 
-/* ── Step 2: Add first site ── */
+/* ── Step 2: Choose plan ── */
+function StepPlan({ onSelectPlan, loading }) {
+  var { t } = useTheme();
+  var [hoveredPlan, setHoveredPlan] = useState(null);
+
+  return (
+    <div>
+      <div style={{ fontSize: "1.6rem", marginBottom: "0.8rem" }}>
+        <CreditCard size={28} color={t.accent} strokeWidth={1.5} />
+      </div>
+      <h1
+        style={{
+          fontFamily: "var(--serif)",
+          fontSize: "1.8rem",
+          fontWeight: 700,
+          color: t.ink,
+          marginBottom: "0.5rem",
+          lineHeight: 1.2,
+        }}
+      >
+        Choose your plan
+      </h1>
+      <p
+        style={{
+          color: t.ink50,
+          fontSize: "0.95rem",
+          marginBottom: "1.8rem",
+          lineHeight: 1.7,
+          maxWidth: 460,
+        }}
+      >
+        Start free and upgrade anytime. Paid plans unlock more scans, AI
+        suggestions, and GitHub integrations.
+      </p>
+
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(2, 1fr)",
+          gap: "0.7rem",
+          maxWidth: 520,
+          marginBottom: "1.5rem",
+        }}
+      >
+        {ONBOARDING_PLANS.map(function (plan) {
+          var isHovered = hoveredPlan === plan.key;
+          var isPopular = plan.popular;
+          var isLoading = loading === plan.key;
+
+          return (
+            <div
+              key={plan.key}
+              onClick={function () {
+                if (!loading) onSelectPlan(plan.key);
+              }}
+              onMouseEnter={function () {
+                setHoveredPlan(plan.key);
+              }}
+              onMouseLeave={function () {
+                setHoveredPlan(null);
+              }}
+              style={{
+                position: "relative",
+                padding: "1.1rem",
+                borderRadius: 10,
+                border: isPopular
+                  ? "2px solid " + t.accent
+                  : "1.5px solid " + (isHovered ? t.ink20 : t.ink08),
+                background: isPopular ? t.accentBg : t.cardBg,
+                cursor: loading ? "wait" : "pointer",
+                transition: "all 0.2s",
+                transform: isHovered && !loading ? "translateY(-2px)" : "none",
+                boxShadow:
+                  isHovered && !loading
+                    ? "0 8px 24px rgba(0,0,0,0.06)"
+                    : "none",
+                opacity: loading && !isLoading ? 0.5 : 1,
+              }}
+            >
+              {isPopular && (
+                <span
+                  style={{
+                    position: "absolute",
+                    top: -9,
+                    left: "1rem",
+                    fontFamily: "var(--mono)",
+                    fontSize: "0.55rem",
+                    fontWeight: 700,
+                    letterSpacing: "0.08em",
+                    textTransform: "uppercase",
+                    color: "white",
+                    background: t.accent,
+                    padding: "0.15rem 0.5rem",
+                    borderRadius: 3,
+                  }}
+                >
+                  Most popular
+                </span>
+              )}
+
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  marginBottom: "0.5rem",
+                }}
+              >
+                <span
+                  style={{
+                    fontFamily: "var(--mono)",
+                    fontSize: "0.62rem",
+                    fontWeight: 600,
+                    textTransform: "uppercase",
+                    letterSpacing: "0.08em",
+                    color: isPopular ? t.accent : t.ink50,
+                  }}
+                >
+                  {plan.tier}
+                </span>
+                {plan.key === "agency" && (
+                  <Crown size={13} color={t.ink50} strokeWidth={1.5} />
+                )}
+              </div>
+
+              <div style={{ marginBottom: "0.4rem" }}>
+                <span
+                  style={{
+                    fontFamily: "var(--serif)",
+                    fontSize: "1.6rem",
+                    fontWeight: 700,
+                    color: t.ink,
+                    letterSpacing: "-0.02em",
+                  }}
+                >
+                  {plan.price === 0 ? "Free" : "$" + plan.price}
+                </span>
+                {plan.price > 0 && (
+                  <span
+                    style={{
+                      fontSize: "0.78rem",
+                      color: t.ink50,
+                      marginLeft: "0.2rem",
+                    }}
+                  >
+                    /mo
+                  </span>
+                )}
+              </div>
+
+              <div
+                style={{
+                  fontSize: "0.76rem",
+                  color: t.ink50,
+                  marginBottom: "0.7rem",
+                  lineHeight: 1.4,
+                }}
+              >
+                {plan.blurb}
+              </div>
+
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "0.25rem",
+                  marginBottom: "0.8rem",
+                }}
+              >
+                {plan.highlights.slice(0, 5).map(function (f, i) {
+                  return (
+                    <div
+                      key={i}
+                      style={{
+                        fontSize: "0.72rem",
+                        color: t.ink50,
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "0.35rem",
+                      }}
+                    >
+                      <Check
+                        size={11}
+                        color={isPopular ? t.accent : t.ink20}
+                        strokeWidth={2.5}
+                      />
+                      {f}
+                    </div>
+                  );
+                })}
+                {plan.highlights.length > 5 && (
+                  <div
+                    style={{
+                      fontSize: "0.65rem",
+                      color: t.ink50,
+                      paddingLeft: "1.35rem",
+                      fontStyle: "italic",
+                    }}
+                  >
+                    + {plan.highlights.length - 5} more
+                  </div>
+                )}
+              </div>
+
+              <div
+                style={{
+                  padding: "0.45rem 0",
+                  borderRadius: 6,
+                  textAlign: "center",
+                  fontFamily: "var(--body)",
+                  fontSize: "0.8rem",
+                  fontWeight: 600,
+                  background: isPopular ? t.accent : "transparent",
+                  color: isPopular ? "white" : t.ink,
+                  border: isPopular ? "none" : "1.5px solid " + t.ink20,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: "0.35rem",
+                  transition: "all 0.15s",
+                }}
+              >
+                {isLoading ? (
+                  <Loader2 size={14} className="xsbl-spin" />
+                ) : plan.key === "free" ? (
+                  <>
+                    Continue free <ArrowRight size={13} />
+                  </>
+                ) : (
+                  <>
+                    <Zap size={12} /> Start with {plan.tier}
+                  </>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      <p
+        style={{
+          fontSize: "0.74rem",
+          color: t.ink50,
+          maxWidth: 460,
+          lineHeight: 1.6,
+        }}
+      >
+        All paid plans include a free trial. You can change plans anytime from
+        Settings → Billing. No lock-in, cancel anytime.
+      </p>
+    </div>
+  );
+}
+
+/* ── Step 3: Add first site ── */
 function StepAddSite({ domain, setDomain, onNext, onSkip, saving }) {
   const { t } = useTheme();
 
@@ -307,7 +619,7 @@ function StepAddSite({ domain, setDomain, onNext, onSkip, saving }) {
   );
 }
 
-/* ── Step 3: Scanning / done ── */
+/* ── Step 4: Scanning / done ── */
 function StepScan({ site, scanResult, scanning, onFinish }) {
   const { t } = useTheme();
 
@@ -509,7 +821,7 @@ function StepScan({ site, scanResult, scanning, onFinish }) {
 /* ── Main onboarding page ── */
 export default function OnboardingPage() {
   const { t } = useTheme();
-  const { user, org, refreshOrg } = useAuth();
+  const { user, org, session, refreshOrg } = useAuth();
   const navigate = useNavigate();
 
   const [step, setStep] = useState(0);
@@ -523,19 +835,41 @@ export default function OnboardingPage() {
   const [scanResult, setScanResult] = useState(null);
   const [scanning, setScanning] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [loadingPlan, setLoadingPlan] = useState(null);
   const [error, setError] = useState(null);
 
-  // Step 1 → save org name
+  // Step 0 → save org name (or CREATE org if trigger didn't fire)
   const handleStep1 = async () => {
     setSaving(true);
     setError(null);
     try {
       if (org) {
+        // Org exists (trigger worked) — just rename it
         await supabase
           .from("organizations")
           .update({ name: orgName.trim() })
           .eq("id", org.id);
+      } else {
+        // Org doesn't exist — trigger failed or never ran.
+        // Use SECURITY DEFINER RPC to create profile + org + membership
+        var { data: rpcResult, error: rpcErr } = await supabase.rpc(
+          "bootstrap_workspace",
+          { p_org_name: orgName.trim() || "My workspace" }
+        );
+
+        if (rpcErr) {
+          setError("Failed to create workspace: " + rpcErr.message);
+          setSaving(false);
+          return;
+        }
+
+        if (rpcResult && rpcResult.error) {
+          setError(rpcResult.error);
+          setSaving(false);
+          return;
+        }
       }
+
       await refreshOrg?.();
       setStep(1);
     } catch (err) {
@@ -544,8 +878,50 @@ export default function OnboardingPage() {
     setSaving(false);
   };
 
+  // Step 1 → choose plan
+  const handleSelectPlan = async (planKey) => {
+    setError(null);
+    if (planKey === "free") {
+      // Continue on free → go to add site
+      setStep(2);
+      return;
+    }
+
+    // Paid plan → redirect to Stripe checkout
+    setLoadingPlan(planKey);
+    try {
+      var { data, error: checkoutErr } = await supabase.functions.invoke(
+        "create-checkout",
+        {
+          body: { plan: planKey },
+          headers: {
+            Authorization: "Bearer " + (session ? session.access_token : ""),
+          },
+        }
+      );
+      if (checkoutErr) throw new Error(checkoutErr.message);
+      if (data && data.url) {
+        window.location.href = data.url;
+        return;
+      }
+      // If no URL returned, just continue
+      setStep(2);
+    } catch (err) {
+      setError(
+        "Checkout failed: " +
+          err.message +
+          ". You can upgrade later from Billing."
+      );
+      // Don't block — let them continue
+      setTimeout(function () {
+        setStep(2);
+      }, 2000);
+    }
+    setLoadingPlan(null);
+  };
+
   // Step 2 → add site + trigger scan
-  const handleStep2 = async () => {
+  const handleAddSite = async () => {
     setSaving(true);
     setError(null);
     try {
@@ -580,7 +956,7 @@ export default function OnboardingPage() {
       }
 
       setSite(newSite);
-      setStep(2);
+      setStep(3);
       setSaving(false);
 
       // Trigger scan
@@ -603,7 +979,7 @@ export default function OnboardingPage() {
   };
 
   const handleSkipSite = () => {
-    setStep(2);
+    setStep(3);
   };
 
   const handleFinish = async () => {
@@ -641,7 +1017,13 @@ export default function OnboardingPage() {
         padding: "2rem",
       }}
     >
-      <div style={{ width: "100%", maxWidth: 500 }}>
+      <div
+        style={{
+          width: "100%",
+          maxWidth: step === 1 ? 580 : 500,
+          transition: "max-width 0.3s",
+        }}
+      >
         {/* Logo */}
         <div
           style={{
@@ -655,7 +1037,7 @@ export default function OnboardingPage() {
           xsbl<span style={{ color: t.accent }}>.</span>
         </div>
 
-        <Steps current={step} total={3} />
+        <Steps current={step} total={4} />
 
         {error && (
           <div
@@ -682,15 +1064,18 @@ export default function OnboardingPage() {
           />
         )}
         {step === 1 && (
+          <StepPlan onSelectPlan={handleSelectPlan} loading={loadingPlan} />
+        )}
+        {step === 2 && (
           <StepAddSite
             domain={domain}
             setDomain={setDomain}
-            onNext={handleStep2}
+            onNext={handleAddSite}
             onSkip={handleSkipSite}
             saving={saving}
           />
         )}
-        {step === 2 && (
+        {step === 3 && (
           <StepScan
             site={site}
             scanResult={scanResult}

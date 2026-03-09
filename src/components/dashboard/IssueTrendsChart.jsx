@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useTheme } from "../../context/ThemeContext";
 import { useAuth } from "../../context/AuthContext";
 import { supabase } from "../../lib/supabase";
@@ -7,6 +7,13 @@ import { TrendingUp, TrendingDown, Minus, Loader2 } from "lucide-react";
 /*
   IssueTrendsChart — SVG bar chart showing issues opened vs fixed
   per week over the last 12 weeks. Placed on the Overview page.
+
+  FIX: Previously flickered because contextSites is a new array ref
+  on every render → useEffect re-ran → setLoading(true) → spinner →
+  data loads → repeat. Now we:
+  1. Stabilize site IDs with useMemo so the dep doesn't change on every render
+  2. Skip showing loading spinner on refetches (only show on first load)
+  3. Use a ref to prevent duplicate concurrent fetches
 */
 
 function weekStart(date) {
@@ -26,11 +33,34 @@ export default function IssueTrendsChart() {
   var { org, sites: contextSites } = useAuth();
   var [weeks, setWeeks] = useState([]);
   var [loading, setLoading] = useState(true);
+  var [hasLoaded, setHasLoaded] = useState(false);
+  var fetchingRef = useRef(false);
+
+  // Stabilize site IDs — only changes when the actual IDs change,
+  // NOT when the parent re-renders with a new array reference
+  var stableSiteIds = useMemo(
+    function () {
+      if (!contextSites || contextSites.length === 0) return "";
+      return contextSites
+        .map(function (s) {
+          return s.id;
+        })
+        .sort()
+        .join(",");
+    },
+    [contextSites]
+  );
 
   useEffect(
     function () {
-      if (!org || !contextSites) return;
-      setLoading(true);
+      if (!org || !stableSiteIds) return;
+
+      // Prevent duplicate fetches
+      if (fetchingRef.current) return;
+      fetchingRef.current = true;
+
+      // Only show loading spinner on first load — not on refetches
+      if (!hasLoaded) setLoading(true);
 
       var now = new Date();
       var twelveWeeksAgo = new Date(
@@ -46,15 +76,7 @@ export default function IssueTrendsChart() {
         buckets[key] = { week: key, opened: 0, fixed: 0 };
       }
 
-      // Use site IDs from context instead of querying
-      var siteIds = contextSites.map(function (s) {
-        return s.id;
-      });
-      if (siteIds.length === 0) {
-        setWeeks(Object.values(buckets));
-        setLoading(false);
-        return;
-      }
+      var siteIds = stableSiteIds.split(",");
 
       // Fetch issues created in range (opened)
       var openedP = supabase
@@ -87,9 +109,11 @@ export default function IssueTrendsChart() {
 
         setWeeks(Object.values(buckets));
         setLoading(false);
+        setHasLoaded(true);
+        fetchingRef.current = false;
       });
     },
-    [org?.id, contextSites]
+    [org?.id, stableSiteIds]
   );
 
   if (loading) {
