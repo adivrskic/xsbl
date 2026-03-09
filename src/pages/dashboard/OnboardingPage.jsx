@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useTheme } from "../../context/ThemeContext";
 import "../../styles/dashboard.css";
 import "../../styles/dashboard-pages.css";
@@ -16,7 +16,19 @@ import {
   CreditCard,
   Zap,
   Crown,
+  GitPullRequest,
+  Bell,
+  Clock,
+  ExternalLink,
+  SkipForward,
 } from "lucide-react";
+
+function genToken() {
+  const c = "abcdef0123456789";
+  let t = "xsbl-v1-";
+  for (let i = 0; i < 12; i++) t += c[Math.floor(Math.random() * c.length)];
+  return t;
+}
 
 var ONBOARDING_PLANS = [
   {
@@ -67,22 +79,38 @@ var ONBOARDING_PLANS = [
       "Client dashboards",
       "White-label reports",
       "VPAT generation",
-      "Compliance audit log",
       "API access",
     ],
   },
 ];
 
-function genToken() {
-  const c = "abcdef0123456789";
-  let t = "xsbl-v1-";
-  for (let i = 0; i < 12; i++) t += c[Math.floor(Math.random() * c.length)];
-  return t;
+var SCHEDULE_OPTIONS = [
+  { value: "manual", label: "Manual only" },
+  { value: "daily", label: "Daily" },
+  { value: "weekly", label: "Weekly" },
+];
+
+function saveStep(n) {
+  try {
+    localStorage.setItem("xsbl-onboarding-step", String(n));
+  } catch (e) {}
+}
+function loadStep() {
+  try {
+    var v = localStorage.getItem("xsbl-onboarding-step");
+    return v ? parseInt(v, 10) : 0;
+  } catch (e) {
+    return 0;
+  }
+}
+function clearStep() {
+  try {
+    localStorage.removeItem("xsbl-onboarding-step");
+  } catch (e) {}
 }
 
-/* ── Step indicator ── */
 function Steps({ current, total }) {
-  const { t } = useTheme();
+  var { t } = useTheme();
   return (
     <div
       style={{
@@ -92,58 +120,58 @@ function Steps({ current, total }) {
         marginBottom: "2rem",
       }}
     >
-      {Array.from({ length: total }, (_, i) => (
-        <div
-          key={i}
-          style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}
-        >
+      {Array.from({ length: total }, function (_, i) {
+        return (
           <div
-            style={{
-              width: 28,
-              height: 28,
-              borderRadius: "50%",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontFamily: "var(--mono)",
-              fontSize: "0.72rem",
-              fontWeight: 700,
-              background:
-                i < current ? t.accent : i === current ? t.accentBg : t.ink04,
-              color: i < current ? "white" : i === current ? t.accent : t.ink50,
-              border:
-                i === current
-                  ? `2px solid ${t.accent}`
-                  : "2px solid transparent",
-              transition: "all 0.3s",
-            }}
+            key={i}
+            style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}
           >
-            {i < current ? <Check size={14} strokeWidth={3} /> : i + 1}
-          </div>
-          {i < total - 1 && (
             <div
               style={{
-                width: 32,
-                height: 2,
-                borderRadius: 1,
-                background: i < current ? t.accent : t.ink08,
-                transition: "background 0.3s",
+                width: 28,
+                height: 28,
+                borderRadius: "50%",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontFamily: "var(--mono)",
+                fontSize: "0.72rem",
+                fontWeight: 700,
+                background:
+                  i < current ? t.accent : i === current ? t.accentBg : t.ink04,
+                color:
+                  i < current ? "white" : i === current ? t.accent : t.ink50,
+                border:
+                  i === current
+                    ? "2px solid " + t.accent
+                    : "2px solid transparent",
+                transition: "all 0.3s",
               }}
-            />
-          )}
-        </div>
-      ))}
+            >
+              {i < current ? <Check size={14} strokeWidth={3} /> : i + 1}
+            </div>
+            {i < total - 1 && (
+              <div
+                style={{
+                  width: 32,
+                  height: 2,
+                  borderRadius: 1,
+                  background: i < current ? t.accent : t.ink08,
+                  transition: "background 0.3s",
+                }}
+              />
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 }
 
-/* ── Step 1: Name workspace ── */
 function StepWorkspace({ orgName, setOrgName, onNext, saving }) {
-  const { t } = useTheme();
-  const { user } = useAuth();
-
-  const firstName = user?.user_metadata?.full_name?.split(" ")[0] || "there";
-
+  var { t } = useTheme();
+  var { user } = useAuth();
+  var firstName = user?.user_metadata?.full_name?.split(" ")[0] || "there";
   return (
     <div>
       <div style={{ fontSize: "1.6rem", marginBottom: "0.8rem" }}>
@@ -173,7 +201,6 @@ function StepWorkspace({ orgName, setOrgName, onNext, saving }) {
         Let's get your workspace set up. This is where you'll manage all your
         accessibility scans.
       </p>
-
       <div style={{ marginBottom: "1.5rem" }}>
         <label
           style={{
@@ -189,7 +216,9 @@ function StepWorkspace({ orgName, setOrgName, onNext, saving }) {
         <input
           type="text"
           value={orgName}
-          onChange={(e) => setOrgName(e.target.value)}
+          onChange={function (e) {
+            setOrgName(e.target.value);
+          }}
           placeholder="My Company"
           autoFocus
           style={{
@@ -197,17 +226,14 @@ function StepWorkspace({ orgName, setOrgName, onNext, saving }) {
             maxWidth: 360,
             padding: "0.7rem 1rem",
             borderRadius: 8,
-            border: `1.5px solid ${t.ink20}`,
+            border: "1.5px solid " + t.ink20,
             background: t.cardBg,
             color: t.ink,
             fontFamily: "var(--body)",
             fontSize: "0.92rem",
             outline: "none",
             boxSizing: "border-box",
-            transition: "border-color 0.2s",
           }}
-          onFocus={(e) => (e.target.style.borderColor = t.accent)}
-          onBlur={(e) => (e.target.style.borderColor = t.ink20)}
         />
         <p
           style={{ fontSize: "0.76rem", color: t.ink50, marginTop: "0.35rem" }}
@@ -215,7 +241,6 @@ function StepWorkspace({ orgName, setOrgName, onNext, saving }) {
           You can change this later in Settings.
         </p>
       </div>
-
       <button
         onClick={onNext}
         disabled={!orgName.trim() || saving}
@@ -240,17 +265,15 @@ function StepWorkspace({ orgName, setOrgName, onNext, saving }) {
         ) : (
           <ArrowRight size={16} />
         )}
-        {saving ? "Saving…" : "Continue"}
+        {saving ? "Saving\u2026" : "Continue"}
       </button>
     </div>
   );
 }
 
-/* ── Step 2: Choose plan ── */
 function StepPlan({ onSelectPlan, loading }) {
   var { t } = useTheme();
-  var [hoveredPlan, setHoveredPlan] = useState(null);
-
+  var [hovered, setHovered] = useState(null);
   return (
     <div>
       <div style={{ fontSize: "1.6rem", marginBottom: "0.8rem" }}>
@@ -278,9 +301,8 @@ function StepPlan({ onSelectPlan, loading }) {
         }}
       >
         Start free and upgrade anytime. Paid plans unlock more scans, AI
-        suggestions, and GitHub integrations.
+        suggestions, and integrations.
       </p>
-
       <div
         style={{
           display: "grid",
@@ -291,10 +313,9 @@ function StepPlan({ onSelectPlan, loading }) {
         }}
       >
         {ONBOARDING_PLANS.map(function (plan) {
-          var isHovered = hoveredPlan === plan.key;
-          var isPopular = plan.popular;
-          var isLoading = loading === plan.key;
-
+          var isHov = hovered === plan.key,
+            pop = plan.popular,
+            isLoading = loading === plan.key;
           return (
             <div
               key={plan.key}
@@ -302,30 +323,28 @@ function StepPlan({ onSelectPlan, loading }) {
                 if (!loading) onSelectPlan(plan.key);
               }}
               onMouseEnter={function () {
-                setHoveredPlan(plan.key);
+                setHovered(plan.key);
               }}
               onMouseLeave={function () {
-                setHoveredPlan(null);
+                setHovered(null);
               }}
               style={{
                 position: "relative",
                 padding: "1.1rem",
                 borderRadius: 10,
-                border: isPopular
+                border: pop
                   ? "2px solid " + t.accent
-                  : "1.5px solid " + (isHovered ? t.ink20 : t.ink08),
-                background: isPopular ? t.accentBg : t.cardBg,
+                  : "1.5px solid " + (isHov ? t.ink20 : t.ink08),
+                background: pop ? t.accentBg : t.cardBg,
                 cursor: loading ? "wait" : "pointer",
                 transition: "all 0.2s",
-                transform: isHovered && !loading ? "translateY(-2px)" : "none",
+                transform: isHov && !loading ? "translateY(-2px)" : "none",
                 boxShadow:
-                  isHovered && !loading
-                    ? "0 8px 24px rgba(0,0,0,0.06)"
-                    : "none",
+                  isHov && !loading ? "0 8px 24px rgba(0,0,0,0.06)" : "none",
                 opacity: loading && !isLoading ? 0.5 : 1,
               }}
             >
-              {isPopular && (
+              {pop && (
                 <span
                   style={{
                     position: "absolute",
@@ -345,7 +364,6 @@ function StepPlan({ onSelectPlan, loading }) {
                   Most popular
                 </span>
               )}
-
               <div
                 style={{
                   display: "flex",
@@ -361,7 +379,7 @@ function StepPlan({ onSelectPlan, loading }) {
                     fontWeight: 600,
                     textTransform: "uppercase",
                     letterSpacing: "0.08em",
-                    color: isPopular ? t.accent : t.ink50,
+                    color: pop ? t.accent : t.ink50,
                   }}
                 >
                   {plan.tier}
@@ -370,7 +388,6 @@ function StepPlan({ onSelectPlan, loading }) {
                   <Crown size={13} color={t.ink50} strokeWidth={1.5} />
                 )}
               </div>
-
               <div style={{ marginBottom: "0.4rem" }}>
                 <span
                   style={{
@@ -395,7 +412,6 @@ function StepPlan({ onSelectPlan, loading }) {
                   </span>
                 )}
               </div>
-
               <div
                 style={{
                   fontSize: "0.76rem",
@@ -406,7 +422,6 @@ function StepPlan({ onSelectPlan, loading }) {
               >
                 {plan.blurb}
               </div>
-
               <div
                 style={{
                   display: "flex",
@@ -429,7 +444,7 @@ function StepPlan({ onSelectPlan, loading }) {
                     >
                       <Check
                         size={11}
-                        color={isPopular ? t.accent : t.ink20}
+                        color={pop ? t.accent : t.ink20}
                         strokeWidth={2.5}
                       />
                       {f}
@@ -449,7 +464,6 @@ function StepPlan({ onSelectPlan, loading }) {
                   </div>
                 )}
               </div>
-
               <div
                 style={{
                   padding: "0.45rem 0",
@@ -458,14 +472,13 @@ function StepPlan({ onSelectPlan, loading }) {
                   fontFamily: "var(--body)",
                   fontSize: "0.8rem",
                   fontWeight: 600,
-                  background: isPopular ? t.accent : "transparent",
-                  color: isPopular ? "white" : t.ink,
-                  border: isPopular ? "none" : "1.5px solid " + t.ink20,
+                  background: pop ? t.accent : "transparent",
+                  color: pop ? "white" : t.ink,
+                  border: pop ? "none" : "1.5px solid " + t.ink20,
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
                   gap: "0.35rem",
-                  transition: "all 0.15s",
                 }}
               >
                 {isLoading ? (
@@ -484,7 +497,6 @@ function StepPlan({ onSelectPlan, loading }) {
           );
         })}
       </div>
-
       <p
         style={{
           fontSize: "0.74rem",
@@ -493,17 +505,15 @@ function StepPlan({ onSelectPlan, loading }) {
           lineHeight: 1.6,
         }}
       >
-        All paid plans include a free trial. You can change plans anytime from
-        Settings → Billing. No lock-in, cancel anytime.
+        All paid plans include a free trial. Cancel anytime from Settings →
+        Billing.
       </p>
     </div>
   );
 }
 
-/* ── Step 3: Add first site ── */
 function StepAddSite({ domain, setDomain, onNext, onSkip, saving }) {
-  const { t } = useTheme();
-
+  var { t } = useTheme();
   return (
     <div>
       <div style={{ fontSize: "1.6rem", marginBottom: "0.8rem" }}>
@@ -530,10 +540,8 @@ function StepAddSite({ domain, setDomain, onNext, onSkip, saving }) {
           maxWidth: 420,
         }}
       >
-        Enter the domain you want to scan for accessibility issues. We'll check
-        it against WCAG 2.2 in a real browser.
+        Enter the domain you want to scan for accessibility issues.
       </p>
-
       <div style={{ marginBottom: "1.5rem" }}>
         <label
           style={{
@@ -549,7 +557,9 @@ function StepAddSite({ domain, setDomain, onNext, onSkip, saving }) {
         <input
           type="text"
           value={domain}
-          onChange={(e) => setDomain(e.target.value)}
+          onChange={function (e) {
+            setDomain(e.target.value);
+          }}
           placeholder="example.com"
           autoFocus
           style={{
@@ -557,20 +567,16 @@ function StepAddSite({ domain, setDomain, onNext, onSkip, saving }) {
             maxWidth: 360,
             padding: "0.7rem 1rem",
             borderRadius: 8,
-            border: `1.5px solid ${t.ink20}`,
+            border: "1.5px solid " + t.ink20,
             background: t.cardBg,
             color: t.ink,
             fontFamily: "var(--mono)",
             fontSize: "0.92rem",
             outline: "none",
             boxSizing: "border-box",
-            transition: "border-color 0.2s",
           }}
-          onFocus={(e) => (e.target.style.borderColor = t.accent)}
-          onBlur={(e) => (e.target.style.borderColor = t.ink20)}
         />
       </div>
-
       <div style={{ display: "flex", gap: "0.6rem", alignItems: "center" }}>
         <button
           onClick={onNext}
@@ -596,14 +602,14 @@ function StepAddSite({ domain, setDomain, onNext, onSkip, saving }) {
           ) : (
             <ArrowRight size={16} />
           )}
-          {saving ? "Adding…" : "Add site & scan"}
+          {saving ? "Adding\u2026" : "Add site & scan"}
         </button>
         <button
           onClick={onSkip}
           style={{
             padding: "0.65rem 1rem",
             borderRadius: 8,
-            border: `1.5px solid ${t.ink20}`,
+            border: "1.5px solid " + t.ink20,
             background: "none",
             color: t.ink50,
             fontFamily: "var(--body)",
@@ -619,10 +625,397 @@ function StepAddSite({ domain, setDomain, onNext, onSkip, saving }) {
   );
 }
 
-/* ── Step 4: Scanning / done ── */
-function StepScan({ site, scanResult, scanning, onFinish }) {
-  const { t } = useTheme();
+function StepSetup({ site, onNext }) {
+  var { t } = useTheme();
+  var [githubRepo, setGithubRepo] = useState("");
+  var [githubToken, setGithubToken] = useState("");
+  var [slackUrl, setSlackUrl] = useState("");
+  var [alertEmail, setAlertEmail] = useState("");
+  var [schedule, setSchedule] = useState("manual");
+  var [savingSection, setSavingSection] = useState(null);
+  var [saved, setSaved] = useState({});
 
+  var handleSaveGithub = async function () {
+    if (!githubRepo.trim() || !githubToken.trim() || !site) return;
+    setSavingSection("github");
+    await supabase
+      .from("sites")
+      .update({
+        github_repo: githubRepo.trim(),
+        github_token: githubToken.trim(),
+        github_default_branch: "main",
+      })
+      .eq("id", site.id);
+    setSaved(function (p) {
+      return { ...p, github: true };
+    });
+    setSavingSection(null);
+  };
+
+  var handleSaveAlerts = async function () {
+    if (!site) return;
+    setSavingSection("alerts");
+    var updates = {};
+    if (slackUrl.trim()) updates.slack_webhook_url = slackUrl.trim();
+    if (alertEmail.trim())
+      updates.alert_emails = alertEmail
+        .split(",")
+        .map(function (e) {
+          return e.trim();
+        })
+        .filter(Boolean);
+    if (Object.keys(updates).length > 0)
+      await supabase
+        .from("organizations")
+        .update(updates)
+        .eq("id", site.org_id);
+    setSaved(function (p) {
+      return { ...p, alerts: true };
+    });
+    setSavingSection(null);
+  };
+
+  var handleSaveSchedule = async function () {
+    if (!site || schedule === "manual") return;
+    setSavingSection("schedule");
+    await supabase
+      .from("sites")
+      .update({ scan_schedule: schedule, schedule_hour: 6 })
+      .eq("id", site.id);
+    setSaved(function (p) {
+      return { ...p, schedule: true };
+    });
+    setSavingSection(null);
+  };
+
+  var card = function (key) {
+    return {
+      padding: "1rem 1.2rem",
+      borderRadius: 10,
+      border: saved[key]
+        ? "1.5px solid " + t.green + "40"
+        : "1.5px solid " + t.ink08,
+      background: saved[key] ? t.green + "06" : t.cardBg,
+      marginBottom: "0.6rem",
+      transition: "all 0.2s",
+    };
+  };
+  var lbl = {
+    display: "flex",
+    alignItems: "center",
+    gap: "0.5rem",
+    marginBottom: "0.6rem",
+  };
+  var inp = {
+    width: "100%",
+    padding: "0.5rem 0.7rem",
+    borderRadius: 6,
+    border: "1.5px solid " + t.ink12,
+    background: t.paper,
+    color: t.ink,
+    fontFamily: "var(--mono)",
+    fontSize: "0.78rem",
+    outline: "none",
+    boxSizing: "border-box",
+    marginBottom: "0.4rem",
+  };
+  var sbtn = function (on) {
+    return {
+      padding: "0.35rem 0.8rem",
+      borderRadius: 5,
+      border: "none",
+      background: on ? t.accent : t.ink08,
+      color: on ? "white" : t.ink50,
+      fontFamily: "var(--mono)",
+      fontSize: "0.7rem",
+      fontWeight: 600,
+      cursor: on ? "pointer" : "default",
+      opacity: on ? 1 : 0.5,
+      display: "inline-flex",
+      alignItems: "center",
+      gap: "0.3rem",
+    };
+  };
+
+  return (
+    <div>
+      <div style={{ fontSize: "1.6rem", marginBottom: "0.8rem" }}>
+        <Zap size={28} color={t.accent} strokeWidth={1.5} />
+      </div>
+      <h1
+        style={{
+          fontFamily: "var(--serif)",
+          fontSize: "1.8rem",
+          fontWeight: 700,
+          color: t.ink,
+          marginBottom: "0.5rem",
+          lineHeight: 1.2,
+        }}
+      >
+        Supercharge your setup
+      </h1>
+      <p
+        style={{
+          color: t.ink50,
+          fontSize: "0.95rem",
+          marginBottom: "1.5rem",
+          lineHeight: 1.7,
+          maxWidth: 440,
+        }}
+      >
+        These are optional — configure now or later from Settings.
+      </p>
+
+      <div style={card("github")}>
+        <div style={lbl}>
+          <GitPullRequest size={15} color={saved.github ? t.green : t.ink50} />
+          <span style={{ fontSize: "0.84rem", fontWeight: 600, color: t.ink }}>
+            GitHub Integration
+          </span>
+          {saved.github && <Check size={13} color={t.green} strokeWidth={3} />}
+        </div>
+        <p
+          style={{
+            fontSize: "0.74rem",
+            color: t.ink50,
+            marginBottom: "0.6rem",
+            lineHeight: 1.5,
+          }}
+        >
+          Connect a repo to auto-create PRs that fix accessibility issues.
+        </p>
+        {!saved.github && (
+          <>
+            <input
+              value={githubRepo}
+              onChange={function (e) {
+                setGithubRepo(e.target.value);
+              }}
+              placeholder="owner/repo"
+              style={inp}
+            />
+            <input
+              type="password"
+              value={githubToken}
+              onChange={function (e) {
+                setGithubToken(e.target.value);
+              }}
+              placeholder="ghp_xxxxxxxxxxxx (repo scope)"
+              style={inp}
+            />
+            <div
+              style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}
+            >
+              <button
+                onClick={handleSaveGithub}
+                disabled={
+                  !githubRepo.trim() ||
+                  !githubToken.trim() ||
+                  savingSection === "github"
+                }
+                style={sbtn(githubRepo.trim() && githubToken.trim())}
+              >
+                {savingSection === "github" ? (
+                  <Loader2 size={11} className="xsbl-spin" />
+                ) : (
+                  <Check size={11} />
+                )}{" "}
+                Connect
+              </button>
+              <a
+                href="https://github.com/settings/tokens/new?scopes=repo&description=xsbl-a11y-fixes"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  fontSize: "0.68rem",
+                  color: t.accent,
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "0.2rem",
+                  textDecoration: "none",
+                }}
+              >
+                Get token <ExternalLink size={9} />
+              </a>
+            </div>
+          </>
+        )}
+      </div>
+
+      <div style={card("alerts")}>
+        <div style={lbl}>
+          <Bell size={15} color={saved.alerts ? t.green : t.ink50} />
+          <span style={{ fontSize: "0.84rem", fontWeight: 600, color: t.ink }}>
+            Alerts
+          </span>
+          {saved.alerts && <Check size={13} color={t.green} strokeWidth={3} />}
+        </div>
+        <p
+          style={{
+            fontSize: "0.74rem",
+            color: t.ink50,
+            marginBottom: "0.6rem",
+            lineHeight: 1.5,
+          }}
+        >
+          Get notified when scans find new critical issues.
+        </p>
+        {!saved.alerts && (
+          <>
+            <input
+              value={slackUrl}
+              onChange={function (e) {
+                setSlackUrl(e.target.value);
+              }}
+              placeholder="Slack webhook URL (optional)"
+              style={inp}
+            />
+            <input
+              value={alertEmail}
+              onChange={function (e) {
+                setAlertEmail(e.target.value);
+              }}
+              placeholder="Alert email(s), comma separated"
+              style={inp}
+            />
+            <button
+              onClick={handleSaveAlerts}
+              disabled={
+                (!slackUrl.trim() && !alertEmail.trim()) ||
+                savingSection === "alerts"
+              }
+              style={sbtn(slackUrl.trim() || alertEmail.trim())}
+            >
+              {savingSection === "alerts" ? (
+                <Loader2 size={11} className="xsbl-spin" />
+              ) : (
+                <Check size={11} />
+              )}{" "}
+              Save alerts
+            </button>
+          </>
+        )}
+      </div>
+
+      <div style={card("schedule")}>
+        <div style={lbl}>
+          <Clock size={15} color={saved.schedule ? t.green : t.ink50} />
+          <span style={{ fontSize: "0.84rem", fontWeight: 600, color: t.ink }}>
+            Scan Schedule
+          </span>
+          {saved.schedule && (
+            <Check size={13} color={t.green} strokeWidth={3} />
+          )}
+        </div>
+        <p
+          style={{
+            fontSize: "0.74rem",
+            color: t.ink50,
+            marginBottom: "0.6rem",
+            lineHeight: 1.5,
+          }}
+        >
+          Automatically re-scan on a schedule to catch regressions.
+        </p>
+        {!saved.schedule && (
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "0.4rem",
+              flexWrap: "wrap",
+            }}
+          >
+            {SCHEDULE_OPTIONS.map(function (opt) {
+              var on = schedule === opt.value;
+              return (
+                <button
+                  key={opt.value}
+                  onClick={function () {
+                    setSchedule(opt.value);
+                  }}
+                  style={{
+                    padding: "0.35rem 0.7rem",
+                    borderRadius: 5,
+                    border: on
+                      ? "1.5px solid " + t.accent
+                      : "1.5px solid " + t.ink08,
+                    background: on ? t.accentBg : "transparent",
+                    color: on ? t.accent : t.ink50,
+                    fontFamily: "var(--mono)",
+                    fontSize: "0.7rem",
+                    fontWeight: 600,
+                    cursor: "pointer",
+                  }}
+                >
+                  {opt.label}
+                </button>
+              );
+            })}
+            {schedule !== "manual" && (
+              <button
+                onClick={handleSaveSchedule}
+                disabled={savingSection === "schedule"}
+                style={sbtn(true)}
+              >
+                {savingSection === "schedule" ? (
+                  <Loader2 size={11} className="xsbl-spin" />
+                ) : (
+                  <Check size={11} />
+                )}{" "}
+                Save
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+
+      <div style={{ display: "flex", gap: "0.6rem", marginTop: "1.2rem" }}>
+        <button
+          onClick={onNext}
+          style={{
+            padding: "0.65rem 1.5rem",
+            borderRadius: 8,
+            border: "none",
+            background: t.accent,
+            color: "white",
+            fontFamily: "var(--body)",
+            fontSize: "0.9rem",
+            fontWeight: 600,
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            gap: "0.5rem",
+          }}
+        >
+          Continue <ArrowRight size={16} />
+        </button>
+        <button
+          onClick={onNext}
+          style={{
+            padding: "0.65rem 1rem",
+            borderRadius: 8,
+            border: "1.5px solid " + t.ink20,
+            background: "none",
+            color: t.ink50,
+            fontFamily: "var(--body)",
+            fontSize: "0.82rem",
+            fontWeight: 500,
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            gap: "0.4rem",
+          }}
+        >
+          <SkipForward size={14} /> Skip, I'll do this later
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function StepDone({ site, scanResult, scanning, onFinish }) {
+  var { t } = useTheme();
   return (
     <div>
       <div style={{ fontSize: "1.6rem", marginBottom: "0.8rem" }}>
@@ -638,9 +1031,8 @@ function StepScan({ site, scanResult, scanning, onFinish }) {
           lineHeight: 1.2,
         }}
       >
-        {scanning ? "Scanning your site…" : "You're all set!"}
+        {scanning ? "Scanning your site" : "You're all set!"}
       </h1>
-
       {scanning ? (
         <div>
           <p
@@ -654,7 +1046,7 @@ function StepScan({ site, scanResult, scanning, onFinish }) {
           >
             We're scanning{" "}
             <strong style={{ color: t.ink }}>{site?.domain}</strong> in a real
-            browser. This takes about 10–15 seconds.
+            browser. This takes about a minute.
           </p>
           <div
             style={{
@@ -665,8 +1057,7 @@ function StepScan({ site, scanResult, scanning, onFinish }) {
               fontSize: "0.88rem",
             }}
           >
-            <Loader2 size={18} className="xsbl-spin" />
-            Running WCAG 2.2 scan…
+            <Loader2 size={18} className="xsbl-spin" /> Running WCAG 2.2 scan
           </div>
         </div>
       ) : scanResult ? (
@@ -682,14 +1073,13 @@ function StepScan({ site, scanResult, scanning, onFinish }) {
           >
             First scan complete. Here's a quick look:
           </p>
-
           <div
             style={{
               display: "grid",
-              gridTemplateColumns: "repeat(3, 1fr)",
+              gridTemplateColumns: "repeat(2, 1fr)",
               gap: "0.6rem",
               marginBottom: "1.5rem",
-              maxWidth: 360,
+              maxWidth: 280,
             }}
           >
             <div
@@ -697,7 +1087,7 @@ function StepScan({ site, scanResult, scanning, onFinish }) {
                 padding: "0.8rem",
                 borderRadius: 8,
                 background: t.cardBg,
-                border: `1px solid ${t.ink08}`,
+                border: "1px solid " + t.ink08,
                 textAlign: "center",
               }}
             >
@@ -732,7 +1122,7 @@ function StepScan({ site, scanResult, scanning, onFinish }) {
                 padding: "0.8rem",
                 borderRadius: 8,
                 background: t.cardBg,
-                border: `1px solid ${t.ink08}`,
+                border: "1px solid " + t.ink08,
                 textAlign: "center",
               }}
             >
@@ -758,7 +1148,6 @@ function StepScan({ site, scanResult, scanning, onFinish }) {
               </div>
             </div>
           </div>
-
           <button
             onClick={onFinish}
             style={{
@@ -818,58 +1207,81 @@ function StepScan({ site, scanResult, scanning, onFinish }) {
   );
 }
 
-/* ── Main onboarding page ── */
 export default function OnboardingPage() {
-  const { t } = useTheme();
-  const { user, org, session, refreshOrg } = useAuth();
-  const navigate = useNavigate();
+  var { t } = useTheme();
+  var { user, org, session, refreshOrg } = useAuth();
+  var navigate = useNavigate();
+  var [searchParams] = useSearchParams();
 
-  const [step, setStep] = useState(0);
-  const [orgName, setOrgName] = useState(
-    org?.name || user?.user_metadata?.full_name
-      ? `${user.user_metadata.full_name}'s workspace`
-      : ""
+  var checkoutSuccess = searchParams.get("checkout") === "success";
+  var checkoutCanceled = searchParams.get("checkout") === "canceled";
+
+  var [step, setStepRaw] = useState(function () {
+    if (checkoutSuccess) return 2;
+    if (checkoutCanceled) return 1;
+    var s = loadStep();
+    if (s <= 1 && org && org.plan && org.plan !== "free") return 2;
+    return s;
+  });
+
+  var setStep = function (n) {
+    setStepRaw(n);
+    saveStep(n);
+  };
+
+  useEffect(
+    function () {
+      if (org && org.plan && org.plan !== "free" && step <= 1) setStep(2);
+    },
+    [org?.plan]
   );
-  const [domain, setDomain] = useState("");
-  const [site, setSite] = useState(null);
-  const [scanResult, setScanResult] = useState(null);
-  const [scanning, setScanning] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [loadingPlan, setLoadingPlan] = useState(null);
-  const [error, setError] = useState(null);
 
-  // Step 0 → save org name (or CREATE org if trigger didn't fire)
-  const handleStep1 = async () => {
+  useEffect(
+    function () {
+      if (checkoutSuccess && org) refreshOrg?.();
+    },
+    [checkoutSuccess]
+  );
+
+  var [orgName, setOrgName] = useState(
+    org?.name ||
+      (user?.user_metadata?.full_name
+        ? user.user_metadata.full_name + "'s workspace"
+        : "")
+  );
+  var [domain, setDomain] = useState("");
+  var [site, setSite] = useState(null);
+  var [scanResult, setScanResult] = useState(null);
+  var [scanning, setScanning] = useState(false);
+  var [saving, setSaving] = useState(false);
+  var [loadingPlan, setLoadingPlan] = useState(null);
+  var [error, setError] = useState(null);
+
+  var handleStep1 = async function () {
     setSaving(true);
     setError(null);
     try {
       if (org) {
-        // Org exists (trigger worked) — just rename it
         await supabase
           .from("organizations")
           .update({ name: orgName.trim() })
           .eq("id", org.id);
       } else {
-        // Org doesn't exist — trigger failed or never ran.
-        // Use SECURITY DEFINER RPC to create profile + org + membership
         var { data: rpcResult, error: rpcErr } = await supabase.rpc(
           "bootstrap_workspace",
           { p_org_name: orgName.trim() || "My workspace" }
         );
-
         if (rpcErr) {
           setError("Failed to create workspace: " + rpcErr.message);
           setSaving(false);
           return;
         }
-
         if (rpcResult && rpcResult.error) {
           setError(rpcResult.error);
           setSaving(false);
           return;
         }
       }
-
       await refreshOrg?.();
       setStep(1);
     } catch (err) {
@@ -878,22 +1290,23 @@ export default function OnboardingPage() {
     setSaving(false);
   };
 
-  // Step 1 → choose plan
-  const handleSelectPlan = async (planKey) => {
+  var handleSelectPlan = async function (planKey) {
     setError(null);
     if (planKey === "free") {
-      // Continue on free → go to add site
       setStep(2);
       return;
     }
-
-    // Paid plan → redirect to Stripe checkout
     setLoadingPlan(planKey);
     try {
+      var origin = window.location.origin;
       var { data, error: checkoutErr } = await supabase.functions.invoke(
         "create-checkout",
         {
-          body: { plan: planKey },
+          body: {
+            plan: planKey,
+            success_url: origin + "/dashboard/onboarding?checkout=success",
+            cancel_url: origin + "/dashboard/onboarding?checkout=canceled",
+          },
           headers: {
             Authorization: "Bearer " + (session ? session.access_token : ""),
           },
@@ -904,7 +1317,6 @@ export default function OnboardingPage() {
         window.location.href = data.url;
         return;
       }
-      // If no URL returned, just continue
       setStep(2);
     } catch (err) {
       setError(
@@ -912,20 +1324,18 @@ export default function OnboardingPage() {
           err.message +
           ". You can upgrade later from Billing."
       );
-      // Don't block — let them continue
       setTimeout(function () {
         setStep(2);
-      }, 2000);
+      }, 2500);
     }
     setLoadingPlan(null);
   };
 
-  // Step 2 → add site + trigger scan
-  const handleAddSite = async () => {
+  var handleAddSite = async function () {
     setSaving(true);
     setError(null);
     try {
-      let d = domain
+      var d = domain
         .trim()
         .toLowerCase()
         .replace(/^https?:\/\//, "")
@@ -935,8 +1345,7 @@ export default function OnboardingPage() {
         setSaving(false);
         return;
       }
-
-      const { data: newSite, error: siteErr } = await supabase
+      var { data: newSite, error: siteErr } = await supabase
         .from("sites")
         .insert({
           org_id: org.id,
@@ -946,7 +1355,6 @@ export default function OnboardingPage() {
         })
         .select()
         .single();
-
       if (siteErr) {
         setError(
           siteErr.code === "23505" ? "Domain already added." : siteErr.message
@@ -954,21 +1362,17 @@ export default function OnboardingPage() {
         setSaving(false);
         return;
       }
-
       setSite(newSite);
       setStep(3);
       setSaving(false);
-
-      // Trigger scan
       setScanning(true);
       try {
-        const res = await supabase.functions.invoke("scan-site", {
+        var res = await supabase.functions.invoke("scan-site", {
           body: { site_id: newSite.id },
         });
         if (res.error) throw new Error(res.error.message);
         setScanResult(res.data);
-      } catch {
-        // Scan failed but onboarding continues
+      } catch (e) {
         setScanResult(null);
       }
       setScanning(false);
@@ -978,19 +1382,20 @@ export default function OnboardingPage() {
     }
   };
 
-  const handleSkipSite = () => {
-    setStep(3);
+  var handleSkipSite = function () {
+    setStep(4);
+  };
+  var handleSetupDone = function () {
+    setStep(4);
   };
 
-  const handleFinish = async () => {
-    // Mark onboarding complete
+  var handleFinish = async function () {
+    clearStep();
     await supabase
       .from("organizations")
       .update({ onboarding_complete: true })
       .eq("id", org.id);
-
-    // Initialize notification preferences as all off
-    if (user) {
+    if (user)
       await supabase.from("notification_prefs").upsert(
         {
           user_id: user.id,
@@ -1000,8 +1405,6 @@ export default function OnboardingPage() {
         },
         { onConflict: "user_id" }
       );
-    }
-
     await refreshOrg?.();
     navigate("/dashboard", { replace: true });
   };
@@ -1020,11 +1423,10 @@ export default function OnboardingPage() {
       <div
         style={{
           width: "100%",
-          maxWidth: step === 1 ? 580 : 500,
+          maxWidth: step === 1 || step === 3 ? 580 : 500,
           transition: "max-width 0.3s",
         }}
       >
-        {/* Logo */}
         <div
           style={{
             fontFamily: "var(--mono)",
@@ -1036,17 +1438,15 @@ export default function OnboardingPage() {
         >
           xsbl<span style={{ color: t.accent }}>.</span>
         </div>
-
-        <Steps current={step} total={4} />
-
+        <Steps current={step} total={5} />
         {error && (
           <div
             style={{
               padding: "0.6rem 0.9rem",
               borderRadius: 8,
               marginBottom: "1rem",
-              background: `${t.red}08`,
-              border: `1px solid ${t.red}20`,
+              background: t.red + "08",
+              border: "1px solid " + t.red + "20",
               color: t.red,
               fontSize: "0.82rem",
             }}
@@ -1054,7 +1454,6 @@ export default function OnboardingPage() {
             {error}
           </div>
         )}
-
         {step === 0 && (
           <StepWorkspace
             orgName={orgName}
@@ -1075,8 +1474,9 @@ export default function OnboardingPage() {
             saving={saving}
           />
         )}
-        {step === 3 && (
-          <StepScan
+        {step === 3 && <StepSetup site={site} onNext={handleSetupDone} />}
+        {step === 4 && (
+          <StepDone
             site={site}
             scanResult={scanResult}
             scanning={scanning}
@@ -1084,7 +1484,6 @@ export default function OnboardingPage() {
           />
         )}
       </div>
-
       <style>{`@keyframes xsbl-spin { to { transform: rotate(360deg); } } .xsbl-spin { animation: xsbl-spin 0.6s linear infinite; }`}</style>
     </div>
   );

@@ -1895,7 +1895,7 @@ export default function SiteDetailPage() {
     },
     {
       key: "s",
-      description: "Quick scan",
+      description: "Scan",
       category: "Actions",
       handler: function () {
         if (!scanning && !isClient && site) handleScan();
@@ -2360,23 +2360,12 @@ export default function SiteDetailPage() {
                     ) : (
                       <Play size={15} fill="white" />
                     )}
-                    {scanning ? "Scanning\u2026" : "Quick scan"}
+                    {scanning ? "Scanning" : "Scan"}
                   </button>
                   <button
                     onClick={() => setShowScanConfig(true)}
                     disabled={scanning}
-                    style={{
-                      padding: "0.6rem 1.2rem",
-                      borderRadius: 8,
-                      border: "1.5px solid " + t.ink20,
-                      background: "none",
-                      color: t.ink,
-                      fontFamily: "var(--body)",
-                      fontSize: "0.85rem",
-                      fontWeight: 500,
-                      cursor: scanning ? "not-allowed" : "pointer",
-                      opacity: scanning ? 0.6 : 1,
-                    }}
+                    className="dash-action-btn"
                   >
                     Configure scan
                   </button>
@@ -2425,7 +2414,7 @@ export default function SiteDetailPage() {
                           e.currentTarget.style.color = t.accent;
                         }}
                       >
-                        <Eye size={14} /> Simulate vision
+                        <Eye size={14} /> Accessibility Simulator
                       </button>
                     </PlanGate>
                   )}

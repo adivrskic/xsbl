@@ -32,7 +32,7 @@ export function AuthProvider({ children }) {
       var { data, error } = await supabase
         .from("org_members")
         .select(
-          "org_id, role, organizations(id, name, slug, plan, onboarding_complete, plan_limits, status_page_enabled)"
+          "org_id, role, organizations(id, name, slug, plan, onboarding_complete, plan_limits, status_page_enabled, report_schedule, report_emails, report_white_label, report_company_name, slack_webhook_url, alert_emails)"
         )
         .eq("user_id", userId)
         .order("role", { ascending: true })
