@@ -317,7 +317,7 @@ export default function DocsPage() {
             <p>
               <strong>1. Dashboard</strong> — add sites, run scans, view issues,
               and generate reports at{" "}
-              <Link to="/dashboard">xsbl.dev/dashboard</Link>.
+              <Link to="/dashboard">xsbl.io/dashboard</Link>.
             </p>
             <p>
               <strong>2. Scheduled scans</strong> — set daily or weekly scans
@@ -553,7 +553,7 @@ jobs:
             </p>
             <p>
               Your status page lives at{" "}
-              <Mono>xsbl.dev/status/your-org-slug</Mono> and shows all verified
+              <Mono>xsbl.io/status/your-org-slug</Mono> and shows all verified
               sites with their current scores. It updates automatically after
               each scan.
             </p>
