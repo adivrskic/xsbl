@@ -107,7 +107,7 @@ export default function Hero() {
               className="hero__scan-btn"
             >
               {scanning && <span className="hero__spinner" />}
-              {scanning ? "Scanning\u2026" : "Scan free \u2192"}
+              {scanning ? "Scanning" : "Scan free"}
             </button>
           </div>
         </FadeIn>
