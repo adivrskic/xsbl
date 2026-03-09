@@ -9,7 +9,7 @@ import "./Nav.css";
 var landingLinks = [
   { label: "How it works", id: "how" },
   { label: "Features", id: "features" },
-  { label: "GitHub PRs", id: "github" },
+  { label: "Integrations", id: "github" },
   { label: "Simulator", id: "simulator" },
   { label: "Pricing", id: "pricing" },
 ];
