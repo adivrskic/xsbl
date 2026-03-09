@@ -5,7 +5,7 @@ import Section from "./Section";
 import { Eyebrow, H2, SubText, Italic } from "./Typography";
 import { ClipboardList, ScrollText, FileText, BadgeCheck } from "lucide-react";
 import "./ComplianceSection.css";
-
+<span className="vs-divider__text" style={{color: '#6b5a4f'}}>vs.</span>
 const iconMap = { ClipboardList, ScrollText, FileText, BadgeCheck };
 
 function ComplianceCard({ icon, title, desc, delay }) {
