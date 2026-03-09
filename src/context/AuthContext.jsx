@@ -131,6 +131,40 @@ export function AuthProvider({ children }) {
           _event === "TOKEN_REFRESHED"
         ) {
           initializedRef.current = true;
+
+          // Auto-accept pending client invite (survives OAuth redirects via localStorage)
+          if (_event === "SIGNED_IN") {
+            try {
+              var pendingInvite = localStorage.getItem("xsbl-pending-invite");
+              if (pendingInvite) {
+                localStorage.removeItem("xsbl-pending-invite");
+                supabase.functions
+                  .invoke("client-access?action=accept", {
+                    body: { invite_id: pendingInvite },
+                    headers: { Authorization: "Bearer " + s.access_token },
+                  })
+                  .catch(function (e) {
+                    console.log("Invite accept failed:", e);
+                  });
+              }
+            } catch (e) {}
+
+            // Auto-accept pending team invite (matches by email)
+            supabase.functions
+              .invoke("accept-team-invite", {
+                headers: { Authorization: "Bearer " + s.access_token },
+              })
+              .then(function (res) {
+                if (res.data && res.data.accepted) {
+                  console.log(
+                    "[auth] Team invite accepted, role:",
+                    res.data.role
+                  );
+                }
+              })
+              .catch(function () {});
+          }
+
           fetchOrg(s.user.id, true).then(function (orgData) {
             if (orgData) {
               fetchUsage(true);

@@ -81,12 +81,12 @@ function ScoreRing({ score, size, stroke, t }) {
         dominantBaseline="central"
         style={{
           fontFamily: "var(--mono)",
-          fontSize: size * 0.28 + "px",
+          fontSize: size * 0.22 + "px",
           fontWeight: 700,
           fill: color,
         }}
       >
-        {score}
+        {Math.round(score * 10) / 10}
       </text>
     </svg>
   );
@@ -461,7 +461,7 @@ export default function StatusPage() {
             <div
               style={{
                 display: "grid",
-                gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))",
+                gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))",
                 gap: "0.6rem",
               }}
             >
@@ -483,8 +483,8 @@ export default function StatusPage() {
                   >
                     <div
                       style={{
-                        width: 42,
-                        height: 42,
+                        width: 52,
+                        height: 52,
                         borderRadius: "50%",
                         background: hasScore ? color + "12" : t.ink04,
                         border: "2px solid " + (hasScore ? color : t.ink20),
@@ -497,12 +497,12 @@ export default function StatusPage() {
                       <span
                         style={{
                           fontFamily: "var(--mono)",
-                          fontSize: "0.88rem",
+                          fontSize: "0.78rem",
                           fontWeight: 700,
                           color: hasScore ? color : t.ink50,
                         }}
                       >
-                        {hasScore ? site.score : "\u2014"}
+                        {hasScore ? Math.round(site.score * 10) / 10 : "\u2014"}
                       </span>
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>

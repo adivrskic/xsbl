@@ -151,7 +151,7 @@ function EditableField({ label, value, onSave, placeholder }) {
 }
 
 /* ── Team member row ── */
-function MemberRow({ member, isCurrentUser, isOwner, onRemove }) {
+function MemberRow({ member, isCurrentUser, canManage, onRemove }) {
   const { t } = useTheme();
   const confirm = useConfirm();
   const [removing, setRemoving] = useState(false);
@@ -254,7 +254,7 @@ function MemberRow({ member, isCurrentUser, isOwner, onRemove }) {
         >
           {member.role === "owner" && <Crown size={10} />} {member.role}
         </span>
-        {isOwner && !isCurrentUser && (
+        {canManage && !isCurrentUser && member.role !== "owner" && (
           <button
             onClick={handleRemove}
             disabled={removing}
@@ -314,6 +314,13 @@ function InviteForm({ orgId, onInvited }) {
         );
       } else {
         toast.success(cleanEmail + " added as " + role);
+        logAudit({
+          action: "user.added",
+          resourceType: "user",
+          resourceId: users[0].id,
+          description: "Added " + cleanEmail + " as " + role,
+          metadata: { email: cleanEmail, role: role },
+        });
         setEmail("");
         onInvited && onInvited();
       }
@@ -332,6 +339,12 @@ function InviteForm({ orgId, onInvited }) {
             cleanEmail +
             " — they'll be added when they sign up"
         );
+        logAudit({
+          action: "user.invited",
+          resourceType: "user",
+          description: "Invited " + cleanEmail + " as " + role,
+          metadata: { email: cleanEmail, role: role },
+        });
         setEmail("");
         onInvited && onInvited();
 
@@ -530,6 +543,20 @@ function ClientAccessPanel({ org }) {
     await supabase.functions.invoke("client-access?action=remove", {
       body: { user_id: userId },
       headers: { Authorization: "Bearer " + (session?.access_token || "") },
+    });
+    loadClients();
+  };
+
+  var handleRevokeInvite = async function (inviteId) {
+    await supabase
+      .from("client_invites")
+      .update({ revoked: true })
+      .eq("id", inviteId);
+    logAudit({
+      action: "user.client_invite_revoked",
+      resourceType: "user",
+      description: "Client invite revoked",
+      metadata: { invite_id: inviteId },
     });
     loadClients();
   };
@@ -792,6 +819,7 @@ function ClientAccessPanel({ org }) {
             );
           })}
           {pendingInvites.map(function (inv) {
+            var viewed = inv.accepted;
             return (
               <div
                 key={inv.id}
@@ -801,27 +829,71 @@ function ClientAccessPanel({ org }) {
                   gap: "0.5rem",
                   padding: "0.5rem 0.7rem",
                   borderRadius: 7,
-                  border: "1px dashed " + t.ink08,
-                  opacity: 0.6,
+                  border:
+                    "1px " + (viewed ? "solid" : "dashed") + " " + t.ink08,
+                  opacity: viewed ? 1 : 0.6,
                 }}
               >
-                <Mail size={14} color={t.ink50} />
-                <span style={{ fontSize: "0.76rem", color: t.ink50 }}>
-                  {inv.email}
-                </span>
+                <Mail size={14} color={viewed ? t.green : t.ink50} />
                 <span
                   style={{
-                    fontFamily: "var(--mono)",
-                    fontSize: "0.52rem",
-                    padding: "0.05rem 0.25rem",
-                    borderRadius: 3,
-                    background: t.amber + "15",
-                    color: t.amber,
-                    fontWeight: 600,
+                    fontSize: "0.76rem",
+                    color: viewed ? t.ink : t.ink50,
+                    flex: 1,
                   }}
                 >
-                  PENDING
+                  {inv.email}
                 </span>
+                {viewed ? (
+                  <span
+                    style={{
+                      fontFamily: "var(--mono)",
+                      fontSize: "0.52rem",
+                      padding: "0.05rem 0.25rem",
+                      borderRadius: 3,
+                      background: t.green + "15",
+                      color: t.green,
+                      fontWeight: 600,
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "0.15rem",
+                    }}
+                  >
+                    <Check size={9} /> VIEWED
+                  </span>
+                ) : (
+                  <span
+                    style={{
+                      fontFamily: "var(--mono)",
+                      fontSize: "0.52rem",
+                      padding: "0.05rem 0.25rem",
+                      borderRadius: 3,
+                      background: t.amber + "15",
+                      color: t.amber,
+                      fontWeight: 600,
+                    }}
+                  >
+                    PENDING
+                  </span>
+                )}
+                <button
+                  onClick={function () {
+                    handleRevokeInvite(inv.id);
+                  }}
+                  aria-label={"Revoke invite for " + inv.email}
+                  style={{
+                    background: "none",
+                    border: "none",
+                    cursor: "pointer",
+                    color: t.ink50,
+                    padding: "0.15rem",
+                    borderRadius: 4,
+                    display: "flex",
+                    alignItems: "center",
+                  }}
+                >
+                  <X size={14} />
+                </button>
               </div>
             );
           })}
@@ -1976,14 +2048,17 @@ export default function SettingsPage() {
   }
 
   var [settingsTab, setSettingsTab] = useState("general");
+  const isAdmin = org?.role === "owner" || org?.role === "admin";
 
   var settingsTabs = [
     { id: "general", label: "General", icon: User },
     { id: "team", label: "Team", icon: Users },
     { id: "alerts", label: "Alerts", icon: Bell },
     { id: "integrations", label: "Integrations", icon: Key },
-    { id: "account", label: "Account", icon: Trash2 },
   ];
+  if (isOwner) {
+    settingsTabs.push({ id: "account", label: "Account", icon: Trash2 });
+  }
 
   return (
     <div>
@@ -2446,14 +2521,14 @@ export default function SettingsPage() {
                 <p style={{ color: t.ink50, fontSize: "0.82rem" }}>Loading…</p>
               ) : (
                 <div
-                  style={{ marginBottom: isOwner && canInvite ? "1.2rem" : 0 }}
+                  style={{ marginBottom: isAdmin && canInvite ? "1.2rem" : 0 }}
                 >
                   {members.map((m) => (
                     <MemberRow
                       key={m.user_id}
                       member={m}
                       isCurrentUser={m.user_id === user?.id}
-                      isOwner={isOwner}
+                      canManage={isAdmin}
                       onRemove={handleRemoveMember}
                     />
                   ))}
@@ -2545,7 +2620,7 @@ export default function SettingsPage() {
                                 </div>
                               </div>
                             </div>
-                            {isOwner && (
+                            {isAdmin && (
                               <button
                                 onClick={async function () {
                                   await supabase
@@ -2580,7 +2655,7 @@ export default function SettingsPage() {
                 </div>
               )}
 
-              {isOwner && canInvite && (
+              {isAdmin && canInvite && (
                 <div style={{ paddingTop: "0.8rem" }}>
                   <div
                     style={{
@@ -2598,7 +2673,7 @@ export default function SettingsPage() {
                 </div>
               )}
 
-              {isOwner && !canInvite && (
+              {isAdmin && !canInvite && (
                 <div
                   style={{
                     paddingTop: "0.8rem",

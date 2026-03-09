@@ -7,7 +7,6 @@ import {
 } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { useTheme } from "../../context/ThemeContext";
-import { supabase } from "../../lib/supabase";
 import XsblBull from "../../components/landing/XsblBull";
 import "../../styles/auth.css";
 
@@ -64,6 +63,13 @@ export default function LoginPage() {
   const [forgotMode, setForgotMode] = useState(false);
   const [resetSent, setResetSent] = useState(false);
 
+  // Persist invite ID so it survives OAuth redirects and page changes
+  if (inviteId) {
+    try {
+      localStorage.setItem("xsbl-pending-invite", inviteId);
+    } catch (e) {}
+  }
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError(null);
@@ -73,20 +79,7 @@ export default function LoginPage() {
       setError(err.message);
       setLoading(false);
     } else {
-      // Accept client invite if present
-      if (inviteId) {
-        try {
-          var {
-            data: { session: s },
-          } = await supabase.auth.getSession();
-          await supabase.functions.invoke("client-access?action=accept", {
-            body: { invite_id: inviteId },
-            headers: { Authorization: "Bearer " + (s?.access_token || "") },
-          });
-        } catch (e) {
-          console.log("[login] Invite accept failed:", e);
-        }
-      }
+      // Invite acceptance is now handled by AuthContext on auth state change
       navigate(from, { replace: true });
     }
   };
@@ -244,7 +237,10 @@ export default function LoginPage() {
             </>
           ) : (
             <>
-              Don't have an account? <Link to="/signup">Sign up</Link>
+              Don't have an account?{" "}
+              <Link to={"/signup" + (inviteId ? "?invite=" + inviteId : "")}>
+                Sign up
+              </Link>
             </>
           )}
         </p>

@@ -14,6 +14,7 @@ import {
   AlertTriangle,
   X,
 } from "lucide-react";
+import { Navigate } from "react-router-dom";
 
 var PLAN_SITE_LIMITS = {
   free: 1,
@@ -245,6 +246,11 @@ export default function BillingPage() {
   const [portalLoading, setPortalLoading] = useState(false);
   const [message, setMessage] = useState(null);
   const [downgradeBlock, setDowngradeBlock] = useState(null);
+
+  // Only org owner can access billing
+  if (org && org.role !== "owner") {
+    return <Navigate to="/dashboard" replace />;
+  }
 
   // Check for Stripe redirect
   useEffect(() => {

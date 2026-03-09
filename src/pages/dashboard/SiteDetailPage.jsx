@@ -1,8 +1,14 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { useParams, Link, useNavigate } from "react-router-dom";
+import {
+  useParams,
+  Link,
+  useNavigate,
+  useSearchParams,
+} from "react-router-dom";
 import { useTheme } from "../../context/ThemeContext";
 import { useAuth } from "../../context/AuthContext";
 import { supabase } from "../../lib/supabase";
+import { logAudit } from "../../lib/audit";
 import {
   useKeyboardShortcuts,
   ShortcutHelpOverlay,
@@ -478,7 +484,7 @@ function IssueFilters({ filters, setFilters, issues }) {
   const [open, setOpen] = useState(false);
 
   const impacts = ["critical", "serious", "moderate", "minor"];
-  const statuses = ["open", "fixed", "ignored", "false_positive"];
+  const statuses = ["open", "fixed", "ignored", "removed", "false_positive"];
 
   // Collect unique WCAG tags
   const allTags = [...new Set(issues.flatMap((i) => i.wcag_tags || []))].sort();
@@ -950,6 +956,13 @@ function DangerZonePanel({ site }) {
     await supabase.from("issues").delete().eq("site_id", site.id);
     await supabase.from("scans").delete().eq("site_id", site.id);
     await supabase.from("sites").delete().eq("id", site.id);
+    logAudit({
+      action: "site.deleted",
+      resourceType: "site",
+      resourceId: site.id,
+      description: "Deleted site " + site.domain,
+      metadata: { domain: site.domain },
+    });
     navigate("/dashboard/sites");
   };
 
@@ -1645,7 +1658,24 @@ export default function SiteDetailPage() {
   const [scanning, setScanning] = useState(false);
   const [scanError, setScanError] = useState(null);
   const [scanProgress, setScanProgress] = useState(null);
+  const [searchParams, setSearchParams] = useSearchParams();
   const [tab, setTab] = useState("overview");
+
+  // Set tab from ?tab= URL param (works on mount AND subsequent navigations)
+  useEffect(
+    function () {
+      var urlTab = searchParams.get("tab");
+      if (
+        urlTab &&
+        ["overview", "issues", "scans", "settings"].indexOf(urlTab) !== -1
+      ) {
+        setTab(urlTab);
+        searchParams.delete("tab");
+        setSearchParams(searchParams, { replace: true });
+      }
+    },
+    [searchParams]
+  );
   const [selectedIssue, setSelectedIssue] = useState(null);
   const [filters, setFilters] = useState({});
   const [showScanConfig, setShowScanConfig] = useState(false);
@@ -2231,6 +2261,13 @@ export default function SiteDetailPage() {
             refreshSites();
             /* Force a background reload to sync everything from DB */
             loadData(true);
+            logAudit({
+              action: "site.verified",
+              resourceType: "site",
+              resourceId: site.id,
+              description: "Verified ownership of " + site.domain,
+              metadata: { domain: site.domain },
+            });
           }}
         />
       )}
@@ -2574,6 +2611,43 @@ export default function SiteDetailPage() {
               </div>
             ))}
           </div>
+
+          {/* Powered by badge — free tier only */}
+          {plan === "free" && site.score != null && (
+            <div style={{ textAlign: "center", marginBottom: "1rem" }}>
+              <a
+                href="https://xsbl.io"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "0.35rem",
+                  padding: "0.3rem 0.7rem",
+                  borderRadius: 6,
+                  border: "1px solid " + t.ink08,
+                  background: t.ink04,
+                  textDecoration: "none",
+                  fontFamily: "var(--mono)",
+                  fontSize: "0.58rem",
+                  color: t.ink50,
+                  transition: "all 0.15s",
+                }}
+                onMouseEnter={function (e) {
+                  e.currentTarget.style.borderColor = t.accent;
+                  e.currentTarget.style.color = t.accent;
+                }}
+                onMouseLeave={function (e) {
+                  e.currentTarget.style.borderColor = t.ink08;
+                  e.currentTarget.style.color = t.ink50;
+                }}
+              >
+                Scanned by{" "}
+                <span style={{ fontWeight: 600, color: t.ink }}>xsbl</span>
+                <span style={{ color: t.accent }}>.</span>
+              </a>
+            </div>
+          )}
 
           {/* Page breakdown from latest scan */}
           {scans.length > 0 && scans[0].summary_json?.pages?.length > 1 && (
@@ -3228,10 +3302,14 @@ export default function SiteDetailPage() {
                                     background:
                                       inst.status === "fixed"
                                         ? t.greenBg
+                                        : inst.status === "removed"
+                                        ? t.accent + "12"
                                         : t.ink04,
                                     color:
                                       inst.status === "fixed"
                                         ? t.green
+                                        : inst.status === "removed"
+                                        ? t.accent
                                         : t.ink50,
                                   }}
                                 >
@@ -3424,9 +3502,15 @@ export default function SiteDetailPage() {
                                 background:
                                   issue.status === "fixed"
                                     ? t.greenBg
+                                    : issue.status === "removed"
+                                    ? t.accent + "12"
                                     : t.ink04,
                                 color:
-                                  issue.status === "fixed" ? t.green : t.ink50,
+                                  issue.status === "fixed"
+                                    ? t.green
+                                    : issue.status === "removed"
+                                    ? t.accent
+                                    : t.ink50,
                               }}
                             >
                               {issue.status.replace("_", " ")}

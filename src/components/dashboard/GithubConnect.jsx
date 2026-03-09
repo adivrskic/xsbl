@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { supabase } from "../../lib/supabase";
+import { logAudit } from "../../lib/audit";
 import { useToast } from "../ui/Toast";
 import { Check, Loader2, ExternalLink, Unlink } from "lucide-react";
 import "../../styles/dashboard.css";
@@ -44,6 +45,18 @@ export default function GitHubConnect({ site, onUpdate }) {
       toast.error("Failed to save: " + error.message);
     } else {
       toast.success("GitHub repo connected");
+      logAudit({
+        action: "settings.github_connected",
+        resourceType: "site",
+        resourceId: site.id,
+        description:
+          "Connected GitHub repo " + repo.trim() + " to " + site.domain,
+        metadata: {
+          repo: repo.trim(),
+          branch: branch.trim() || "main",
+          domain: site.domain,
+        },
+      });
       setConnected(true);
       onUpdate?.({ ...site, ...updateData });
     }
@@ -95,6 +108,13 @@ export default function GitHubConnect({ site, onUpdate }) {
     setBranch("main");
     setConnected(false);
     toast.success("GitHub disconnected");
+    logAudit({
+      action: "settings.github_disconnected",
+      resourceType: "site",
+      resourceId: site.id,
+      description: "Disconnected GitHub from " + site.domain,
+      metadata: { domain: site.domain },
+    });
     onUpdate?.({ ...site, github_repo: null, github_token: null });
     setSaving(false);
   };

@@ -8,6 +8,7 @@ import { ConfirmProvider } from "./components/ui/ConfirmModal";
 
 // Auth
 import AuthGuard from "./components/auth/AuthGuard";
+import AuthCallback from "./components/auth/AuthCallback";
 import LoginPage from "./pages/auth/LoginPage";
 import SignupPage from "./pages/auth/SignupPage";
 
@@ -32,6 +33,7 @@ import BlogArticlePage from "./pages/blog/BlogArticlePage";
 import ContactPage from "./pages/ContactPage";
 import AgencyPage from "./pages/AgencyPage";
 import StatusPage from "./pages/StatusPage";
+import ClientDashboardPage from "./pages/ClientDashboardPage";
 
 // Dashboard
 import DashboardLayout from "./pages/dashboard/DashboardLayout";
@@ -128,6 +130,8 @@ function PageTitle() {
       }
     } else if (path.startsWith("/status/")) {
       document.title = "Accessibility status — xsbl";
+    } else if (path.startsWith("/client-dashboard/")) {
+      document.title = "Client dashboard — xsbl";
     } else {
       document.title = "xsbl — make your web accessible";
     }
@@ -201,6 +205,7 @@ export default function App() {
                 <Route path="/" element={<LandingPage />} />
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/signup" element={<SignupPage />} />
+                <Route path="/auth/callback" element={<AuthCallback />} />
                 <Route
                   path="/docs"
                   element={
@@ -243,6 +248,10 @@ export default function App() {
                 />
 
                 <Route path="/status/:slug" element={<StatusPage />} />
+                <Route
+                  path="/client-dashboard/:token"
+                  element={<ClientDashboardPage />}
+                />
 
                 {/* Onboarding */}
                 <Route

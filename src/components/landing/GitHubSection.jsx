@@ -166,7 +166,7 @@ function CardGenerate() {
         <span className="gh-gen__spinner">
           <Sparkles size={15} color="var(--accent)" strokeWidth={2} />
         </span>
-        <span className="gh-gen__title">Claude is writing fixes…</span>
+        <span className="gh-gen__title">Writing fixes…</span>
       </div>
       <div className="gh-gen__tabs">
         {["Hero.tsx", "Nav.tsx"].map(function (f, i) {
@@ -271,7 +271,7 @@ function PRDemo() {
     {
       label: "AI generates fix",
       icon: <Sparkles size={20} color={t.accent} strokeWidth={1.8} />,
-      detail: "Claude reads your source code and writes the fix",
+      detail: "AI reads your source code and writes the fix",
     },
     {
       label: "PR created",
@@ -359,7 +359,7 @@ export default function GitHubSection() {
               },
               {
                 title: "AI reads your actual code",
-                desc: "Not generic suggestions — Claude sees your source files and writes fixes that match your codebase.",
+                desc: "Not generic suggestions — AI sees your source files and writes fixes that match your codebase.",
                 icon: <Sparkles size={17} color={t.accent} strokeWidth={1.8} />,
               },
               {

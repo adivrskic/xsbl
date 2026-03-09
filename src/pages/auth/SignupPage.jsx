@@ -1,15 +1,24 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { useTheme } from "../../context/ThemeContext";
 import XsblBull from "../../components/landing/XsblBull";
-import { Sun, Moon, Mail } from "lucide-react";
+import { Sun, Moon } from "lucide-react";
 import "../../styles/auth.css";
 
 export default function SignupPage() {
   const { t, dark, toggle } = useTheme();
   const { signUp, signInWithOAuth } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const inviteId = searchParams.get("invite");
+
+  // Persist invite ID so it survives OAuth redirects
+  if (inviteId) {
+    try {
+      localStorage.setItem("xsbl-pending-invite", inviteId);
+    } catch (e) {}
+  }
 
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
@@ -62,9 +71,7 @@ export default function SignupPage() {
           )}
         </button>
         <div className="auth-card auth-card--center">
-          <div className="auth-icon-box auth-icon-box--accent">
-            <Mail size={20} />
-          </div>
+          <div className="auth-icon-box auth-icon-box--accent">✉</div>
           <h1 className="auth-title" style={{ fontSize: "1.5rem" }}>
             Check your email
           </h1>
@@ -100,9 +107,13 @@ export default function SignupPage() {
           xsbl<span className="auth-logo__dot">.</span>
         </Link>
 
-        <h1 className="auth-title">Create your account</h1>
+        <h1 className="auth-title">
+          {inviteId ? "Create your account" : "Create your account"}
+        </h1>
         <p className="auth-subtitle">
-          Start scanning your sites for accessibility issues.
+          {inviteId
+            ? "Sign up to view the accessibility dashboard shared with you."
+            : "Start scanning your sites for accessibility issues."}
         </p>
 
         <div className="auth-oauth-group">
@@ -197,7 +208,10 @@ export default function SignupPage() {
         </form>
 
         <p className="auth-footer">
-          Already have an account? <Link to="/login">Sign in</Link>
+          Already have an account?{" "}
+          <Link to={"/login" + (inviteId ? "?invite=" + inviteId : "")}>
+            Sign in
+          </Link>
         </p>
       </div>
     </div>

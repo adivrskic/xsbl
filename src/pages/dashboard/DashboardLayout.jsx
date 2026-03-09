@@ -25,7 +25,6 @@ import {
   Shield,
   Package,
   Code,
-  Book,
 } from "lucide-react";
 import XsblBull from "../../components/landing/XsblBull";
 import HelpSearch from "../../components/ui/HelpSearch";
@@ -59,6 +58,7 @@ const navItems = [
     path: "/dashboard/billing",
     icon: CreditCard,
     hideForClient: true,
+    ownerOnly: true,
   },
 ];
 
@@ -464,6 +464,7 @@ export default function DashboardLayout() {
           {navItems
             .filter(function (item) {
               if (item.hideForClient && org?.role === "client") return false;
+              if (item.ownerOnly && org?.role !== "owner") return false;
               if (!item.plans) return true;
               return item.plans.indexOf(org?.plan || "free") !== -1;
             })
@@ -511,7 +512,6 @@ export default function DashboardLayout() {
             {[
               { label: "Home", href: "/", icon: Home },
               { label: "Blog", href: "/blog", icon: BookOpen },
-              { label: "Docs", href: "/docs", icon: Book },
               { label: "Contact", href: "/contact", icon: Mail },
             ].map(function (link) {
               return (

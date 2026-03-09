@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../../lib/supabase";
-import { X } from "lucide-react";
 import "../../styles/auth.css";
 
 export default function AuthCallback() {
@@ -9,6 +8,15 @@ export default function AuthCallback() {
   const [error, setError] = useState(null);
 
   useEffect(() => {
+    // Capture invite param before auth processing (survives redirect)
+    var urlParams = new URLSearchParams(window.location.search);
+    var inviteId = urlParams.get("invite");
+    if (inviteId) {
+      try {
+        localStorage.setItem("xsbl-pending-invite", inviteId);
+      } catch (e) {}
+    }
+
     async function handleCallback() {
       try {
         const { data, error: authError } = await supabase.auth.getSession();
@@ -61,9 +69,7 @@ export default function AuthCallback() {
     return (
       <div className="auth-page">
         <div className="auth-card auth-card--center">
-          <div className="auth-icon-box auth-icon-box--red">
-            <X size={20} />
-          </div>
+          <div className="auth-icon-box auth-icon-box--red">✕</div>
           <h1 className="auth-title" style={{ fontSize: "1.4rem" }}>
             Confirmation failed
           </h1>

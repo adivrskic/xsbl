@@ -147,6 +147,13 @@ export default function IssueDetailModal({
       .from("issues")
       .update({ auditor_notes: notes.trim() || null })
       .eq("id", issue.id);
+    logAudit({
+      action: "issue.notes_updated",
+      resourceType: "issue",
+      resourceId: issue.id,
+      description: "Auditor notes updated on " + issue.rule_id,
+      metadata: { rule_id: issue.rule_id, has_notes: !!notes.trim() },
+    });
     setNotesSaving(false);
     setNotesSaved(true);
     onUpdate?.({ ...issue, auditor_notes: notes.trim() || null });
@@ -662,12 +669,16 @@ export default function IssueDetailModal({
                       ? t.red + "12"
                       : status === "fixed"
                       ? t.greenBg || t.ink04
+                      : status === "removed"
+                      ? t.accent + "12"
                       : t.ink04,
                   color:
                     status === "open"
                       ? t.red
                       : status === "fixed"
                       ? t.green
+                      : status === "removed"
+                      ? t.accent
                       : t.ink50,
                   textTransform: "capitalize",
                 }}
@@ -675,31 +686,57 @@ export default function IssueDetailModal({
                 {status}
               </span>
             ) : (
-              <div style={{ display: "flex", gap: "0.3rem", flexWrap: "wrap" }}>
-                {STATUS_OPTIONS.map(({ value, label }) => (
-                  <button
-                    key={value}
-                    onClick={() => handleStatusChange(value)}
-                    disabled={statusSaving}
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "0.4rem",
+                }}
+              >
+                {status === "removed" && (
+                  <div
                     style={{
-                      padding: "0.35rem 0.7rem",
-                      borderRadius: 6,
-                      fontSize: "0.76rem",
-                      fontFamily: "var(--body)",
-                      fontWeight: 500,
-                      cursor: "pointer",
-                      border: `1.5px solid ${
-                        status === value ? t.accent : t.ink08
-                      }`,
-                      background: status === value ? t.accentBg : "transparent",
-                      color: status === value ? t.accent : t.ink50,
-                      opacity: statusSaving ? 0.5 : 1,
-                      transition: "all 0.15s",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "0.3rem",
+                      fontSize: "0.72rem",
+                      color: t.accent,
+                      fontWeight: 600,
+                      marginBottom: "0.1rem",
                     }}
                   >
-                    {label}
-                  </button>
-                ))}
+                    <Check size={13} /> Auto-removed — not found in latest scan
+                  </div>
+                )}
+                <div
+                  style={{ display: "flex", gap: "0.3rem", flexWrap: "wrap" }}
+                >
+                  {STATUS_OPTIONS.map(({ value, label }) => (
+                    <button
+                      key={value}
+                      onClick={() => handleStatusChange(value)}
+                      disabled={statusSaving}
+                      style={{
+                        padding: "0.35rem 0.7rem",
+                        borderRadius: 6,
+                        fontSize: "0.76rem",
+                        fontFamily: "var(--body)",
+                        fontWeight: 500,
+                        cursor: "pointer",
+                        border: `1.5px solid ${
+                          status === value ? t.accent : t.ink08
+                        }`,
+                        background:
+                          status === value ? t.accentBg : "transparent",
+                        color: status === value ? t.accent : t.ink50,
+                        opacity: statusSaving ? 0.5 : 1,
+                        transition: "all 0.15s",
+                      }}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
               </div>
             )}
           </div>

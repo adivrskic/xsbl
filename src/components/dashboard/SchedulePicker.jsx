@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useTheme } from "../../context/ThemeContext";
 import { supabase } from "../../lib/supabase";
+import { logAudit } from "../../lib/audit";
 import { Clock, Check, Loader2, Lock, Globe } from "lucide-react";
 import "../../styles/dashboard.css";
 import "../../styles/dashboard-modals.css";
@@ -87,6 +88,19 @@ export default function SchedulePicker({ site, plan, onUpdate }) {
     setSaving(false);
     if (!error) {
       setSaved(true);
+      logAudit({
+        action: "settings.schedule_updated",
+        resourceType: "site",
+        resourceId: site.id,
+        description:
+          "Scan schedule set to " +
+          schedule +
+          " at " +
+          hour +
+          ":00 UTC for " +
+          site.domain,
+        metadata: { schedule: schedule, hour: hour, domain: site.domain },
+      });
       setTimeout(() => {
         onUpdate?.({ ...site, scan_schedule: schedule, schedule_hour: hour });
         setSaved(false);

@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTheme } from "../../context/ThemeContext";
+import { useAuth } from "../../context/AuthContext";
 import {
   Search,
   Globe,
@@ -21,21 +22,16 @@ import {
   HelpCircle,
   Trash2,
   ArrowRight,
+  ArrowLeft,
+  ChevronRight,
 } from "lucide-react";
 
 /*
-  Knowledge base — every entry has:
-  - q: array of question/keyword variants users might type
-  - label: what shows in results
-  - desc: short explanation
-  - path: where to navigate (route or route#section)
-  - icon: Lucide icon component
-  - cat: category for grouping
-  - plan: optional minimum plan required
-  - tab: optional settings tab to activate
+  Knowledge base — entries with `siteSpecific: true` prompt a site picker.
+  `siteTab` is included in the description so the user knows where to go once on the site page.
 */
 var HELP_ENTRIES = [
-  // Sites
+  // Sites (list-level — no site picker)
   {
     q: [
       "add site",
@@ -77,7 +73,7 @@ var HELP_ENTRIES = [
     cat: "Sites",
   },
 
-  // Scanning
+  // Scanning (site-specific)
   {
     q: [
       "run scan",
@@ -90,10 +86,11 @@ var HELP_ENTRIES = [
       "audit site",
     ],
     label: "Run a scan",
-    desc: "Open a site and click Quick Scan or configure scan options",
-    path: "/dashboard/sites",
+    desc: "Quick Scan button on the Overview tab",
     icon: Scan,
     cat: "Scanning",
+    siteSpecific: true,
+    siteTab: "overview",
   },
   {
     q: [
@@ -105,10 +102,11 @@ var HELP_ENTRIES = [
       "scan frequency",
     ],
     label: "Schedule automatic scans",
-    desc: "Open a site → Settings tab → Scan schedule",
-    path: "/dashboard/sites",
+    desc: "Settings tab → Scan schedule",
     icon: Scan,
     cat: "Scanning",
+    siteSpecific: true,
+    siteTab: "settings",
   },
   {
     q: [
@@ -120,13 +118,29 @@ var HELP_ENTRIES = [
       "best practice",
     ],
     label: "Configure scan profile",
-    desc: "Open a site → Settings tab → Scan profile (Agency)",
-    path: "/dashboard/sites",
+    desc: "Settings tab → Scan profile (Agency)",
     icon: Settings,
     cat: "Scanning",
+    siteSpecific: true,
+    siteTab: "settings",
+  },
+  {
+    q: [
+      "scan history",
+      "past scans",
+      "previous scans",
+      "scan results",
+      "scan log",
+    ],
+    label: "View scan history",
+    desc: "Scans tab — all past scan results and scores",
+    icon: Scan,
+    cat: "Scanning",
+    siteSpecific: true,
+    siteTab: "scans",
   },
 
-  // Issues
+  // Issues (site-specific)
   {
     q: [
       "view issues",
@@ -138,10 +152,11 @@ var HELP_ENTRIES = [
       "issue list",
     ],
     label: "View issues",
-    desc: "Open a site → Issues tab to see all detected violations",
-    path: "/dashboard/sites",
+    desc: "Issues tab — all detected violations",
     icon: Shield,
     cat: "Issues",
+    siteSpecific: true,
+    siteTab: "issues",
   },
   {
     q: [
@@ -153,18 +168,20 @@ var HELP_ENTRIES = [
       "ai fix",
     ],
     label: "Create a fix PR",
-    desc: "Open an issue → click Create Fix PR (requires GitHub)",
-    path: "/dashboard/sites",
+    desc: "Open an issue → Create Fix PR (requires GitHub)",
     icon: GitPullRequest,
     cat: "Issues",
+    siteSpecific: true,
+    siteTab: "issues",
   },
   {
     q: ["bulk fix", "fix multiple", "batch fix"],
     label: "Bulk fix issues",
-    desc: "Select multiple issues on the Issues tab, then Create Fix PR",
-    path: "/dashboard/sites",
+    desc: "Select multiple issues → Create Fix PR",
     icon: GitPullRequest,
     cat: "Issues",
+    siteSpecific: true,
+    siteTab: "issues",
   },
   {
     q: [
@@ -175,13 +192,14 @@ var HELP_ENTRIES = [
       "issue status",
     ],
     label: "Change issue status",
-    desc: "Open an issue → use the status buttons (Open, Fixed, Ignored)",
-    path: "/dashboard/sites",
+    desc: "Open an issue → status buttons (Open, Fixed, Ignored)",
     icon: Shield,
     cat: "Issues",
+    siteSpecific: true,
+    siteTab: "issues",
   },
 
-  // Reports & scores
+  // Reports (site-specific)
   {
     q: [
       "score",
@@ -192,10 +210,11 @@ var HELP_ENTRIES = [
       "score breakdown",
     ],
     label: "Understand your score",
-    desc: "Open a site → click 'Why this score?' on the score card",
-    path: "/dashboard/sites",
+    desc: "Click 'Why this score?' on the Overview tab",
     icon: BarChart3,
     cat: "Reports",
+    siteSpecific: true,
+    siteTab: "overview",
   },
   {
     q: [
@@ -206,10 +225,11 @@ var HELP_ENTRIES = [
       "generate report",
     ],
     label: "Generate a report",
-    desc: "Open a site → click the Report button (Pro+)",
-    path: "/dashboard/sites",
+    desc: "Report button on the Overview tab (Pro+)",
     icon: FileText,
     cat: "Reports",
+    siteSpecific: true,
+    siteTab: "overview",
   },
   {
     q: ["trend", "trends", "progress", "over time", "history", "improving"],
@@ -220,7 +240,7 @@ var HELP_ENTRIES = [
     cat: "Reports",
   },
 
-  // Element tester
+  // Tools
   {
     q: [
       "test element",
@@ -234,13 +254,11 @@ var HELP_ENTRIES = [
       "wcag check",
     ],
     label: "Test an HTML element",
-    desc: "Paste any HTML and get instant axe-core accessibility results",
+    desc: "Paste any HTML and get instant axe-core results",
     path: "/dashboard/tester",
     icon: Code,
     cat: "Tools",
   },
-
-  // Simulator
   {
     q: [
       "simulator",
@@ -252,10 +270,11 @@ var HELP_ENTRIES = [
       "accessibility simulator",
     ],
     label: "Accessibility simulator",
-    desc: "Open a site → click the Simulator button to preview impairments",
-    path: "/dashboard/sites",
+    desc: "Simulator button on the site Overview tab (Pro+)",
     icon: Eye,
     cat: "Tools",
+    siteSpecific: true,
+    siteTab: "overview",
   },
 
   // Settings — General
@@ -272,7 +291,6 @@ var HELP_ENTRIES = [
     path: "/dashboard/settings",
     icon: Settings,
     cat: "Settings",
-    tab: "general",
   },
   {
     q: [
@@ -288,16 +306,14 @@ var HELP_ENTRIES = [
     path: "/dashboard/settings",
     icon: Settings,
     cat: "Settings",
-    tab: "general",
   },
   {
     q: ["status page", "public page", "public status", "share status"],
     label: "Public status page",
-    desc: "Settings → General → enable public accessibility status page",
+    desc: "Settings → General → enable public status page",
     path: "/dashboard/settings",
     icon: Globe,
     cat: "Settings",
-    tab: "general",
   },
 
   // Settings — Team
@@ -316,16 +332,14 @@ var HELP_ENTRIES = [
     path: "/dashboard/settings",
     icon: Users,
     cat: "Settings",
-    tab: "team",
   },
   {
     q: ["remove member", "kick user", "remove user", "remove teammate"],
     label: "Remove a team member",
-    desc: "Settings → Team tab → click Remove next to a member",
+    desc: "Settings → Team tab → click Remove",
     path: "/dashboard/settings",
     icon: Users,
     cat: "Settings",
-    tab: "team",
   },
 
   // Settings — Alerts
@@ -338,11 +352,10 @@ var HELP_ENTRIES = [
       "notification settings",
     ],
     label: "Notification preferences",
-    desc: "Settings → Alerts tab → toggle scan/issue/digest notifications",
+    desc: "Settings → Alerts tab",
     path: "/dashboard/settings",
     icon: Bell,
     cat: "Settings",
-    tab: "alerts",
   },
   {
     q: [
@@ -353,11 +366,10 @@ var HELP_ENTRIES = [
       "connect slack",
     ],
     label: "Connect Slack",
-    desc: "Settings → Alerts tab → add your Slack webhook URL (Pro+)",
+    desc: "Settings → Alerts tab → Slack webhook URL (Pro+)",
     path: "/dashboard/settings",
     icon: Bell,
     cat: "Settings",
-    tab: "alerts",
   },
 
   // Settings — Integrations
@@ -371,11 +383,10 @@ var HELP_ENTRIES = [
       "api token",
     ],
     label: "Manage API keys",
-    desc: "Settings → Integrations tab → create and manage API keys (Pro+)",
+    desc: "Settings → Integrations → API keys (Pro+)",
     path: "/dashboard/settings",
     icon: Key,
     cat: "Settings",
-    tab: "integrations",
   },
   {
     q: [
@@ -386,10 +397,11 @@ var HELP_ENTRIES = [
       "repository",
     ],
     label: "Connect GitHub",
-    desc: "Open a site → Settings tab → GitHub connection",
-    path: "/dashboard/sites",
+    desc: "Settings tab → GitHub connection",
     icon: GitPullRequest,
     cat: "Settings",
+    siteSpecific: true,
+    siteTab: "settings",
   },
   {
     q: [
@@ -400,11 +412,10 @@ var HELP_ENTRIES = [
       "invite client",
     ],
     label: "Client access",
-    desc: "Settings → Integrations → invite clients to view-only dashboards (Agency)",
+    desc: "Settings → Integrations → invite clients (Agency)",
     path: "/dashboard/settings",
     icon: Users,
     cat: "Settings",
-    tab: "integrations",
   },
   {
     q: [
@@ -414,11 +425,10 @@ var HELP_ENTRIES = [
       "report schedule",
     ],
     label: "Scheduled reports",
-    desc: "Settings → Integrations → set up automatic report delivery (Agency)",
+    desc: "Settings → Integrations → report delivery (Agency)",
     path: "/dashboard/settings",
     icon: FileText,
     cat: "Settings",
-    tab: "integrations",
   },
 
   // Settings — Account
@@ -429,7 +439,6 @@ var HELP_ENTRIES = [
     path: "/dashboard/settings",
     icon: Trash2,
     cat: "Settings",
-    tab: "account",
   },
 
   // Billing
@@ -448,7 +457,7 @@ var HELP_ENTRIES = [
       "starter plan",
     ],
     label: "Billing & plans",
-    desc: "View your current plan, usage, and upgrade options",
+    desc: "View plan, usage, and upgrade options",
     path: "/dashboard/billing",
     icon: CreditCard,
     cat: "Billing",
@@ -456,7 +465,7 @@ var HELP_ENTRIES = [
   {
     q: ["usage", "scan limit", "how many scans", "quota", "limits"],
     label: "Check usage",
-    desc: "See your scan, AI suggestion, and PR limits on the Billing page",
+    desc: "Scan, AI suggestion, and PR limits",
     path: "/dashboard/billing",
     icon: BarChart3,
     cat: "Billing",
@@ -466,11 +475,10 @@ var HELP_ENTRIES = [
   {
     q: ["audit log", "audit trail", "activity log", "who did what"],
     label: "Audit log",
-    desc: "View all actions taken across your organization (Agency)",
+    desc: "All actions across your organization (Agency)",
     path: "/dashboard/audit-log",
     icon: Shield,
     cat: "Compliance",
-    plan: "agency",
   },
   {
     q: [
@@ -484,14 +492,24 @@ var HELP_ENTRIES = [
       "audit evidence",
     ],
     label: "Evidence export",
-    desc: "Generate SOC 2 or ISO 27001 evidence packages (Agency)",
+    desc: "SOC 2 or ISO 27001 evidence packages (Agency)",
     path: "/dashboard/evidence",
     icon: Package,
     cat: "Compliance",
-    plan: "agency",
   },
 
-  // General help
+  // Badge (site-specific)
+  {
+    q: ["badge", "embed badge", "accessibility badge", "widget"],
+    label: "Embed accessibility badge",
+    desc: "Settings tab → Badge embed code",
+    icon: Shield,
+    cat: "Tools",
+    siteSpecific: true,
+    siteTab: "settings",
+  },
+
+  // Help
   {
     q: [
       "help",
@@ -504,7 +522,7 @@ var HELP_ENTRIES = [
       "getting started",
     ],
     label: "Documentation",
-    desc: "Read the full xsbl docs, API reference, and guides",
+    desc: "Full docs, API reference, and guides",
     path: "/docs",
     icon: HelpCircle,
     cat: "Help",
@@ -520,17 +538,9 @@ var HELP_ENTRIES = [
   {
     q: ["keyboard", "shortcuts", "hotkeys", "keyboard shortcuts"],
     label: "Keyboard shortcuts",
-    desc: "Press ? on any site detail page to see all shortcuts",
+    desc: "Press ? on any site detail page",
     path: "/dashboard/sites",
     icon: Code,
-    cat: "Help",
-  },
-  {
-    q: ["badge", "embed badge", "accessibility badge", "widget"],
-    label: "Embed accessibility badge",
-    desc: "Open a site → Settings tab → Badge embed code",
-    path: "/dashboard/sites",
-    icon: Shield,
     cat: "Help",
   },
 ];
@@ -538,23 +548,14 @@ var HELP_ENTRIES = [
 function scoreMatch(query, entry) {
   var q = query.toLowerCase().trim();
   if (!q) return 0;
-
   var words = q.split(/\s+/);
   var score = 0;
 
   for (var i = 0; i < entry.q.length; i++) {
     var variant = entry.q[i].toLowerCase();
-
-    // Exact match
     if (variant === q) return 100;
-
-    // Starts with
     if (variant.indexOf(q) === 0) score = Math.max(score, 80);
-
-    // Contains full query
     if (variant.indexOf(q) !== -1) score = Math.max(score, 60);
-
-    // Word overlap
     var variantWords = variant.split(/\s+/);
     var matched = 0;
     for (var w = 0; w < words.length; w++) {
@@ -568,33 +569,31 @@ function scoreMatch(query, entry) {
         }
       }
     }
-    if (matched > 0) {
-      var wordScore = (matched / words.length) * 50;
-      score = Math.max(score, wordScore);
-    }
+    if (matched > 0) score = Math.max(score, (matched / words.length) * 50);
   }
-
-  // Also match against label and desc
   var labelLower = entry.label.toLowerCase();
   var descLower = entry.desc.toLowerCase();
   if (labelLower.indexOf(q) !== -1) score = Math.max(score, 55);
   if (descLower.indexOf(q) !== -1) score = Math.max(score, 30);
-
-  for (var w = 0; w < words.length; w++) {
-    if (labelLower.indexOf(words[w]) !== -1) score = Math.max(score, 40);
+  for (var w2 = 0; w2 < words.length; w2++) {
+    if (labelLower.indexOf(words[w2]) !== -1) score = Math.max(score, 40);
   }
-
   return score;
 }
 
-export default function HelpSearch({ compact }) {
+export default function HelpSearch() {
   var { t } = useTheme();
+  var { sites } = useAuth();
   var navigate = useNavigate();
   var [open, setOpen] = useState(false);
   var [query, setQuery] = useState("");
   var [selectedIdx, setSelectedIdx] = useState(0);
+  var [pickingSite, setPickingSite] = useState(null); // entry waiting for site selection
+  var [siteIdx, setSiteIdx] = useState(0);
   var inputRef = useRef(null);
   var panelRef = useRef(null);
+
+  var siteList = sites || [];
 
   var results = [];
   if (query.trim()) {
@@ -611,8 +610,7 @@ export default function HelpSearch({ compact }) {
     results = scored.map(function (r) {
       return r.entry;
     });
-  } else if (open) {
-    // Show suggested entries when empty
+  } else if (open && !pickingSite) {
     results = HELP_ENTRIES.filter(function (e) {
       return (
         e.q[0] === "run scan" ||
@@ -627,12 +625,48 @@ export default function HelpSearch({ compact }) {
 
   var handleSelect = useCallback(
     function (entry) {
+      if (entry.siteSpecific && siteList.length > 0) {
+        // If only 1 site, skip the picker
+        if (siteList.length === 1) {
+          setOpen(false);
+          setQuery("");
+          setPickingSite(null);
+          navigate(
+            "/dashboard/sites/" +
+              siteList[0].id +
+              (entry.siteTab ? "?tab=" + entry.siteTab : "")
+          );
+          return;
+        }
+        setPickingSite(entry);
+        setSiteIdx(0);
+        return;
+      }
       setOpen(false);
       setQuery("");
-      navigate(entry.path);
+      setPickingSite(null);
+      navigate(entry.path || "/dashboard/sites");
     },
-    [navigate]
+    [navigate, siteList]
   );
+
+  var handleSiteSelect = useCallback(
+    function (site) {
+      setOpen(false);
+      setQuery("");
+      var tabParam =
+        pickingSite && pickingSite.siteTab ? "?tab=" + pickingSite.siteTab : "";
+      setPickingSite(null);
+      navigate("/dashboard/sites/" + site.id + tabParam);
+    },
+    [navigate, pickingSite]
+  );
+
+  var handleBack = useCallback(function () {
+    setPickingSite(null);
+    setSiteIdx(0);
+    if (inputRef.current) inputRef.current.focus();
+  }, []);
 
   // Keyboard nav
   useEffect(
@@ -640,8 +674,36 @@ export default function HelpSearch({ compact }) {
       if (!open) return;
       var handler = function (e) {
         if (e.key === "Escape") {
-          setOpen(false);
-          setQuery("");
+          if (pickingSite) {
+            handleBack();
+          } else {
+            setOpen(false);
+            setQuery("");
+          }
+          return;
+        }
+        if (pickingSite) {
+          if (e.key === "ArrowDown") {
+            e.preventDefault();
+            setSiteIdx(function (i) {
+              return Math.min(i + 1, siteList.length - 1);
+            });
+          }
+          if (e.key === "ArrowUp") {
+            e.preventDefault();
+            setSiteIdx(function (i) {
+              return Math.max(i - 1, 0);
+            });
+          }
+          if (e.key === "Enter" && siteList[siteIdx]) {
+            e.preventDefault();
+            handleSiteSelect(siteList[siteIdx]);
+          }
+          if (e.key === "Backspace" || (e.key === "ArrowLeft" && !query)) {
+            e.preventDefault();
+            handleBack();
+          }
+          return;
         }
         if (e.key === "ArrowDown") {
           e.preventDefault();
@@ -665,10 +727,20 @@ export default function HelpSearch({ compact }) {
         document.removeEventListener("keydown", handler);
       };
     },
-    [open, results, selectedIdx, handleSelect]
+    [
+      open,
+      results,
+      selectedIdx,
+      handleSelect,
+      pickingSite,
+      siteList,
+      siteIdx,
+      handleSiteSelect,
+      handleBack,
+      query,
+    ]
   );
 
-  // Reset selection when results change
   useEffect(
     function () {
       setSelectedIdx(0);
@@ -676,7 +748,6 @@ export default function HelpSearch({ compact }) {
     [query]
   );
 
-  // Close on outside click
   useEffect(
     function () {
       if (!open) return;
@@ -684,6 +755,7 @@ export default function HelpSearch({ compact }) {
         if (panelRef.current && !panelRef.current.contains(e.target)) {
           setOpen(false);
           setQuery("");
+          setPickingSite(null);
         }
       };
       document.addEventListener("mousedown", handler);
@@ -694,15 +766,13 @@ export default function HelpSearch({ compact }) {
     [open]
   );
 
-  // Focus input when opened
   useEffect(
     function () {
-      if (open && inputRef.current) inputRef.current.focus();
+      if (open && !pickingSite && inputRef.current) inputRef.current.focus();
     },
-    [open]
+    [open, pickingSite]
   );
 
-  // Global "/" shortcut to open
   useEffect(function () {
     var handler = function (e) {
       var tag = document.activeElement?.tagName;
@@ -724,7 +794,7 @@ export default function HelpSearch({ compact }) {
       ref={panelRef}
       style={{ position: "relative", marginBottom: "0.5rem" }}
     >
-      {/* Search trigger */}
+      {/* Trigger button */}
       <button
         onClick={function () {
           setOpen(true);
@@ -769,7 +839,7 @@ export default function HelpSearch({ compact }) {
         </span>
       </button>
 
-      {/* Search panel — pops up above the button */}
+      {/* Panel */}
       {open && (
         <div
           style={{
@@ -783,62 +853,212 @@ export default function HelpSearch({ compact }) {
             boxShadow: "0 -8px 32px rgba(0,0,0,0.12)",
             overflow: "hidden",
             zIndex: 100,
-            maxHeight: 380,
+            maxHeight: 400,
             display: "flex",
             flexDirection: "column",
           }}
         >
-          {/* Input */}
-          <div
-            style={{
-              padding: "0.5rem 0.6rem",
-              borderBottom: "1px solid " + t.ink08,
-              display: "flex",
-              alignItems: "center",
-              gap: "0.4rem",
-            }}
-          >
-            <Search size={14} color={t.accent} />
-            <input
-              ref={inputRef}
-              value={query}
-              onChange={function (e) {
-                setQuery(e.target.value);
-              }}
-              placeholder="What do you need help with?"
+          {/* Input area */}
+          {!pickingSite && (
+            <div
               style={{
-                flex: 1,
-                border: "none",
-                background: "none",
-                color: t.ink,
-                fontFamily: "var(--body)",
-                fontSize: "0.82rem",
-                outline: "none",
+                padding: "0.5rem 0.6rem",
+                borderBottom: "1px solid " + t.ink08,
+                display: "flex",
+                alignItems: "center",
+                gap: "0.4rem",
               }}
-            />
-            {query && (
-              <button
-                onClick={function () {
-                  setQuery("");
-                  inputRef.current?.focus();
+            >
+              <Search size={14} color={t.accent} />
+              <input
+                ref={inputRef}
+                value={query}
+                onChange={function (e) {
+                  setQuery(e.target.value);
                 }}
+                placeholder="What do you need help with?"
+                style={{
+                  flex: 1,
+                  border: "none",
+                  background: "none",
+                  color: t.ink,
+                  fontFamily: "var(--body)",
+                  fontSize: "0.82rem",
+                  outline: "none",
+                }}
+              />
+              {query && (
+                <button
+                  onClick={function () {
+                    setQuery("");
+                    inputRef.current?.focus();
+                  }}
+                  style={{
+                    background: "none",
+                    border: "none",
+                    cursor: "pointer",
+                    color: t.ink50,
+                    display: "flex",
+                    padding: "0.1rem",
+                  }}
+                >
+                  ×
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* Site picker header */}
+          {pickingSite && (
+            <div
+              style={{
+                padding: "0.5rem 0.6rem",
+                borderBottom: "1px solid " + t.ink08,
+                display: "flex",
+                alignItems: "center",
+                gap: "0.4rem",
+              }}
+            >
+              <button
+                onClick={handleBack}
                 style={{
                   background: "none",
                   border: "none",
                   cursor: "pointer",
-                  color: t.ink50,
+                  color: t.accent,
                   display: "flex",
+                  alignItems: "center",
                   padding: "0.1rem",
                 }}
+                aria-label="Back to search"
               >
-                ×
+                <ArrowLeft size={14} />
               </button>
-            )}
-          </div>
+              <div style={{ flex: 1 }}>
+                <div
+                  style={{ fontSize: "0.72rem", fontWeight: 600, color: t.ink }}
+                >
+                  {pickingSite.label}
+                </div>
+                <div style={{ fontSize: "0.6rem", color: t.ink50 }}>
+                  Which site?
+                </div>
+              </div>
+            </div>
+          )}
 
-          {/* Results */}
-          <div style={{ overflowY: "auto", flex: 1 }}>
-            {results.length === 0 && query.trim() ? (
+          {/* Results or site list */}
+          <div style={{ overflowY: "auto", flex: 1 }} aria-live="polite">
+            {pickingSite ? (
+              /* Site picker */
+              siteList.length === 0 ? (
+                <div
+                  style={{
+                    padding: "1.2rem",
+                    textAlign: "center",
+                    fontSize: "0.78rem",
+                    color: t.ink50,
+                  }}
+                >
+                  No sites yet.{" "}
+                  <button
+                    onClick={function () {
+                      setOpen(false);
+                      setPickingSite(null);
+                      navigate("/dashboard/sites?add=true");
+                    }}
+                    style={{
+                      background: "none",
+                      border: "none",
+                      color: t.accent,
+                      cursor: "pointer",
+                      fontWeight: 600,
+                      fontSize: "0.78rem",
+                    }}
+                  >
+                    Add a site first
+                  </button>
+                </div>
+              ) : (
+                siteList.map(function (site, i) {
+                  var isSelected = i === siteIdx;
+                  return (
+                    <button
+                      key={site.id}
+                      onClick={function () {
+                        handleSiteSelect(site);
+                      }}
+                      onMouseEnter={function () {
+                        setSiteIdx(i);
+                      }}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "0.6rem",
+                        width: "100%",
+                        padding: "0.55rem 0.7rem",
+                        border: "none",
+                        background: isSelected ? t.accentBg : "transparent",
+                        cursor: "pointer",
+                        textAlign: "left",
+                        transition: "background 0.08s",
+                      }}
+                    >
+                      <div
+                        style={{
+                          width: 28,
+                          height: 28,
+                          borderRadius: 6,
+                          background: isSelected ? t.accent + "15" : t.ink04,
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          flexShrink: 0,
+                        }}
+                      >
+                        <Globe
+                          size={13}
+                          color={isSelected ? t.accent : t.ink50}
+                          strokeWidth={1.8}
+                        />
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div
+                          style={{
+                            fontSize: "0.78rem",
+                            fontWeight: 600,
+                            color: isSelected ? t.accent : t.ink,
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          {site.display_name || site.domain}
+                        </div>
+                        <div
+                          style={{
+                            fontSize: "0.62rem",
+                            fontFamily: "var(--mono)",
+                            color: t.ink50,
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          {site.domain}
+                          {site.score != null ? " · " + site.score : ""}
+                        </div>
+                      </div>
+                      <ChevronRight
+                        size={12}
+                        color={isSelected ? t.accent : "transparent"}
+                        style={{ flexShrink: 0 }}
+                      />
+                    </button>
+                  );
+                })
+              )
+            ) : results.length === 0 && query.trim() ? (
               <div style={{ padding: "1.2rem", textAlign: "center" }}>
                 <div
                   style={{
@@ -922,18 +1142,36 @@ export default function HelpSearch({ compact }) {
                         {entry.desc}
                       </div>
                     </div>
-                    <ArrowRight
-                      size={12}
-                      color={isSelected ? t.accent : "transparent"}
-                      style={{ flexShrink: 0 }}
-                    />
+                    {entry.siteSpecific ? (
+                      <span
+                        style={{
+                          fontFamily: "var(--mono)",
+                          fontSize: "0.48rem",
+                          padding: "0.08rem 0.25rem",
+                          borderRadius: 3,
+                          background: isSelected ? t.accent + "15" : t.ink04,
+                          color: isSelected ? t.accent : t.ink50,
+                          fontWeight: 600,
+                          flexShrink: 0,
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        SITE →
+                      </span>
+                    ) : (
+                      <ArrowRight
+                        size={12}
+                        color={isSelected ? t.accent : "transparent"}
+                        style={{ flexShrink: 0 }}
+                      />
+                    )}
                   </button>
                 );
               })
             )}
           </div>
 
-          {/* Footer hint */}
+          {/* Footer */}
           <div
             style={{
               padding: "0.35rem 0.7rem",
@@ -945,9 +1183,20 @@ export default function HelpSearch({ compact }) {
               color: t.ink50,
             }}
           >
-            <span>↑↓ navigate</span>
-            <span>↵ select</span>
-            <span>esc close</span>
+            {pickingSite ? (
+              <>
+                <span>↑↓ navigate</span>
+                <span>↵ select</span>
+                <span>← back</span>
+                <span>esc close</span>
+              </>
+            ) : (
+              <>
+                <span>↑↓ navigate</span>
+                <span>↵ select</span>
+                <span>esc close</span>
+              </>
+            )}
           </div>
         </div>
       )}
