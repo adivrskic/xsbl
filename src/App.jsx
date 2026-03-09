@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { useEffect } from "react";
 import { useTheme } from "./context/ThemeContext";
+import { useAuth } from "./context/AuthContext";
 
 // Providers
 import { ToastProvider } from "./components/ui/Toast";
@@ -50,6 +51,8 @@ import NotFoundPage from "./pages/NotFoundPage";
 import ErrorBoundary from "./components/ui/ErrorBoundary";
 
 function LandingPage() {
+  const { org } = useAuth();
+  const showPricing = !org || org.plan === "free";
   return (
     <>
       <a href="#main-content" className="skip-to-content">
@@ -65,7 +68,7 @@ function LandingPage() {
         <GitHubSection />
         <SimulatorSection />
         <ComplianceSection />
-        <PricingSection />
+        {showPricing && <PricingSection />}
         <CtaSection />
       </main>
       <Footer />

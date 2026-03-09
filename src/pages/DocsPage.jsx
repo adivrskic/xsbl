@@ -14,6 +14,12 @@ import {
   Terminal,
   List,
   ChevronUp,
+  Clock,
+  Users,
+  Monitor,
+  Settings,
+  Download,
+  Palette,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import FadeIn from "../components/landing/FadeIn";
@@ -75,9 +81,17 @@ function Mono({ children }) {
 
 var sidebar = [
   { id: "getting-started", label: "Getting started", group: "Guides" },
+  { id: "scheduled-scans", label: "Scheduled scans", group: "Guides" },
   { id: "github-setup", label: "GitHub integration", group: "Guides" },
   { id: "cicd", label: "CI/CD (GitHub Actions)", group: "Guides" },
   { id: "slack-email", label: "Slack & email alerts", group: "Guides" },
+  { id: "team-management", label: "Team management", group: "Guides" },
+  { id: "simulator", label: "Accessibility simulator", group: "Guides" },
+  { id: "status-page", label: "Public status page", group: "Guides" },
+  { id: "client-dashboards", label: "Client dashboards", group: "Agency" },
+  { id: "white-label", label: "White-label reports", group: "Agency" },
+  { id: "scan-profiles", label: "Custom scan profiles", group: "Agency" },
+  { id: "evidence-export", label: "Evidence export", group: "Agency" },
   { id: "api-keys", label: "API keys", group: "API Reference" },
   { id: "quick-scan-api", label: "Quick scan", group: "API Reference" },
   { id: "scan-site-api", label: "Scan site", group: "API Reference" },
@@ -124,7 +138,7 @@ export default function DocsPage() {
           }
         }
       },
-      { rootMargin: "-100px 0px -60% 0px", threshold: 0 }
+      { rootMargin: "-88px 0px -60% 0px", threshold: 0 }
     );
 
     sectionIds.forEach(function (id) {
@@ -170,13 +184,24 @@ export default function DocsPage() {
     setTimeout(function () {
       var el = document.getElementById(id);
       if (el) {
-        // Manual offset: nav height + sticky sidebar height on mobile
-        var sidebarEl = document.querySelector(".docs-sidebar");
-        var sidebarH = sidebarEl ? sidebarEl.getBoundingClientRect().height : 0;
+        var isMobile = window.innerWidth <= 768;
         var navH = 64;
-        var offset = navH + sidebarH + 16;
+        var offset;
+
+        if (isMobile) {
+          // On mobile, sidebar is sticky above content — measure its collapsed height
+          var sidebarEl = document.querySelector(".docs-sidebar");
+          var sidebarH = sidebarEl
+            ? sidebarEl.getBoundingClientRect().height
+            : 48;
+          offset = navH + sidebarH + 12;
+        } else {
+          // On desktop, sidebar is alongside — only nav offset needed
+          offset = navH + 24;
+        }
+
         var top = el.getBoundingClientRect().top + window.scrollY - offset;
-        window.scrollTo({ top: top, behavior: "smooth" });
+        window.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
 
         var heading = el.querySelector("h2");
         if (heading) {
@@ -187,7 +212,7 @@ export default function DocsPage() {
       setTimeout(function () {
         isClickScrolling.current = false;
       }, 800);
-    }, 60);
+    }, 100);
   };
 
   var groups = [];
@@ -287,7 +312,7 @@ export default function DocsPage() {
           <Sec id="getting-started" icon={Book} title="Getting started">
             <p>
               xsbl scans websites for WCAG 2.2 accessibility violations using
-              axe-core in a real browser. There are three ways to use it:
+              axe-core in a real browser. Here are the main ways to use it:
             </p>
             <p>
               <strong>1. Dashboard</strong> — add sites, run scans, view issues,
@@ -295,18 +320,55 @@ export default function DocsPage() {
               <Link to="/dashboard">xsbl.dev/dashboard</Link>.
             </p>
             <p>
-              <strong>2. GitHub integration</strong> — connect your repo, select
+              <strong>2. Scheduled scans</strong> — set daily or weekly scans
+              per site and get alerted when new issues appear after a deploy.
+            </p>
+            <p>
+              <strong>3. GitHub integration</strong> — connect your repo, select
               issues, and xsbl creates a pull request with AI-generated code
               fixes.
             </p>
             <p>
-              <strong>3. API & CI/CD</strong> — trigger scans from your
+              <strong>4. API & CI/CD</strong> — trigger scans from your
               deployment pipeline using API keys.
             </p>
             <Note>
-              All plans include the dashboard and scanning. GitHub PRs, API
-              keys, and CI/CD require Pro or Agency.
+              All plans include the dashboard and manual scanning. Scheduled
+              scans require Starter or above. GitHub PRs, API keys, and CI/CD
+              require Pro or Agency.
             </Note>
+            <p>
+              <strong>Verify your site</strong> to unlock scheduled scans and
+              compliance reports. Go to your site → the verification banner at
+              the top. Choose DNS (add a TXT record), Meta tag (add a meta tag
+              to your HTML), or File upload (host a verification file). Click
+              "Verify" once done.
+            </p>
+          </Sec>
+
+          <Sec id="scheduled-scans" icon={Clock} title="Scheduled scans">
+            <p>
+              Automate scanning on a daily or weekly schedule. Available on
+              Starter, Pro, and Agency plans.
+            </p>
+            <p>
+              Go to any site → Settings tab → Scan Schedule. Choose daily or
+              weekly and select the hour (UTC) you want scans to run.
+            </p>
+            <Note>
+              Scheduled scans count toward your monthly scan limit. Free plans
+              are limited to manual scans only.
+            </Note>
+            <p>
+              After each scheduled scan, xsbl automatically sends alerts (Slack
+              and email) if configured, and auto-resolves issues that no longer
+              appear in the results.
+            </p>
+            <p>
+              The site overview shows the time of the last scheduled scan and
+              when the next one is due. Your time zone is displayed alongside
+              the UTC hour for reference.
+            </p>
           </Sec>
 
           <Sec id="github-setup" icon={GitBranch} title="GitHub integration">
@@ -436,6 +498,180 @@ jobs:
               <strong>Email:</strong> Add email addresses in Settings → Alert
               Integrations, or leave blank to use team members' addresses based
               on their notification preferences.
+            </p>
+          </Sec>
+
+          <Sec id="team-management" icon={Users} title="Team management">
+            <p>
+              Invite team members from Settings → Team. Enter their email and
+              choose a role:
+            </p>
+            <p>
+              <strong>Owner</strong> — full access including billing and account
+              deletion. One per workspace.
+            </p>
+            <p>
+              <strong>Admin</strong> — can manage sites, settings, and team
+              members. Cannot change billing or delete the account.
+            </p>
+            <p>
+              <strong>Member</strong> — can run scans, view issues, and create
+              fix PRs. Cannot change settings or manage the team.
+            </p>
+            <Note>
+              If the invitee already has an xsbl account, they're added
+              immediately. Otherwise they receive an email invite and are added
+              automatically when they sign up with that email address.
+            </Note>
+          </Sec>
+
+          <Sec id="simulator" icon={Monitor} title="Accessibility simulator">
+            <p>
+              The simulator shows how your site appears under different vision
+              conditions. Available on Pro and Agency plans.
+            </p>
+            <p>
+              Go to any site → Simulator tab → select a condition. The simulator
+              takes a real screenshot of your site and applies scientifically
+              accurate filters for:
+            </p>
+            <p>
+              Protanopia (red-blind), Deuteranopia (green-blind), Tritanopia
+              (blue-blind), Achromatopsia (total color blindness), Low vision,
+              Cataracts, Glaucoma, and Macular degeneration.
+            </p>
+            <p>
+              Use these screenshots in client presentations and reports to
+              demonstrate why accessibility matters.
+            </p>
+          </Sec>
+
+          <Sec id="status-page" icon={Globe} title="Public status page">
+            <p>
+              Enable a public accessibility status page for your organization.
+              Go to Settings → General → toggle "Public status page."
+            </p>
+            <p>
+              Your status page lives at{" "}
+              <Mono>xsbl.dev/status/your-org-slug</Mono> and shows all verified
+              sites with their current scores. It updates automatically after
+              each scan.
+            </p>
+            <p>
+              Link it from your site's footer to demonstrate your commitment to
+              accessibility. Only verified sites appear on the status page.
+            </p>
+          </Sec>
+
+          {/* ═══ AGENCY ═══ */}
+
+          <Sec
+            id="client-dashboards"
+            icon={Users}
+            title="Client dashboards (Agency)"
+          >
+            <p>
+              Give clients read-only access to their sites without sharing your
+              full dashboard. Agency plan only.
+            </p>
+            <p>
+              <strong>Invite a client:</strong> Go to Settings → Integrations →
+              Client Access → enter their email and select which sites they can
+              see. They receive an invite link with a unique access token.
+            </p>
+            <p>
+              Clients see their assigned sites, scores, issues, and reports —
+              but cannot trigger scans, change settings, or see other clients'
+              data.
+            </p>
+            <Note>
+              Clients don't need an xsbl account. They access their dashboard
+              via a unique token URL. You can revoke access at any time.
+            </Note>
+          </Sec>
+
+          <Sec
+            id="white-label"
+            icon={Palette}
+            title="White-label reports (Agency)"
+          >
+            <p>
+              Replace xsbl branding with your company name on all client-facing
+              reports. Agency plan only.
+            </p>
+            <p>
+              Go to Settings → Integrations → Scheduled Reports. Enable
+              white-label, enter your company name, add recipient emails, and
+              set the delivery schedule (weekly or monthly).
+            </p>
+            <p>
+              Reports include the overall score, per-page breakdowns, top issues
+              with severity and WCAG criteria, and remediation guidance — all
+              under your brand.
+            </p>
+          </Sec>
+
+          <Sec
+            id="scan-profiles"
+            icon={Settings}
+            title="Custom scan profiles (Agency)"
+          >
+            <p>Customize what gets scanned per site. Agency plan only.</p>
+            <p>Go to any site → Settings → Scan Profile. You can:</p>
+            <p>
+              <strong>Exclude rules</strong> — skip specific axe-core rules that
+              aren't relevant (e.g. rules for content you don't control).
+            </p>
+            <p>
+              <strong>Exclude selectors</strong> — skip specific page elements
+              like third-party widgets, chat bubbles, or ad containers.
+            </p>
+            <p>
+              <strong>Toggle best practices</strong> — include or exclude
+              best-practice checks that go beyond WCAG requirements.
+            </p>
+            <Note>
+              Scan profiles persist across all scans (manual and scheduled) for
+              that site.
+            </Note>
+          </Sec>
+
+          <Sec
+            id="evidence-export"
+            icon={Download}
+            title="Evidence export (Agency)"
+          >
+            <p>
+              Export structured compliance evidence for SOC 2, ISO 27001, and
+              HIPAA audits. Agency plan only.
+            </p>
+            <p>
+              Go to Dashboard → Evidence Export. Select a framework, date range,
+              and which sections to include:
+            </p>
+            <p>
+              <strong>Vulnerability management</strong> — open/fixed issues,
+              severity breakdown, remediation timelines.
+            </p>
+            <p>
+              <strong>Access control</strong> — team members, roles, access
+              change history.
+            </p>
+            <p>
+              <strong>Change management</strong> — pull requests created, files
+              changed, approval status.
+            </p>
+            <p>
+              <strong>Monitoring</strong> — scan history, scheduled scan
+              configuration, scan completion rates.
+            </p>
+            <p>
+              <strong>Asset inventory</strong> — all monitored sites with
+              scores, scan schedules, and GitHub connections.
+            </p>
+            <p>
+              Export as JSON for programmatic use or CSV for spreadsheet review.
+              Evidence packages are timestamped and include full metadata.
             </p>
           </Sec>
 
@@ -627,16 +863,27 @@ jobs:
 
           <Sec id="rate-limits" icon={Shield} title="Rate limits">
             <div className="docs-param-list">
-              <div>Free — 3 scans/month, 1 site</div>
-              <div>Starter ($19/mo) — 10 scans/month, 1 site</div>
               <div>
-                Pro ($69/mo) — 100 scans/month, unlimited sites, API keys, CI/CD
+                Free — 3 scans/month, 1 site, 10 AI suggestions, 1 GitHub PR
               </div>
               <div>
-                Agency ($249/mo) — unlimited scans, unlimited sites, white-label
-                reports
+                Starter ($19/mo) — 10 scans/month, 1 site, 50 AI suggestions, 5
+                GitHub PRs
+              </div>
+              <div>
+                Pro ($69/mo) — 100 scans/month, unlimited sites, 200 AI
+                suggestions, 25 GitHub PRs, API keys, CI/CD
+              </div>
+              <div>
+                Agency ($249/mo) — 999 scans/month, unlimited sites, unlimited
+                AI suggestions, unlimited GitHub PRs, white-label reports,
+                client dashboards
               </div>
             </div>
+            <p>
+              Scan limits reset on the 1st of each month. AI suggestion and
+              GitHub PR limits also reset monthly.
+            </p>
           </Sec>
 
           <Sec id="webhooks" icon={Zap} title="Realtime events">
