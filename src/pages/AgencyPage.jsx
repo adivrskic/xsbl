@@ -378,7 +378,7 @@ export default function AgencyPage() {
                   <Link to="/signup" style={{ color: t.accent }}>
                     sign up
                   </Link>{" "}
-                  and upgrade to Agency in Billing.
+                  and upgrade to Agency during onboarding or in Billing.
                 </p>
               </form>
             )}

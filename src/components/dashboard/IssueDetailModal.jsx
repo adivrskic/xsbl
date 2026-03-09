@@ -516,7 +516,7 @@ export default function IssueDetailModal({
                     gap: "0.4rem",
                   }}
                 >
-                  <Sparkles size={14} /> Generate fix with Claude
+                  <Sparkles size={14} /> Generate fix
                 </button>
               )}
 
