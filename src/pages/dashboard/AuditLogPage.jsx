@@ -198,14 +198,16 @@ export default function AuditLogPage() {
         });
         var { data: profs } = await supabase
           .from("profiles")
-          .select("id, email, display_name")
+          .select("id, email, full_name")
           .in("id", uniqueIds);
         if (profs) {
-          var updated = Object.assign({}, profiles);
-          profs.forEach(function (p) {
-            updated[p.id] = p;
+          setProfiles(function (prev) {
+            var updated = Object.assign({}, prev);
+            profs.forEach(function (p) {
+              updated[p.id] = p;
+            });
+            return updated;
           });
-          setProfiles(updated);
         }
       }
     },
@@ -252,7 +254,7 @@ export default function AuditLogPage() {
     var rows = logs.map(function (l) {
       var user =
         l.user_id && profiles[l.user_id]
-          ? profiles[l.user_id].display_name || profiles[l.user_id].email
+          ? profiles[l.user_id].full_name || profiles[l.user_id].email
           : l.user_id || "System";
       return [
         new Date(l.created_at).toISOString(),
@@ -495,7 +497,7 @@ export default function AuditLogPage() {
               var Icon = meta.icon;
               var user =
                 log.user_id && profiles[log.user_id]
-                  ? profiles[log.user_id].display_name ||
+                  ? profiles[log.user_id].full_name ||
                     profiles[log.user_id].email
                   : null;
               var isSystem = !log.user_id;

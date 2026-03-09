@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { useSearchParams } from "react-router-dom";
 import { useTheme } from "../../context/ThemeContext";
 import "../../styles/dashboard.css";
 import "../../styles/dashboard-pages.css";
@@ -1336,19 +1337,6 @@ function ScheduledReports({ org }) {
   const [companyName, setCompanyName] = useState(
     org?.report_company_name || org?.name || ""
   );
-
-  useEffect(() => {
-    setSchedule(org?.report_schedule || "");
-    setEmails((org?.report_emails || []).join(", "));
-    setWhiteLabel(org?.report_white_label || false);
-    setCompanyName(org?.report_company_name || org?.name || "");
-  }, [
-    org?.id,
-    org?.report_schedule,
-    org?.report_emails,
-    org?.report_white_label,
-    org?.report_company_name,
-  ]);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
@@ -1604,16 +1592,10 @@ function AlertIntegrations({ org }) {
   const { t } = useTheme();
   const [slackUrl, setSlackUrl] = useState(org?.slack_webhook_url || "");
   const [emails, setEmails] = useState((org?.alert_emails || []).join(", "));
-
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState(null);
-
-  useEffect(() => {
-    setSlackUrl(org?.slack_webhook_url || "");
-    setEmails((org?.alert_emails || []).join(", "));
-  }, [org?.id, org?.slack_webhook_url, org?.alert_emails]);
 
   if (!org) return null;
 
@@ -2067,7 +2049,26 @@ export default function SettingsPage() {
   }
 
   var [settingsTab, setSettingsTab] = useState("general");
+  var [searchParams, setSearchParams] = useSearchParams();
   const isAdmin = org?.role === "owner" || org?.role === "admin";
+
+  // Read ?tab= from URL (e.g. from HelpSearch navigation)
+  useEffect(
+    function () {
+      var urlTab = searchParams.get("tab");
+      if (
+        urlTab &&
+        ["general", "team", "alerts", "integrations", "account"].indexOf(
+          urlTab
+        ) !== -1
+      ) {
+        setSettingsTab(urlTab);
+        searchParams.delete("tab");
+        setSearchParams(searchParams, { replace: true });
+      }
+    },
+    [searchParams]
+  );
 
   var settingsTabs = [
     { id: "general", label: "General", icon: User },
