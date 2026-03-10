@@ -43,3 +43,21 @@
   stroke: var(--accent);
   fill: none;
 }
+.bull-body {
+  fill: var(--paper);
+}
+.bull-medium {
+  fill: var(--ink20);
+}
+.bull-dark {
+  fill: var(--ink50);
+}
+.bull-light {
+  fill: var(--paperWarm);
+}
+.bull-accent {
+  fill: var(--accent);
+}
+.bull-gradient {
+  fill: url(#Gradient1);
+} /* gradients need special handling */

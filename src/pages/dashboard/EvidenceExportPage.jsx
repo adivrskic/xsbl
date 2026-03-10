@@ -667,6 +667,7 @@ export default function EvidenceExportPage() {
 
         {/* Configuration */}
         <div
+          className="evidence-export-configuration"
           style={{
             display: "grid",
             gridTemplateColumns: "1fr 1fr",

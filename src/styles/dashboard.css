@@ -421,3 +421,9 @@
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
+
+@media screen and (max-width: 960px) {
+  .evidence-export-configuration {
+    grid-template-columns: 1fr !important;
+  }
+}

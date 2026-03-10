@@ -212,8 +212,15 @@ export const marqueeItems = [
   "Not an overlay",
   "Real fixes, not band-aids",
   "Overlays got fined $1M by the FTC",
+  "Daily & weekly scheduled scans",
+  "White-label reports for agencies",
+  "SOC 2 & ISO evidence export",
+  "Client dashboards included",
+  "Simulate 8 vision conditions",
+  "AI-generated alt text",
+  "Auto-resolves fixed issues",
+  "CI/CD in 5 minutes",
 ];
-
 export const navLinks = [
   { label: "How it works", id: "how" },
   { label: "Features", id: "agent" },
