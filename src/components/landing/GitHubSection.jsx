@@ -4,7 +4,15 @@ import FadeIn from "./FadeIn";
 import Section from "./Section";
 import { Eyebrow, H2, SubText, Italic } from "./Typography";
 import XsblBull from "./XsblBull";
-import { Check, Sparkles, Search, MoveRight } from "lucide-react";
+import {
+  Check,
+  Sparkles,
+  Search,
+  MoveRight,
+  Zap,
+  RefreshCw,
+  ShieldCheck,
+} from "lucide-react";
 import "./GitHubSection.css";
 
 /* ── shared card data ── */
@@ -328,6 +336,100 @@ function PRDemo() {
   );
 }
 
+/* ── CI / Actions card ── */
+function CICard() {
+  var { t } = useTheme();
+
+  var lines = [
+    { type: "header", text: "♿ Accessibility Scan Results" },
+    { type: "blank", text: "" },
+    { type: "table-header", text: "| Metric | Value   |" },
+    { type: "table-sep", text: "|--------|---------|" },
+    { type: "table-row", text: "| Score  |", val: "94", good: true },
+    { type: "table-row", text: "| Issues |", val: "3", good: false },
+    { type: "table-row", text: "| Pages  |", val: "6", good: true },
+    { type: "blank", text: "" },
+    { type: "success", text: "✅ Score 94 meets threshold 70" },
+  ];
+
+  return (
+    <div
+      className="gh-ci-card"
+      role="img"
+      aria-label="GitHub Actions workflow run showing accessibility scan results"
+    >
+      <div className="gh-ci-card__bar">
+        <div className="gh-ci-card__status">
+          <span className="gh-ci-card__check">
+            <Check size={11} color="white" strokeWidth={3} />
+          </span>
+          <span className="gh-ci-card__workflow">Accessibility Scan</span>
+        </div>
+        <span className="gh-ci-card__time">32s</span>
+      </div>
+      <div className="gh-ci-card__body">
+        <div className="gh-ci-card__step">
+          <span className="gh-ci-card__step-check">
+            <Check size={9} color="#28ca41" strokeWidth={3} />
+          </span>
+          <span className="gh-ci-card__step-name">Trigger xsbl scan</span>
+        </div>
+        <div className="gh-ci-card__output">
+          {lines.map(function (l, i) {
+            if (l.type === "blank")
+              return <div key={i} style={{ height: 6 }} />;
+            if (l.type === "header")
+              return (
+                <div
+                  key={i}
+                  className="gh-ci-card__line gh-ci-card__line--header"
+                >
+                  {l.text}
+                </div>
+              );
+            if (l.type === "table-header" || l.type === "table-sep")
+              return (
+                <div key={i} className="gh-ci-card__line gh-ci-card__line--dim">
+                  {l.text}
+                </div>
+              );
+            if (l.type === "table-row")
+              return (
+                <div key={i} className="gh-ci-card__line">
+                  {l.text}{" "}
+                  <span
+                    className={
+                      l.good ? "gh-ci-card__val--good" : "gh-ci-card__val--warn"
+                    }
+                  >
+                    {l.val}
+                  </span>
+                  {"     |"}
+                </div>
+              );
+            if (l.type === "success")
+              return (
+                <div
+                  key={i}
+                  className="gh-ci-card__line gh-ci-card__line--success"
+                >
+                  {l.text}
+                </div>
+              );
+            return null;
+          })}
+        </div>
+        <div className="gh-ci-card__step">
+          <span className="gh-ci-card__step-check">
+            <Check size={9} color="#28ca41" strokeWidth={3} />
+          </span>
+          <span className="gh-ci-card__step-name">Check score threshold</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function GitHubSection() {
   var { t } = useTheme();
 
@@ -391,6 +493,68 @@ export default function GitHubSection() {
         </FadeIn>
         <FadeIn delay={0.2}>
           <PRDemo />
+        </FadeIn>
+      </div>
+
+      {/* ── CI / Continuous Scanning ── */}
+      <div className="gh-ci-section">
+        <FadeIn delay={0.1}>
+          <div className="gh-ci-layout">
+            <div className="gh-ci-content">
+              <div className="gh-ci-eyebrow">
+                <Zap size={14} color={t.accent} strokeWidth={2} />
+                <span>Continuous scanning</span>
+              </div>
+              <h3 className="gh-ci-heading">
+                Scan on every deploy.{" "}
+                <span style={{ color: t.accent }}>Automatically.</span>
+              </h3>
+              <p className="gh-ci-desc">
+                Install a GitHub Actions workflow with one click — no YAML to
+                write, no secrets to configure. Every push to main triggers an
+                accessibility scan. Regressions get caught before they reach
+                production.
+              </p>
+              <div className="gh-ci-features">
+                {[
+                  {
+                    icon: (
+                      <RefreshCw size={14} color={t.accent} strokeWidth={2} />
+                    ),
+                    title: "One-click install",
+                    desc: "xsbl commits the workflow file and sets your secrets automatically.",
+                  },
+                  {
+                    icon: (
+                      <ShieldCheck size={14} color={t.accent} strokeWidth={2} />
+                    ),
+                    title: "Score threshold gate",
+                    desc: "Set a minimum score — builds warn or fail if accessibility drops below it.",
+                  },
+                  {
+                    icon: (
+                      <Sparkles size={14} color={t.accent} strokeWidth={2} />
+                    ),
+                    title: "Results in GitHub",
+                    desc: "Scan results appear in the Actions summary. No context switching needed.",
+                  },
+                ].map(function (feat, i) {
+                  return (
+                    <div key={i} className="gh-ci-feat">
+                      <span className="gh-ci-feat__icon">{feat.icon}</span>
+                      <div>
+                        <div className="gh-ci-feat__title">{feat.title}</div>
+                        <div className="gh-ci-feat__desc">{feat.desc}</div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+            <div className="gh-ci-card-wrap">
+              <CICard />
+            </div>
+          </div>
         </FadeIn>
       </div>
     </Section>

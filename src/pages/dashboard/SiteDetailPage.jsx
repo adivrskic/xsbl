@@ -40,6 +40,7 @@ import GitHubConnect from "../../components/dashboard/GithubConnect";
 import SchedulePicker from "../../components/dashboard/SchedulePicker";
 import ScanProfileEditor from "../../components/dashboard/ScanProfileEditor";
 import PlanGate from "../../components/ui/PlanGate";
+import CIWorkflowPanel from "../../components/dashboard/CIWorkflowPanel";
 
 /* ── GitHub icon (no lucide brand icons) ── */
 /* ── CSV Export ── */
@@ -3677,6 +3678,8 @@ export default function SiteDetailPage() {
 
           {/* GitHub Integration */}
           <GitHubConnect site={site} onUpdate={(s) => setSite(s)} />
+
+          <CIWorkflowPanel site={site} onUpdate={(s) => setSite(s)} />
 
           {/* Badge Embed */}
           <PlanGate

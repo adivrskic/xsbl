@@ -22,6 +22,7 @@ import {
   ExternalLink,
   SkipForward,
 } from "lucide-react";
+import CIWorkflowPanel from "../../components/dashboard/CIWorkflowPanel";
 
 function genToken() {
   const c = "abcdef0123456789";
@@ -839,6 +840,32 @@ function StepSetup({ site, onNext }) {
               </a>
             </div>
           </>
+        )}
+        {saved.github && site && (
+          <div style={{ marginTop: "0.5rem" }}>
+            <div
+              style={{
+                fontSize: "0.72rem",
+                color: t.ink50,
+                marginBottom: "0.4rem",
+                display: "flex",
+                alignItems: "center",
+                gap: "0.3rem",
+              }}
+            >
+              <Zap size={11} color={t.accent} />
+              Auto-scan on every deploy?
+            </div>
+            <CIWorkflowPanel
+              site={{
+                ...site,
+                github_repo: githubRepo,
+                github_token: githubToken,
+              }}
+              onUpdate={function () {}}
+              compact
+            />
+          </div>
         )}
       </div>
 
