@@ -109,7 +109,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="auth-page">
+    <main className="auth-page">
       <div className="auth-card">
         <Link to="/" className="auth-logo">
           <XsblBull />
@@ -212,8 +212,8 @@ export default function LoginPage() {
             <button type="submit" disabled={loading} className="auth-submit">
               {loading
                 ? forgotMode
-                  ? "Sending…"
-                  : "Signing in…"
+                  ? "Sendingâ¦"
+                  : "Signing inâ¦"
                 : forgotMode
                 ? "Send reset link"
                 : "Sign in"}
@@ -245,6 +245,6 @@ export default function LoginPage() {
           )}
         </p>
       </div>
-    </div>
-  );
+    </main>
+    );
 }
