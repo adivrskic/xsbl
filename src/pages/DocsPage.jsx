@@ -228,8 +228,8 @@ export default function DocsPage() {
   var BASE =
     import.meta.env.VITE_SUPABASE_URL || "https://YOUR_PROJECT.supabase.co";
 
-  return (
-    <div>
+  <div>
+    <main className="docs-main">
       <div className="docs-page">
         {/* Sidebar navigation */}
         <aside className="docs-sidebar">
