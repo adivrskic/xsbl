@@ -179,7 +179,7 @@ export default function AgencyPage() {
                   <div className="agency-feat__icon">
                     <Icon size={17} color={t.accent} strokeWidth={1.8} />
                   </div>
-                  <h3 className="agency-feat__title">{feat.title}</h3>
+                  <h2 className="agency-feat__title">{feat.title}</h2>
                   <p className="agency-feat__desc">{feat.desc}</p>
                 </div>
               </FadeIn>
