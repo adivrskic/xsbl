@@ -19,21 +19,33 @@ export default function XsblBull({ size = 42, style = {}, theme: themeProp }) {
 
   // Use explicit theme prop if provided, otherwise pull from context.
   const c = themeProp || themeCtx || {};
+  // Detect light vs dark mode from the theme's paper color
+  const isLight = (() => {
+    const hex = (c.paper || "#f6f1eb").replace("#", "");
+    return parseInt(hex.substring(0, 2), 16) > 128;
+  })();
 
-  // Body colors — paper tones for the bull's body, ink tones for shading.
-  // In light mode these are warm beige; in dark mode they become dark grays.
-  const bodyLight = c.paper || "#f6f1eb";
-  const bodyMid = c.paperWarm || "#efe8df";
-  const bodyShadow = c.ink20 || "rgba(26,23,20,0.2)";
-  const bodyDeep = c.ink50 || "rgba(26,23,20,0.82)";
+  // Body colors — shifted one tier darker in light mode, one tier lighter in dark
+  const bodyLight = isLight ? "#dfd8cf" : "#333338";
+  const bodyMid = isLight ? "#d6c7b4" : "#1d1d22";
+  const bodyShadow = isLight ? "rgba(26,23,20,0.30)" : "rg#f1f0ec229,224,0.14)";
+  const bodyDeep = isLight ? "rgba(26,23,20,0.88)" : "rgba(232,229,224,0.76)";
 
   // Accent colors for horns / wings
-  const accentBright = c.accentLight || "#5a4ee0";
-  const accentDark = c.accentBtn || "#4338f0";
+  const accentBright = isLight
+    ? c.accent || "#4338f0"
+    : c.accentLight || "#9b94ff";
+  const accentDark = isLight ? "#3a2ed0" : c.accentBtn || "#5548db";
 
-  // Gold belt / nose ring — kept the same amber tone
-  const goldLight = c.amber ? c.amber + "99" : "#f5c842";
-  const goldDark = c.amber || "#9a4a07";
+  // Gold belt / nose ring
+  const goldLight = isLight
+    ? c.amber
+      ? c.amber + "bb"
+      : "#f5c842"
+    : c.amber
+    ? c.amber + "77"
+    : "#f5c842";
+  const goldDark = c.amber || (isLight ? "#8a4006" : "#9a4a07");
 
   return (
     <svg

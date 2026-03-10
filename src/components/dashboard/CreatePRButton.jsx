@@ -3,6 +3,7 @@ import { useTheme } from "../../context/ThemeContext";
 import { supabase } from "../../lib/supabase";
 import { useToast } from "../ui/Toast";
 import { Loader2, ExternalLink, Check, AlertTriangle } from "lucide-react";
+import PRFeedback from "./PRFeedback";
 
 function GitHubIcon({ size = 14 }) {
   return (
@@ -240,6 +241,7 @@ export default function CreatePRButton({ issue, site }) {
               {result.file} → {result.branch}
             </span>
           </div>
+          <PRFeedback prNumber={result.pr_number} siteId={site?.id} />
         </div>
       )}
 

@@ -3,6 +3,7 @@ import { useTheme } from "../../context/ThemeContext";
 import { supabase } from "../../lib/supabase";
 import { useToast } from "../ui/Toast";
 import { Loader2, ExternalLink, Check, X } from "lucide-react";
+import PRFeedback from "./PRFeedback";
 
 function GitHubIcon({ size = 14 }) {
   return (
@@ -28,7 +29,7 @@ export default function BulkFixBar({
 
   var hasGitHub = site && site.github_repo && site.github_token;
   var count = selectedIds.length;
-  if (count === 0) return null;
+  if (count === 0 && !result) return null;
   var limit = maxPerPr || 999;
 
   // Count by impact
@@ -100,82 +101,102 @@ export default function BulkFixBar({
         maxWidth: "90vw",
       }}
     >
-      {/* Count + impact badges */}
-      <div style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
-        <span
-          style={{
-            fontFamily: "var(--serif)",
-            fontSize: "1.1rem",
-            fontWeight: 700,
-            color: count >= limit ? t.accent : t.ink,
-          }}
-        >
-          {count}
-        </span>
-        <span
-          style={{
-            fontFamily: "var(--mono)",
-            fontSize: "0.62rem",
-            color: t.ink50,
-          }}
-        >
-          / {limit}
-        </span>
-        <span style={{ fontSize: "0.78rem", color: t.ink50 }}>selected</span>
-        {impacts.critical > 0 && (
+      {/* Count + impact badges — hide after PR created */}
+      {!result && (
+        <div style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
+          <span
+            style={{
+              fontFamily: "var(--serif)",
+              fontSize: "1.1rem",
+              fontWeight: 700,
+              color: count >= limit ? t.accent : t.ink,
+            }}
+          >
+            {count}
+          </span>
           <span
             style={{
               fontFamily: "var(--mono)",
-              fontSize: "0.55rem",
-              fontWeight: 600,
-              padding: "0.1rem 0.3rem",
-              borderRadius: 3,
-              background: t.red + "15",
-              color: t.red,
+              fontSize: "0.62rem",
+              color: t.ink50,
             }}
           >
-            {impacts.critical} critical
+            / {limit}
           </span>
-        )}
-        {impacts.serious > 0 && (
-          <span
-            style={{
-              fontFamily: "var(--mono)",
-              fontSize: "0.55rem",
-              fontWeight: 600,
-              padding: "0.1rem 0.3rem",
-              borderRadius: 3,
-              background: t.red + "10",
-              color: t.red,
-            }}
-          >
-            {impacts.serious} serious
-          </span>
-        )}
-      </div>
+          <span style={{ fontSize: "0.78rem", color: t.ink50 }}>selected</span>
+          {impacts.critical > 0 && (
+            <span
+              style={{
+                fontFamily: "var(--mono)",
+                fontSize: "0.55rem",
+                fontWeight: 600,
+                padding: "0.1rem 0.3rem",
+                borderRadius: 3,
+                background: t.red + "15",
+                color: t.red,
+              }}
+            >
+              {impacts.critical} critical
+            </span>
+          )}
+          {impacts.serious > 0 && (
+            <span
+              style={{
+                fontFamily: "var(--mono)",
+                fontSize: "0.55rem",
+                fontWeight: 600,
+                padding: "0.1rem 0.3rem",
+                borderRadius: 3,
+                background: t.red + "10",
+                color: t.red,
+              }}
+            >
+              {impacts.serious} serious
+            </span>
+          )}
+        </div>
+      )}
 
       {/* Divider */}
-      <div style={{ width: 1, height: 24, background: t.ink08 }} />
+      {!result && <div style={{ width: 1, height: 24, background: t.ink08 }} />}
 
       {/* Result */}
       {result ? (
-        <a
-          href={result.pr_url}
-          target="_blank"
-          rel="noopener noreferrer"
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "0.3rem",
-            fontFamily: "var(--mono)",
-            fontSize: "0.78rem",
-            color: t.green,
-            textDecoration: "none",
-            fontWeight: 600,
-          }}
+        <div
+          style={{ display: "flex", flexDirection: "column", gap: "0.2rem" }}
         >
-          <Check size={15} /> PR #{result.pr_number} <ExternalLink size={11} />
-        </a>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+            <a
+              href={result.pr_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "0.3rem",
+                fontFamily: "var(--mono)",
+                fontSize: "0.78rem",
+                color: t.green,
+                textDecoration: "none",
+                fontWeight: 600,
+              }}
+            >
+              <Check size={15} /> PR #{result.pr_number}{" "}
+              <ExternalLink size={11} />
+            </a>
+            <span
+              style={{
+                fontFamily: "var(--mono)",
+                fontSize: "0.58rem",
+                color: t.ink50,
+              }}
+            >
+              {result.issues_fixed} fix{result.issues_fixed !== 1 ? "es" : ""} ·{" "}
+              {result.files_changed} file{result.files_changed !== 1 ? "s" : ""}
+            </span>
+          </div>
+          <PRFeedback prNumber={result.pr_number} siteId={site?.id} />
+        </div>
       ) : (
         <button
           onClick={handleBulkFix}
@@ -232,7 +253,10 @@ export default function BulkFixBar({
 
       {/* Close */}
       <button
-        onClick={onClear}
+        onClick={function () {
+          setResult(null);
+          onClear();
+        }}
         style={{
           background: "none",
           border: "none",

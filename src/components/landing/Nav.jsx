@@ -28,17 +28,23 @@ function scrollTo(id) {
 export default function Nav() {
   var { t, dark, toggle } = useTheme();
   var scrolled = useScrolled();
-  var { user } = useAuth();
+  var { user, org } = useAuth();
   var [mobileOpen, setMobileOpen] = useState(false);
 
   var isLanding =
     typeof window !== "undefined" &&
     (window.location.pathname === "/" || window.location.pathname === "");
+  var hidePricing = user && org && org.plan !== "free";
   var links = isLanding
     ? landingLinks
     : pageLinks.filter(function (link) {
         return link.href !== window.location.pathname;
       });
+  if (hidePricing) {
+    links = links.filter(function (link) {
+      return link.label !== "Pricing";
+    });
+  }
 
   // Close mobile menu on Escape
   useEffect(

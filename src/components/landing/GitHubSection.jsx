@@ -500,11 +500,10 @@ export default function GitHubSection() {
       <div className="gh-ci-section">
         <FadeIn delay={0.1}>
           <div className="gh-ci-layout">
+            <div className="gh-ci-card-wrap">
+              <CICard />
+            </div>
             <div className="gh-ci-content">
-              <div className="gh-ci-eyebrow">
-                <Zap size={14} color={t.accent} strokeWidth={2} />
-                <span>Continuous scanning</span>
-              </div>
               <h3 className="gh-ci-heading">
                 Scan on every deploy.{" "}
                 <span style={{ color: t.accent }}>Automatically.</span>
@@ -550,9 +549,6 @@ export default function GitHubSection() {
                   );
                 })}
               </div>
-            </div>
-            <div className="gh-ci-card-wrap">
-              <CICard />
             </div>
           </div>
         </FadeIn>
