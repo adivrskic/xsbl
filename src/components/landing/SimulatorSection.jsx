@@ -1,58 +1,96 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useTheme } from "../../context/ThemeContext";
 import { useAuth } from "../../context/AuthContext";
 import FadeIn from "./FadeIn";
 import Section from "./Section";
 import { Eyebrow, H2, SubText, Italic } from "./Typography";
-import { Eye, Lock, ArrowRight, Search, Circle, Minus } from "lucide-react";
+import { Eye, Lock, ArrowRight, Search, Circle } from "lucide-react";
 import "./SimulatorSection.css";
 
-/* Static demo of vision modes — no real screenshot needed */
 var DEMO_MODES = [
-  { id: "normal", name: "Normal vision", icon: <Eye size={14} />, color: null },
+  {
+    id: "normal",
+    name: "Normal vision",
+    icon: <Eye size={14} />,
+    type: "none",
+  },
+
+  // Color vision deficiencies
   {
     id: "protanopia",
-    name: "Protanopia",
+    name: "Protanopia (no red)",
     icon: <Circle size={12} fill="#ef4444" stroke="none" />,
-    color: "grayscale(0.3) sepia(0.4) hue-rotate(-20deg) saturate(0.7)",
+    type: "color",
   },
   {
     id: "deuteranopia",
-    name: "Deuteranopia",
+    name: "Deuteranopia (no green)",
     icon: <Circle size={12} fill="#22c55e" stroke="none" />,
-    color: "grayscale(0.2) sepia(0.3) hue-rotate(-40deg) saturate(0.8)",
+    type: "color",
   },
   {
     id: "tritanopia",
-    name: "Tritanopia",
+    name: "Tritanopia (no blue)",
     icon: <Circle size={12} fill="#3b82f6" stroke="none" />,
-    color: "grayscale(0.2) sepia(0.5) hue-rotate(30deg) saturate(0.7)",
+    type: "color",
   },
   {
     id: "achromatopsia",
-    name: "Achromatopsia",
+    name: "Achromatopsia (no color)",
     icon: <Circle size={12} fill="#374151" stroke="none" />,
-    color: "grayscale(1)",
+    type: "color",
+  },
+  // Low-vision / blur
+  {
+    id: "low-vision",
+    name: "Low vision (blur)",
+    icon: <Search size={14} />,
+    type: "blur",
   },
   {
-    id: "blurred",
-    name: "Low vision",
+    id: "cataracts",
+    name: "Cataracts (cloudy)",
     icon: <Search size={14} />,
-    color: "blur(2px)",
+    type: "contrast",
   },
 ];
 
-/* A fake "website" card to apply filters to */
-function DemoSite({ t }) {
+/**
+ * Fixed intensity = 1 for each mode
+ */
+function getFilterForMode(modeId) {
+  var i = 1; // Fixed at full strength
+
+  switch (modeId) {
+    case "protanopia":
+      return "grayscale(0.7) sepia(0.8) hue-rotate(-25deg) saturate(0.7) contrast(0.9)";
+    case "deuteranopia":
+      return "grayscale(0.5) sepia(0.6) hue-rotate(-40deg) saturate(0.75) contrast(0.95)";
+    case "tritanopia":
+      return "grayscale(0.5) sepia(0.7) hue-rotate(35deg) saturate(0.8) contrast(0.95)";
+    case "achromatopsia":
+      return "grayscale(0.9) contrast(0.8)";
+    case "low-vision":
+      return "blur(3px) contrast(0.75)";
+    case "cataracts":
+      return "blur(2px) contrast(0.6) brightness(1.1) sepia(0.2)";
+
+    case "normal":
+    default:
+      return "none";
+  }
+}
+
+function DemoSite(props) {
+  var t = props.t;
   return (
     <div className="sim-site" role="img" aria-label="Website preview">
-      {/* Nav bar */}
       <div className="sim-site__nav">
         <div className="sim-site__dot" />
         <span className="sim-site__brand">acme.com</span>
         <div className="sim-site__spacer" />
         <div className="sim-site__links">
-          {["Products", "About", "Contact"].map(function (l) {
+          {["Products", "Pricing", "Status", "Docs"].map(function (l) {
             return (
               <span key={l} className="sim-site__link">
                 {l}
@@ -61,19 +99,20 @@ function DemoSite({ t }) {
           })}
         </div>
       </div>
-      {/* Hero area */}
+
       <div className="sim-site__hero">
-        <div className="sim-site__title">Build something beautiful</div>
+        <div className="sim-site__eyebrow">For product teams</div>
+        <div className="sim-site__title">Ship accessible UIs faster</div>
         <div className="sim-site__text">
           The platform for modern teams to ship faster and build better
-          products.
+          products, without leaving accessibility to chance.
         </div>
         <div className="sim-site__btns">
           <div className="sim-site__btn-primary">Get started</div>
-          <div className="sim-site__btn-secondary">Learn more</div>
+          <div className="sim-site__btn-secondary">View contrast report</div>
         </div>
       </div>
-      {/* Feature cards — colors are dynamic so stay inline */}
+
       <div className="sim-site__cards">
         {[
           { label: "Analytics", color: t.accent },
@@ -106,27 +145,38 @@ function DemoSite({ t }) {
 export default function SimulatorSection() {
   var { t } = useTheme();
   var { user } = useAuth();
+
   var [active, setActive] = useState("normal");
 
   var activeMode =
     DEMO_MODES.find(function (m) {
       return m.id === active;
     }) || DEMO_MODES[0];
-  var sectionFilter = activeMode.color
-    ? { filter: activeMode.color, transition: "filter 0.4s ease" }
-    : { transition: "filter 0.4s ease" };
+
+  var filter = useMemo(
+    function () {
+      return getFilterForMode(activeMode.id);
+    },
+    [activeMode.id]
+  );
+
+  var sectionFilterStyle =
+    filter && filter !== "none"
+      ? { filter: filter, transition: "filter 0.4s ease" }
+      : { transition: "filter 0.4s ease" };
+
+  var isNormal = activeMode.id === "normal";
 
   return (
     <div
       className="sim-wrapper"
-      style={sectionFilter}
+      style={sectionFilterStyle}
       aria-label={
-        activeMode.color
+        !isNormal
           ? "Section simulating " + activeMode.name + " vision"
           : undefined
       }
     >
-      {/* Glow background — colors need theme vars inline */}
       <div
         className="sim-glow"
         style={{
@@ -159,33 +209,32 @@ export default function SimulatorSection() {
         </FadeIn>
         <FadeIn delay={0.05}>
           <H2>
-            See through your <Italic>users' eyes.</Italic>
+            See through your <Italic>users&apos; eyes.</Italic>
           </H2>
         </FadeIn>
         <FadeIn delay={0.1}>
           <SubText>
-            Preview how your site looks to people with color blindness, low
-            vision, and other visual conditions. Catch contrast issues before
-            your users do.
+            Preview how your site looks to people with different types of color
+            blindness and low vision. Catch contrast issues before your users
+            do.
           </SubText>
         </FadeIn>
 
         <div className="sim-layout">
-          {/* Left — feature description */}
           <FadeIn delay={0.15}>
             <div className="sim-features">
               {[
                 {
-                  title: "8 vision conditions",
-                  desc: "Protanopia, deuteranopia, tritanopia, achromatopsia, cataracts, low vision blur, and more — scientifically accurate simulation matrices.",
+                  title: "Common vision conditions",
+                  desc: "Simulate protanopia, deuteranopia, tritanopia, achromatopsia, low vision blur, and cataracts.",
                 },
                 {
-                  title: "Real screenshot rendering",
-                  desc: "We capture your actual site in a real browser, then apply vision filters. See exactly what your users see — not a mockup.",
+                  title: "Real browser rendering",
+                  desc: "See exactly what your users see — not just a mockup. Real typography, anti-aliasing, and spacing preserved.",
                 },
                 {
-                  title: "Issue overlay",
-                  desc: "Toggle accessibility issues on top of the simulation. See which contrast failures actually affect users under different conditions.",
+                  title: "Spot issues instantly",
+                  desc: "Quickly identify where color is doing too much work and where contrast needs improvement.",
                 },
               ].map(function (feat, i) {
                 return (
@@ -203,7 +252,6 @@ export default function SimulatorSection() {
                 );
               })}
 
-              {/* CTA */}
               <FadeIn delay={0.4}>
                 <div className="sim-cta">
                   <a
@@ -223,10 +271,8 @@ export default function SimulatorSection() {
             </div>
           </FadeIn>
 
-          {/* Right — interactive demo */}
           <FadeIn delay={0.2}>
             <div className="sim-demo">
-              {/* Mode selector pills */}
               <div
                 className="sim-modes"
                 role="radiogroup"
@@ -254,10 +300,8 @@ export default function SimulatorSection() {
                 })}
               </div>
 
-              {/* Demo site with filter */}
               <DemoSite t={t} />
 
-              {/* Active mode label */}
               <div className="sim-active-label" aria-live="polite">
                 Viewing as:{" "}
                 <span className="sim-active-label__name">

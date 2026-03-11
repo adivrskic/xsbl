@@ -504,10 +504,9 @@ export default function GitHubSection() {
               <CICard />
             </div>
             <div className="gh-ci-content">
-              <h3 className="gh-ci-heading">
-                Scan on every deploy.{" "}
-                <span style={{ color: t.accent }}>Automatically.</span>
-              </h3>
+              <H2>
+                Scan on every deploy. <Italic>Automatically.</Italic>
+              </H2>
               <p className="gh-ci-desc">
                 Install a GitHub Actions workflow with one click — no YAML to
                 write, no secrets to configure. Every push to main triggers an

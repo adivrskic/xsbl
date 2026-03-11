@@ -51,7 +51,7 @@ export default function PricingSection() {
         </H2>
       </FadeIn>
       <FadeIn delay={0.1}>
-        <SubText>Free tier included. Cancel anytime.</SubText>
+        <SubText>Cancel anytime.</SubText>
       </FadeIn>
 
       <div className="grid-1-mobile pricing-grid">
