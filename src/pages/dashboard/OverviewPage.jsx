@@ -35,12 +35,15 @@ export default function OverviewPage() {
   }, [org?.id]);
 
   var siteList = sites || [];
+  var scannedSites = siteList.filter(function (s) {
+    return s.score != null;
+  });
   var avg =
-    siteList.length > 0
+    scannedSites.length > 0
       ? Math.round(
-          siteList.reduce(function (s, x) {
-            return s + (x.score || 0);
-          }, 0) / siteList.length
+          scannedSites.reduce(function (s, x) {
+            return s + x.score;
+          }, 0) / scannedSites.length
         )
       : null;
 
@@ -176,7 +179,16 @@ export default function OverviewPage() {
                   ? t.red
                   : t.ink50
               }
-              sub="across all sites"
+              sub={
+                scannedSites.length > 0
+                  ? scannedSites.length === siteList.length
+                    ? "across all sites"
+                    : "across " +
+                      scannedSites.length +
+                      " scanned site" +
+                      (scannedSites.length !== 1 ? "s" : "")
+                  : "no scans yet"
+              }
             />
             <Stat
               label="Plan"

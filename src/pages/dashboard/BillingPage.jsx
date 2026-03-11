@@ -11,8 +11,11 @@ import {
   Zap,
   Building2,
   ArrowUpRight,
+  ArrowDownRight,
   AlertTriangle,
   X,
+  Clock,
+  Info,
 } from "lucide-react";
 import { Navigate } from "react-router-dom";
 
@@ -21,6 +24,13 @@ var PLAN_SITE_LIMITS = {
   starter: 1,
   pro: 999,
   agency: 999,
+};
+
+var PLAN_ORDER = {
+  free: 0,
+  starter: 1,
+  pro: 2,
+  agency: 3,
 };
 
 const plans = [
@@ -90,8 +100,14 @@ const plans = [
   },
 ];
 
-/* ── Downgrade blocked modal ── */
-function DowngradeModal({ t, targetPlan, sitesUsed, siteLimit, onClose }) {
+/* ── Downgrade blocked modal (too many sites) ── */
+function DowngradeBlockedModal({
+  t,
+  targetPlan,
+  sitesUsed,
+  siteLimit,
+  onClose,
+}) {
   var excess = sitesUsed - siteLimit;
 
   return (
@@ -231,6 +247,349 @@ function DowngradeModal({ t, targetPlan, sitesUsed, siteLimit, onClose }) {
   );
 }
 
+/* ── Downgrade confirm modal (sites OK — proceed?) ── */
+function DowngradeConfirmModal({
+  t,
+  currentPlan,
+  targetPlan,
+  previewData,
+  loading,
+  confirming,
+  onConfirm,
+  onClose,
+}) {
+  var currentPlanObj = plans.find(function (p) {
+    return p.key === currentPlan;
+  });
+  var targetPlanObj = plans.find(function (p) {
+    return p.key === targetPlan;
+  });
+  var isCancelToFree = targetPlan === "free";
+
+  // Features they'll lose
+  var currentFeatures = currentPlanObj ? currentPlanObj.features : [];
+  var targetFeatures = targetPlanObj ? targetPlanObj.features : [];
+  var lostFeatures = currentFeatures.filter(function (f) {
+    return !targetFeatures.some(function (tf) {
+      return tf.toLowerCase() === f.toLowerCase();
+    });
+  });
+
+  return (
+    <div
+      style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 200,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        background: "rgba(0,0,0,0.4)",
+        padding: "1rem",
+      }}
+      onClick={function (e) {
+        if (e.target === e.currentTarget && !confirming) onClose();
+      }}
+    >
+      <div
+        style={{
+          width: "100%",
+          maxWidth: 460,
+          borderRadius: 14,
+          background: t.cardBg,
+          border: "1px solid " + t.ink08,
+          boxShadow: "0 16px 48px rgba(0,0,0,0.15)",
+          overflow: "hidden",
+        }}
+      >
+        {/* Header */}
+        <div
+          style={{
+            padding: "1.2rem 1.4rem 0.8rem",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+            <ArrowDownRight size={18} color={t.amber} strokeWidth={2} />
+            <h3
+              style={{
+                fontFamily: "var(--serif)",
+                fontSize: "1rem",
+                fontWeight: 700,
+                color: t.ink,
+                margin: 0,
+              }}
+            >
+              {isCancelToFree ? "Cancel subscription" : "Confirm downgrade"}
+            </h3>
+          </div>
+          <button
+            onClick={onClose}
+            disabled={confirming}
+            style={{
+              background: "none",
+              border: "none",
+              cursor: confirming ? "default" : "pointer",
+              color: t.ink50,
+              padding: "0.2rem",
+              display: "flex",
+              opacity: confirming ? 0.4 : 1,
+            }}
+          >
+            <X size={18} />
+          </button>
+        </div>
+
+        <div style={{ padding: "0 1.4rem 1.4rem" }}>
+          {/* Plan change summary */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "0.6rem",
+              padding: "0.8rem",
+              borderRadius: 8,
+              background: t.ink04 || t.ink + "06",
+              marginBottom: "1rem",
+            }}
+          >
+            <div style={{ flex: 1, textAlign: "center" }}>
+              <div
+                style={{
+                  fontFamily: "var(--mono)",
+                  fontSize: "0.6rem",
+                  color: t.ink50,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.06em",
+                  marginBottom: "0.15rem",
+                }}
+              >
+                Current
+              </div>
+              <div
+                style={{
+                  fontFamily: "var(--serif)",
+                  fontSize: "1rem",
+                  fontWeight: 700,
+                  color: t.ink,
+                  textTransform: "capitalize",
+                }}
+              >
+                {currentPlan}
+              </div>
+              <div
+                style={{
+                  fontFamily: "var(--mono)",
+                  fontSize: "0.72rem",
+                  color: t.ink50,
+                }}
+              >
+                ${currentPlanObj ? currentPlanObj.price : 0}/mo
+              </div>
+            </div>
+            <div style={{ color: t.ink30, fontSize: "1.2rem" }}>→</div>
+            <div style={{ flex: 1, textAlign: "center" }}>
+              <div
+                style={{
+                  fontFamily: "var(--mono)",
+                  fontSize: "0.6rem",
+                  color: t.ink50,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.06em",
+                  marginBottom: "0.15rem",
+                }}
+              >
+                New plan
+              </div>
+              <div
+                style={{
+                  fontFamily: "var(--serif)",
+                  fontSize: "1rem",
+                  fontWeight: 700,
+                  color: t.ink,
+                  textTransform: "capitalize",
+                }}
+              >
+                {targetPlan}
+              </div>
+              <div
+                style={{
+                  fontFamily: "var(--mono)",
+                  fontSize: "0.72rem",
+                  color: t.ink50,
+                }}
+              >
+                {targetPlanObj
+                  ? targetPlanObj.price === 0
+                    ? "Free"
+                    : "$" + targetPlanObj.price + "/mo"
+                  : "Free"}
+              </div>
+            </div>
+          </div>
+
+          {/* Proration / refund info */}
+          {loading ? (
+            <div
+              style={{
+                padding: "0.8rem",
+                borderRadius: 8,
+                background: t.accentBg,
+                border: "1px solid " + t.accent + "20",
+                marginBottom: "1rem",
+                fontSize: "0.82rem",
+                color: t.ink50,
+              }}
+            >
+              Calculating credit…
+            </div>
+          ) : previewData ? (
+            <div
+              style={{
+                padding: "0.8rem",
+                borderRadius: 8,
+                background: t.accentBg,
+                border: "1px solid " + t.accent + "20",
+                marginBottom: "1rem",
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "flex-start",
+                  gap: "0.5rem",
+                }}
+              >
+                <Info
+                  size={14}
+                  color={t.accent}
+                  style={{ marginTop: 2, flexShrink: 0 }}
+                />
+                <p
+                  style={{
+                    fontSize: "0.82rem",
+                    color: t.ink70 || t.ink50,
+                    lineHeight: 1.6,
+                    margin: 0,
+                  }}
+                >
+                  {previewData.message}
+                </p>
+              </div>
+            </div>
+          ) : null}
+
+          {/* Features they'll lose */}
+          {lostFeatures.length > 0 && (
+            <div style={{ marginBottom: "1rem" }}>
+              <div
+                style={{
+                  fontFamily: "var(--mono)",
+                  fontSize: "0.62rem",
+                  color: t.ink50,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.06em",
+                  marginBottom: "0.4rem",
+                }}
+              >
+                You'll lose access to
+              </div>
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "0.2rem",
+                }}
+              >
+                {lostFeatures.slice(0, 5).map(function (f, i) {
+                  return (
+                    <div
+                      key={i}
+                      style={{
+                        fontSize: "0.78rem",
+                        color: t.ink50,
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "0.35rem",
+                      }}
+                    >
+                      <X size={11} color={t.red} strokeWidth={2.5} /> {f}
+                    </div>
+                  );
+                })}
+                {lostFeatures.length > 5 && (
+                  <div
+                    style={{
+                      fontSize: "0.76rem",
+                      color: t.ink30,
+                      fontStyle: "italic",
+                      paddingLeft: "1.1rem",
+                    }}
+                  >
+                    + {lostFeatures.length - 5} more
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Action buttons */}
+          <div style={{ display: "flex", gap: "0.5rem" }}>
+            <button
+              onClick={onClose}
+              disabled={confirming}
+              style={{
+                flex: 1,
+                padding: "0.55rem",
+                borderRadius: 7,
+                border: "1.5px solid " + t.ink20,
+                background: "none",
+                color: t.ink,
+                fontFamily: "var(--body)",
+                fontSize: "0.82rem",
+                fontWeight: 600,
+                cursor: confirming ? "default" : "pointer",
+                opacity: confirming ? 0.5 : 1,
+              }}
+            >
+              Keep current plan
+            </button>
+            <button
+              onClick={onConfirm}
+              disabled={confirming || loading}
+              style={{
+                flex: 1,
+                padding: "0.55rem",
+                borderRadius: 7,
+                border: "none",
+                background: t.red || "#e53e3e",
+                color: "white",
+                fontFamily: "var(--body)",
+                fontSize: "0.82rem",
+                fontWeight: 600,
+                cursor: confirming || loading ? "default" : "pointer",
+                opacity: confirming || loading ? 0.6 : 1,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "0.3rem",
+              }}
+            >
+              {confirming
+                ? "Processing…"
+                : isCancelToFree
+                ? "Cancel subscription"
+                : "Confirm downgrade"}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function BillingPage() {
   const { t } = useTheme();
   const {
@@ -246,6 +605,10 @@ export default function BillingPage() {
   const [portalLoading, setPortalLoading] = useState(false);
   const [message, setMessage] = useState(null);
   const [downgradeBlock, setDowngradeBlock] = useState(null);
+  const [downgradeConfirm, setDowngradeConfirm] = useState(null);
+  const [downgradePreview, setDowngradePreview] = useState(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [confirming, setConfirming] = useState(false);
 
   // Only org owner can access billing
   if (org && org.role !== "owner") {
@@ -313,10 +676,12 @@ export default function BillingPage() {
     setPortalLoading(false);
   };
 
-  var handleDowngrade = function (targetKey) {
+  // Step 1: Check site limits, then open confirm modal with preview
+  var handleDowngrade = async function (targetKey) {
     var targetLimit = PLAN_SITE_LIMITS[targetKey] || 1;
     var sitesUsed = usage ? usage.sites_used : 0;
 
+    // Gate: too many sites for target plan
     if (sitesUsed > targetLimit) {
       setDowngradeBlock({
         targetPlan: targetKey,
@@ -326,7 +691,90 @@ export default function BillingPage() {
       return;
     }
 
-    handlePortal();
+    // Sites OK — fetch proration preview from server, then show confirm modal
+    setDowngradeConfirm({ targetPlan: targetKey });
+    setPreviewLoading(true);
+    setDowngradePreview(null);
+
+    try {
+      var { data, error } = await supabase.functions.invoke("downgrade-plan", {
+        body: { target_plan: targetKey, preview_only: true },
+        headers: { Authorization: "Bearer " + (session?.access_token || "") },
+      });
+      if (error) throw new Error(error.message);
+
+      // Server may also return a site-count error (race condition safety)
+      if (data?.error === "too_many_sites") {
+        setDowngradeConfirm(null);
+        setDowngradeBlock({
+          targetPlan: targetKey,
+          sitesUsed: data.sites_used,
+          siteLimit: data.site_limit,
+        });
+        return;
+      }
+
+      setDowngradePreview(data);
+    } catch (err) {
+      // Show generic preview if the server preview fails
+      setDowngradePreview({
+        message:
+          targetKey === "free"
+            ? "Your subscription will be canceled at the end of your current billing period. You'll keep full access until then."
+            : "Any unused time on your current plan will be applied as a prorated credit to your next invoice.",
+      });
+    } finally {
+      setPreviewLoading(false);
+    }
+  };
+
+  // Step 2: User confirmed — execute the downgrade
+  var executeDowngrade = async function () {
+    if (!downgradeConfirm) return;
+    var targetKey = downgradeConfirm.targetPlan;
+    setConfirming(true);
+
+    try {
+      var { data, error } = await supabase.functions.invoke("downgrade-plan", {
+        body: { target_plan: targetKey },
+        headers: { Authorization: "Bearer " + (session?.access_token || "") },
+      });
+      if (error) throw new Error(error.message);
+
+      // Server-side site-count block (race condition)
+      if (data?.error === "too_many_sites") {
+        setDowngradeConfirm(null);
+        setConfirming(false);
+        setDowngradeBlock({
+          targetPlan: targetKey,
+          sitesUsed: data.sites_used,
+          siteLimit: data.site_limit,
+        });
+        return;
+      }
+
+      if (data?.error) {
+        throw new Error(data.message || data.error);
+      }
+
+      setDowngradeConfirm(null);
+      setConfirming(false);
+      setMessage({
+        type: "success",
+        text: data?.message || "Plan updated successfully.",
+      });
+      refreshOrg?.();
+      fetchUsage?.(true).then(function (d) {
+        if (d) setUsage(d);
+      });
+    } catch (err) {
+      setConfirming(false);
+      setDowngradeConfirm(null);
+      setMessage({
+        type: "error",
+        text: err.message || "Failed to downgrade. Please try again.",
+      });
+    }
   };
 
   const currentPlan = org?.plan || "free";
@@ -382,6 +830,23 @@ export default function BillingPage() {
         >
           {message.type === "success" && <Check size={15} />}
           {message.text}
+          <button
+            onClick={function () {
+              setMessage(null);
+            }}
+            style={{
+              marginLeft: "auto",
+              background: "none",
+              border: "none",
+              cursor: "pointer",
+              color: "inherit",
+              opacity: 0.6,
+              display: "flex",
+              padding: "0.1rem",
+            }}
+          >
+            <X size={14} />
+          </button>
         </div>
       )}
 
@@ -447,7 +912,7 @@ export default function BillingPage() {
               }}
             >
               <CreditCard size={13} />
-              {portalLoading ? "Loading..." : "Manage subscription"}
+              {portalLoading ? "Loading…" : "Manage payment method"}
             </button>
           )}
         </div>
@@ -575,9 +1040,12 @@ export default function BillingPage() {
         {plans.map((p) => {
           const isCurrent = currentPlan === p.key;
           const isDowngrade =
-            plans.findIndex((x) => x.key === currentPlan) >
-            plans.findIndex((x) => x.key === p.key);
+            (PLAN_ORDER[currentPlan] ?? 0) > (PLAN_ORDER[p.key] ?? 0);
+          const isUpgrade = !isCurrent && !isDowngrade && p.key !== currentPlan;
           const Icon = p.icon;
+          const isProcessing =
+            loadingPlan === p.key ||
+            (downgradeConfirm?.targetPlan === p.key && confirming);
 
           return (
             <div
@@ -691,31 +1159,23 @@ export default function BillingPage() {
                     handleUpgrade(p.key);
                   }
                 }}
-                disabled={
-                  isCurrent ||
-                  (p.key === "free" && currentPlan === "free") ||
-                  loadingPlan === p.key ||
-                  (isDowngrade && portalLoading)
-                }
+                disabled={isCurrent || isProcessing}
                 style={{
                   width: "100%",
                   padding: "0.5rem",
                   borderRadius: 7,
-                  border: isCurrent ? "none" : `1.5px solid ${t.ink20}`,
+                  border: isCurrent
+                    ? "none"
+                    : isDowngrade
+                    ? "1.5px solid " + (t.ink15 || t.ink20)
+                    : "1.5px solid " + t.ink20,
                   background: isCurrent ? t.accent : "none",
-                  color: isCurrent ? "white" : t.ink,
+                  color: isCurrent ? "white" : isDowngrade ? t.ink50 : t.ink,
                   fontFamily: "var(--body)",
                   fontSize: "0.8rem",
                   fontWeight: 600,
-                  cursor:
-                    isCurrent || (p.key === "free" && currentPlan === "free")
-                      ? "default"
-                      : "pointer",
-                  opacity: isCurrent
-                    ? 0.7
-                    : loadingPlan === p.key || (isDowngrade && portalLoading)
-                    ? 0.5
-                    : 1,
+                  cursor: isCurrent || isProcessing ? "default" : "pointer",
+                  opacity: isCurrent ? 0.7 : isProcessing ? 0.5 : 1,
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
@@ -724,18 +1184,16 @@ export default function BillingPage() {
               >
                 {isCurrent ? (
                   "Current plan"
+                ) : isProcessing ? (
+                  "Processing…"
                 ) : isDowngrade ? (
-                  portalLoading ? (
-                    "Redirecting\u2026"
-                  ) : (
-                    <>
-                      Downgrade via portal <ExternalLink size={12} />
-                    </>
-                  )
+                  <>
+                    <ArrowDownRight size={13} /> Downgrade
+                  </>
                 ) : p.key === "free" ? (
                   "Free"
                 ) : loadingPlan === p.key ? (
-                  "Redirecting\u2026"
+                  "Redirecting…"
                 ) : (
                   <>
                     <ArrowUpRight size={14} /> Upgrade
@@ -747,15 +1205,34 @@ export default function BillingPage() {
         })}
       </div>
 
-      {/* Downgrade blocked modal */}
+      {/* Downgrade blocked modal (too many sites) */}
       {downgradeBlock && (
-        <DowngradeModal
+        <DowngradeBlockedModal
           t={t}
           targetPlan={downgradeBlock.targetPlan}
           sitesUsed={downgradeBlock.sitesUsed}
           siteLimit={downgradeBlock.siteLimit}
           onClose={function () {
             setDowngradeBlock(null);
+          }}
+        />
+      )}
+
+      {/* Downgrade confirm modal (sites OK, confirm proration) */}
+      {downgradeConfirm && (
+        <DowngradeConfirmModal
+          t={t}
+          currentPlan={currentPlan}
+          targetPlan={downgradeConfirm.targetPlan}
+          previewData={downgradePreview}
+          loading={previewLoading}
+          confirming={confirming}
+          onConfirm={executeDowngrade}
+          onClose={function () {
+            if (!confirming) {
+              setDowngradeConfirm(null);
+              setDowngradePreview(null);
+            }
           }}
         />
       )}
