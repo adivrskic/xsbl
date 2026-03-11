@@ -4,7 +4,7 @@ import "./Footer.css";
 export default function Footer() {
   return (
     <footer className="footer">
-      <span>xsbl · Accessibility scanning, powered by AI.</span>
+      <span>xsbl - Accessibility scanning and automation, powered by AI.</span>
       <nav className="footer__links" aria-label="Footer navigation">
         {footerLinks.map(function (link) {
           return (
