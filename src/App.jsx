@@ -92,7 +92,7 @@ function PublicLayout({ children }) {
 }
 
 const PAGE_TITLES = {
-  "/": "xsbl — make your web accessible",
+  "/": "xsbl — Web Accessibility Scanner, Automation & WCAG 2.2 Compliance Tool",
   "/login": "Sign in — xsbl",
   "/signup": "Sign up — xsbl",
   "/reset-password": "Reset password — xsbl",
