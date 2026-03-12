@@ -143,6 +143,31 @@ export var PAGE_META = {
     description:
       "Complete guide to WCAG 2.2 success criteria. Learn what each criterion means, why it matters, common failures, and how to fix them.",
   },
+  "/changelog": {
+    title: "Changelog — xsbl",
+    description:
+      "New features, improvements, and fixes to xsbl. Track every update to the accessibility scanner.",
+  },
+  "/tools": {
+    title: "Free Accessibility Tools — xsbl",
+    description:
+      "Free browser-based accessibility tools: color contrast checker, heading structure analyzer, and alt text validator. No signup required.",
+  },
+  "/tools/contrast-checker": {
+    title: "Color Contrast Checker — WCAG 2.2 — xsbl",
+    description:
+      "Test any two colors against WCAG 2.2 AA and AAA contrast requirements. Free, instant, no signup. Check your text contrast ratio.",
+  },
+  "/tools/heading-checker": {
+    title: "Heading Structure Analyzer — WCAG 2.2 — xsbl",
+    description:
+      "Paste HTML to visualize your heading hierarchy. Detects skipped levels, missing H1s, and empty headings. Free accessibility tool.",
+  },
+  "/tools/alt-text-checker": {
+    title: "Alt Text Checker — WCAG 2.2 — xsbl",
+    description:
+      "Find images with missing, empty, or generic alt text. Paste HTML and get instant results. Free accessibility tool.",
+  },
   "/dashboard": {
     title: "Dashboard — xsbl",
     description:

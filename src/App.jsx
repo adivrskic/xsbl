@@ -46,6 +46,15 @@ import SecurityPage from "./pages/SecurityPage";
 import WcagIndexPage from "./pages/WcagIndexPage";
 import WcagCriterionPage from "./pages/WcagCriterionPage";
 
+// Changelog
+import ChangelogPage from "./pages/ChangelogPage";
+
+// Free tools
+import ToolsIndexPage from "./pages/ToolsIndexPage";
+import ContrastCheckerPage from "./pages/ContrastCheckerPage";
+import HeadingCheckerPage from "./pages/HeadingCheckerPage";
+import AltTextCheckerPage from "./pages/AltTextCheckerPage";
+
 // Dashboard
 import DashboardLayout from "./pages/dashboard/DashboardLayout";
 import OverviewPage from "./pages/dashboard/OverviewPage";
@@ -56,6 +65,7 @@ import BillingPage from "./pages/dashboard/BillingPage";
 import AuditLogPage from "./pages/dashboard/AuditLogPage";
 import EvidenceExportPage from "./pages/dashboard/EvidenceExportPage";
 import ElementTester from "./pages/dashboard/ElementTester";
+import DashboardToolsPage from "./pages/dashboard/DashboardToolsPage";
 import OnboardingPage from "./pages/dashboard/OnboardingPage";
 import NotFoundPage from "./pages/NotFoundPage";
 import ErrorBoundary, {
@@ -334,6 +344,46 @@ export default function App() {
                     </PublicLayout>
                   }
                 />
+                <Route
+                  path="/changelog"
+                  element={
+                    <PublicLayout>
+                      <ChangelogPage />
+                    </PublicLayout>
+                  }
+                />
+                <Route
+                  path="/tools"
+                  element={
+                    <PublicLayout>
+                      <ToolsIndexPage />
+                    </PublicLayout>
+                  }
+                />
+                <Route
+                  path="/tools/contrast-checker"
+                  element={
+                    <PublicLayout>
+                      <ContrastCheckerPage />
+                    </PublicLayout>
+                  }
+                />
+                <Route
+                  path="/tools/heading-checker"
+                  element={
+                    <PublicLayout>
+                      <HeadingCheckerPage />
+                    </PublicLayout>
+                  }
+                />
+                <Route
+                  path="/tools/alt-text-checker"
+                  element={
+                    <PublicLayout>
+                      <AltTextCheckerPage />
+                    </PublicLayout>
+                  }
+                />
 
                 <Route path="/status/:slug" element={<StatusPage />} />
                 <Route
@@ -364,6 +414,7 @@ export default function App() {
                   <Route path="sites" element={<SitesPage />} />
                   <Route path="sites/:id" element={<SiteDetailPage />} />
                   <Route path="tester" element={<ElementTester />} />
+                  <Route path="tools" element={<DashboardToolsPage />} />
                   <Route path="audit-log" element={<AuditLogPage />} />
                   <Route path="evidence" element={<EvidenceExportPage />} />
                   <Route path="settings" element={<SettingsPage />} />

@@ -265,6 +265,21 @@ export default function Hero() {
 
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
+        if (res.status === 429 || err.rate_limited) {
+          var retryMin = err.retry_after_ms
+            ? Math.ceil(err.retry_after_ms / 60000)
+            : 60;
+          throw new Error(
+            "You've used all " +
+              (err.limit || 5) +
+              " free scans this hour. " +
+              "Try again in " +
+              retryMin +
+              " minute" +
+              (retryMin !== 1 ? "s" : "") +
+              ", or sign up for unlimited scans."
+          );
+        }
         throw new Error(err.error || `Scan failed (${res.status})`);
       }
 
@@ -603,6 +618,19 @@ export default function Hero() {
           )}
         </div>
         {/* end aria-live region */}
+
+        {/* Trust badges */}
+        {!result && (
+          <FadeIn delay={0.26}>
+            <div className="hero__trust">
+              <span>No signup required</span>
+              <span className="hero__pipe" />
+              <span>WCAG 2.2 AA + AAA</span>
+              <span className="hero__pipe" />
+              <span>Auto GitHub PRs</span>
+            </div>
+          </FadeIn>
+        )}
       </div>
 
       <FadeIn delay={0.2}>

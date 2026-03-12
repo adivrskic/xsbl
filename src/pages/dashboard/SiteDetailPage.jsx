@@ -1843,6 +1843,9 @@ export default function SiteDetailPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [tab, setTab] = useState("overview");
 
+  // Handle ?action=scan from command palette
+  var pendingScanRef = useRef(false);
+
   // Set tab from ?tab= URL param (works on mount AND subsequent navigations)
   useEffect(
     function () {
@@ -1855,6 +1858,12 @@ export default function SiteDetailPage() {
         searchParams.delete("tab");
         setSearchParams(searchParams, { replace: true });
       }
+      var action = searchParams.get("action");
+      if (action === "scan") {
+        searchParams.delete("action");
+        setSearchParams(searchParams, { replace: true });
+        pendingScanRef.current = true;
+      }
     },
     [searchParams]
   );
@@ -1865,6 +1874,7 @@ export default function SiteDetailPage() {
   const [viewMode, setViewMode] = useState("grouped");
   const [groupBy, setGroupBy] = useState("rule");
   const [sortMode, setSortMode] = useState("severity");
+  const [showDiff, setShowDiff] = useState(false);
   const [showSimulator, setShowSimulator] = useState(false);
   const [expandedGroups, setExpandedGroups] = useState({});
   const [showScoreExplainer, setShowScoreExplainer] = useState(false);
@@ -1996,6 +2006,17 @@ export default function SiteDetailPage() {
     setScanning(false);
   };
 
+  // Fire pending scan from ?action=scan URL param
+  useEffect(
+    function () {
+      if (pendingScanRef.current && site && !scanning && !loading) {
+        pendingScanRef.current = false;
+        handleScan();
+      }
+    },
+    [site, loading]
+  );
+
   const handleIssueUpdate = (updatedIssue) => {
     setIssues((prev) =>
       prev.map((i) => (i.id === updatedIssue.id ? updatedIssue : i))
@@ -2078,6 +2099,55 @@ export default function SiteDetailPage() {
   };
 
   // Apply filters
+  // ── Scan diff: identify issues new in the latest scan ──
+  var newIssueIds = new Set();
+  var completedScans = scans.filter(function (s) {
+    return s.status === "complete";
+  });
+  if (completedScans.length >= 2) {
+    var latestScanId = completedScans[0].id;
+    var prevScanId = completedScans[1].id;
+
+    // Build fingerprint set from previous scan's issues
+    var prevFingerprints = new Set();
+    for (var pi = 0; pi < issues.length; pi++) {
+      if (issues[pi].scan_id === prevScanId) {
+        prevFingerprints.add(
+          (issues[pi].rule_id || "") +
+            "||" +
+            (issues[pi].page_url || "") +
+            "||" +
+            (issues[pi].element_selector || "")
+        );
+      }
+    }
+
+    // Issues in the latest scan that have no match in previous scan = new
+    for (var ni = 0; ni < issues.length; ni++) {
+      if (issues[ni].scan_id === latestScanId) {
+        var fp =
+          (issues[ni].rule_id || "") +
+          "||" +
+          (issues[ni].page_url || "") +
+          "||" +
+          (issues[ni].element_selector || "");
+        if (!prevFingerprints.has(fp)) {
+          newIssueIds.add(issues[ni].id);
+        }
+      }
+    }
+  } else if (completedScans.length === 1) {
+    // First scan ever — all issues are "new"
+    var firstScanId = completedScans[0].id;
+    for (var fi = 0; fi < issues.length; fi++) {
+      if (issues[fi].scan_id === firstScanId) {
+        newIssueIds.add(issues[fi].id);
+      }
+    }
+  }
+
+  var newIssueCount = newIssueIds.size;
+
   const filteredIssues = issues.filter((issue) => {
     if (filters.impact?.length && !filters.impact.includes(issue.impact))
       return false;
@@ -2172,6 +2242,11 @@ export default function SiteDetailPage() {
         return !!i.fix_suggestion;
       }
     ).length;
+    groupedIssues[gk].newCount = groupedIssues[gk].instances.filter(function (
+      i
+    ) {
+      return newIssueIds.has(i.id);
+    }).length;
   }
 
   // In quick-wins mode, re-sort groups: fully fixable groups first, then by severity
@@ -3679,6 +3754,46 @@ export default function SiteDetailPage() {
                 })}
               </div>
 
+              {/* Scan diff toggle */}
+              {completedScans.length >= 2 && newIssueCount > 0 && (
+                <button
+                  onClick={function () {
+                    setShowDiff(function (v) {
+                      return !v;
+                    });
+                  }}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "0.3rem",
+                    padding: "0.25rem 0.6rem",
+                    borderRadius: 5,
+                    border: showDiff
+                      ? "1.5px solid " + t.green
+                      : "1.5px solid " + t.ink08,
+                    background: showDiff ? t.green + "10" : "transparent",
+                    color: showDiff ? t.green : t.ink50,
+                    fontFamily: "var(--mono)",
+                    fontSize: "0.6rem",
+                    fontWeight: 600,
+                    cursor: "pointer",
+                    transition: "all 0.15s",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  <span
+                    style={{
+                      width: 6,
+                      height: 6,
+                      borderRadius: "50%",
+                      background: showDiff ? t.green : t.ink50,
+                      flexShrink: 0,
+                    }}
+                  />
+                  {newIssueCount} new
+                </button>
+              )}
+
               {sortedIssues.length > 0 && (
                 <button
                   onClick={function () {
@@ -4025,6 +4140,25 @@ export default function SiteDetailPage() {
                               total={group.count}
                             />
                           )}
+                          {showDiff && group.newCount > 0 && (
+                            <span
+                              style={{
+                                fontFamily: "var(--mono)",
+                                fontSize: "0.5rem",
+                                fontWeight: 700,
+                                padding: "0.08rem 0.35rem",
+                                borderRadius: 3,
+                                background: t.green + "15",
+                                color: t.green,
+                                letterSpacing: "0.04em",
+                                flexShrink: 0,
+                              }}
+                            >
+                              {group.newCount === group.count
+                                ? "ALL NEW"
+                                : group.newCount + " NEW"}
+                            </span>
+                          )}
                           <span
                             style={{
                               fontFamily: "var(--mono)",
@@ -4253,6 +4387,23 @@ export default function SiteDetailPage() {
                                   {inst.status}
                                 </span>
                               )}
+                              {showDiff && newIssueIds.has(inst.id) && (
+                                <span
+                                  style={{
+                                    fontFamily: "var(--mono)",
+                                    fontSize: "0.48rem",
+                                    fontWeight: 700,
+                                    padding: "0.05rem 0.3rem",
+                                    borderRadius: 3,
+                                    background: t.green + "15",
+                                    color: t.green,
+                                    letterSpacing: "0.04em",
+                                    flexShrink: 0,
+                                  }}
+                                >
+                                  NEW
+                                </span>
+                              )}
                             </div>
                           );
                         })}
@@ -4371,6 +4522,23 @@ export default function SiteDetailPage() {
                             issue.fix_suggestion && (
                               <FixBadge count={1} total={1} />
                             )}
+                          {showDiff && newIssueIds.has(issue.id) && (
+                            <span
+                              style={{
+                                fontFamily: "var(--mono)",
+                                fontSize: "0.48rem",
+                                fontWeight: 700,
+                                padding: "0.05rem 0.3rem",
+                                borderRadius: 3,
+                                background: t.green + "15",
+                                color: t.green,
+                                letterSpacing: "0.04em",
+                                flexShrink: 0,
+                              }}
+                            >
+                              NEW
+                            </span>
+                          )}
                           <span
                             style={{
                               fontFamily: "var(--mono)",

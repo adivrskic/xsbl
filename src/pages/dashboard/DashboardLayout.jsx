@@ -25,6 +25,7 @@ import {
   Shield,
   Package,
   Code,
+  Wrench,
 } from "lucide-react";
 import XsblBull from "../../components/landing/XsblBull";
 import HelpSearch from "../../components/ui/HelpSearch";
@@ -37,6 +38,7 @@ const navItems = [
   { label: "Overview", path: "/dashboard", icon: LayoutDashboard, end: true },
   { label: "Sites", path: "/dashboard/sites", icon: Globe },
   { label: "Element Tester", path: "/dashboard/tester", icon: Code },
+  { label: "Tools", path: "/dashboard/tools", icon: Wrench },
   {
     label: "Audit Log",
     path: "/dashboard/audit-log",
@@ -85,7 +87,6 @@ function FeedbackModal({ onClose, t, user }) {
         page_url: window.location.href,
       });
 
-      /* Also email the feedback to the team inbox */
       var supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
       if (supabaseUrl) {
         fetch(supabaseUrl + "/functions/v1/contact", {
@@ -135,7 +136,6 @@ function FeedbackModal({ onClose, t, user }) {
           overflow: "hidden",
         }}
       >
-        {/* Header */}
         <div
           style={{
             padding: "1rem 1.2rem",
@@ -205,7 +205,6 @@ function FeedbackModal({ onClose, t, user }) {
           </div>
         ) : (
           <div style={{ padding: "1.2rem" }}>
-            {/* Type selector */}
             <div
               style={{ display: "flex", gap: "0.3rem", marginBottom: "0.8rem" }}
             >
@@ -258,7 +257,6 @@ function FeedbackModal({ onClose, t, user }) {
               })}
             </div>
 
-            {/* Message */}
             <textarea
               value={message}
               onChange={function (e) {
@@ -288,7 +286,6 @@ function FeedbackModal({ onClose, t, user }) {
               }}
             />
 
-            {/* Submit */}
             <div
               style={{
                 display: "flex",
@@ -341,8 +338,6 @@ export default function DashboardLayout() {
   };
 
   // ── Global dashboard keyboard shortcuts ──
-  // Page-level shortcuts (e.g. SiteDetailPage) add their own via useKeyboardShortcuts.
-  // These globals are intentionally minimal to avoid conflicts.
   var globalShortcuts = [
     {
       key: "?",
@@ -535,10 +530,8 @@ export default function DashboardLayout() {
 
         {/* User footer with links + feedback */}
         <div style={{ padding: "0.6rem", borderTop: `1px solid ${t.ink08}` }}>
-          {/* Help search */}
           <HelpSearch />
 
-          {/* Quick links */}
           <div
             style={{
               display: "flex",
@@ -618,7 +611,6 @@ export default function DashboardLayout() {
             </button>
           </div>
 
-          {/* Feedback button */}
           <button
             onClick={function () {
               setShowFeedback(true);
@@ -655,7 +647,6 @@ export default function DashboardLayout() {
             Send feedback
           </button>
 
-          {/* User email */}
           <div
             style={{
               fontSize: "0.68rem",
@@ -674,7 +665,6 @@ export default function DashboardLayout() {
 
       {/* Main content */}
       <main id="main-content" style={{ flex: 1, marginLeft: SW, minWidth: 0 }}>
-        {/* Mobile top bar */}
         <div
           className="xsbl-mobile-bar"
           style={{
@@ -743,6 +733,16 @@ export default function DashboardLayout() {
           }}
           t={t}
           user={user}
+        />
+      )}
+
+      {/* Global keyboard shortcut help overlay */}
+      {showShortcutHelp && (
+        <ShortcutHelpOverlay
+          shortcuts={globalShortcuts}
+          onClose={function () {
+            setShowShortcutHelp(false);
+          }}
         />
       )}
 
