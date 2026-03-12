@@ -42,6 +42,10 @@ import PrivacyPage from "./pages/PrivacyPage";
 import TermsPage from "./pages/TermsPage";
 import SecurityPage from "./pages/SecurityPage";
 
+// WCAG Reference
+import WcagIndexPage from "./pages/WcagIndexPage";
+import WcagCriterionPage from "./pages/WcagCriterionPage";
+
 // Dashboard
 import DashboardLayout from "./pages/dashboard/DashboardLayout";
 import OverviewPage from "./pages/dashboard/OverviewPage";
@@ -59,6 +63,7 @@ import ErrorBoundary, {
 } from "./components/ui/ErrorBoundary";
 import useDocumentMeta, { PAGE_META } from "./hooks/useDocumentMeta";
 import { blogArticles } from "./data/blogArticles";
+import { getCriterionBySlug } from "./data/wcagCriteria";
 
 function LandingPage() {
   const { org } = useAuth();
@@ -140,6 +145,22 @@ function PageMeta() {
         description:
           "Public accessibility status page showing WCAG compliance score and issue breakdown.",
       };
+    } else if (path.startsWith("/wcag/")) {
+      var wcagSlug = path.replace("/wcag/", "");
+      var criterion = getCriterionBySlug(wcagSlug);
+      if (criterion) {
+        meta = {
+          title: "WCAG " + criterion.id + ": " + criterion.title + " — xsbl",
+          description:
+            criterion.description +
+            " Learn why it matters, common failures, and how to fix them.",
+        };
+      } else {
+        meta = {
+          title: "WCAG 2.2 Reference — xsbl",
+          description: "Complete guide to WCAG 2.2 success criteria.",
+        };
+      }
     } else if (path.startsWith("/client-dashboard/")) {
       meta = {
         title: "Client dashboard — xsbl",
@@ -294,6 +315,22 @@ export default function App() {
                   element={
                     <PublicLayout>
                       <SecurityPage />
+                    </PublicLayout>
+                  }
+                />
+                <Route
+                  path="/wcag"
+                  element={
+                    <PublicLayout>
+                      <WcagIndexPage />
+                    </PublicLayout>
+                  }
+                />
+                <Route
+                  path="/wcag/:slug"
+                  element={
+                    <PublicLayout>
+                      <WcagCriterionPage />
                     </PublicLayout>
                   }
                 />

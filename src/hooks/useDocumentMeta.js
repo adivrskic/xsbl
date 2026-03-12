@@ -138,6 +138,11 @@ export var PAGE_META = {
     description:
       "How xsbl protects your data. Encryption, infrastructure, access controls, responsible disclosure, and incident response.",
   },
+  "/wcag": {
+    title: "WCAG 2.2 Success Criteria Reference — xsbl",
+    description:
+      "Complete guide to WCAG 2.2 success criteria. Learn what each criterion means, why it matters, common failures, and how to fix them.",
+  },
   "/dashboard": {
     title: "Dashboard — xsbl",
     description:

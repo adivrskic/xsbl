@@ -29,6 +29,7 @@ import {
   HelpCircle,
   X,
   Lightbulb,
+  FileText,
 } from "lucide-react";
 import IssueDetailModal from "../../components/dashboard/IssueDetailModal";
 import ScoreChart from "../../components/dashboard/ScoreChart";
@@ -43,6 +44,7 @@ import ScanProfileEditor from "../../components/dashboard/ScanProfileEditor";
 import PlanGate from "../../components/ui/PlanGate";
 import CIWorkflowPanel from "../../components/dashboard/CIWorkflowPanel";
 import ScanCompare from "../../components/dashboard/ScanCompare";
+import AccessibilityStatementGenerator from "../../components/dashboard/AccessibilityStatementGenerator";
 import { timeAgo, fullDate } from "../../lib/timeAgo";
 
 /* ── GitHub icon (no lucide brand icons) ── */
@@ -972,6 +974,153 @@ function BadgeEmbedPanel({ site }) {
   );
 }
 
+/* ── Ignore Rules Panel ── */
+function IgnoreRulesPanel({ site, onUpdate }) {
+  var { t } = useTheme();
+  var rules = site.ignore_rules || [];
+  var [removing, setRemoving] = useState(null);
+
+  var handleRemove = async function (index) {
+    setRemoving(index);
+    var updated = rules.filter(function (_, i) {
+      return i !== index;
+    });
+    var { data } = await supabase
+      .from("sites")
+      .update({ ignore_rules: updated })
+      .eq("id", site.id)
+      .select()
+      .single();
+    if (data) onUpdate(data);
+    setRemoving(null);
+  };
+
+  if (rules.length === 0) return null;
+
+  return (
+    <div
+      style={{
+        padding: "1.2rem",
+        borderRadius: 12,
+        border: "1px solid " + t.ink08,
+        background: t.cardBg,
+        marginBottom: "1rem",
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: "0.4rem",
+          marginBottom: "0.5rem",
+        }}
+      >
+        <EyeOff size={15} color={t.amber} strokeWidth={2} />
+        <h3
+          style={{
+            fontSize: "0.92rem",
+            fontWeight: 600,
+            color: t.ink,
+            margin: 0,
+          }}
+        >
+          Ignore rules
+        </h3>
+        <span
+          style={{
+            fontFamily: "var(--mono)",
+            fontSize: "0.58rem",
+            fontWeight: 700,
+            padding: "0.1rem 0.35rem",
+            borderRadius: 4,
+            background: t.amber + "15",
+            color: t.amber,
+          }}
+        >
+          {rules.length}
+        </span>
+      </div>
+      <p
+        style={{
+          fontSize: "0.74rem",
+          color: t.ink50,
+          margin: "0 0 0.6rem",
+          lineHeight: 1.5,
+        }}
+      >
+        These rules are auto-ignored on new scans. Issues matching these
+        patterns won't appear as open.
+      </p>
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: "0.3rem",
+        }}
+      >
+        {rules.map(function (rule, i) {
+          return (
+            <div
+              key={i}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "0.5rem",
+                padding: "0.5rem 0.7rem",
+                borderRadius: 7,
+                border: "1px solid " + t.ink08,
+                background: t.paper,
+              }}
+            >
+              <span
+                style={{
+                  fontFamily: "var(--mono)",
+                  fontSize: "0.72rem",
+                  fontWeight: 600,
+                  color: t.accent,
+                }}
+              >
+                {rule.rule_id}
+              </span>
+              <span
+                style={{
+                  flex: 1,
+                  fontSize: "0.74rem",
+                  color: t.ink50,
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {rule.description || ""}
+              </span>
+              <button
+                onClick={function () {
+                  handleRemove(i);
+                }}
+                disabled={removing === i}
+                aria-label={"Remove ignore rule for " + rule.rule_id}
+                style={{
+                  padding: "0.2rem",
+                  borderRadius: 4,
+                  border: "none",
+                  background: "none",
+                  color: t.ink50,
+                  cursor: "pointer",
+                  display: "flex",
+                  opacity: removing === i ? 0.3 : 1,
+                }}
+              >
+                <X size={13} />
+              </button>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 /* ── Danger Zone — working delete ── */
 function DangerZonePanel({ site }) {
   const { t } = useTheme();
@@ -1722,6 +1871,8 @@ export default function SiteDetailPage() {
   const [showShortcutHelp, setShowShortcutHelp] = useState(false);
   const [showCompare, setShowCompare] = useState(false);
   const [scoreCopied, setScoreCopied] = useState(false);
+  const [showStatement, setShowStatement] = useState(false);
+  const [scanJustCompleted, setScanJustCompleted] = useState(null);
 
   // Module-level cache for site detail data
   const cacheRef = useRef({ id: null, site: null, scans: null, issues: null });
@@ -1793,6 +1944,12 @@ export default function SiteDetailPage() {
           } else if (scan.status === "complete") {
             setScanProgress(null);
             setScanning(false);
+            setScanJustCompleted({
+              score: scan.score,
+              pages: scan.pages_scanned,
+              issues: scan.issues_found,
+              time: Date.now(),
+            });
             loadData(true); // Force reload everything
           } else if (scan.status === "failed") {
             setScanProgress(null);
@@ -1821,8 +1978,17 @@ export default function SiteDetailPage() {
         headers: { Authorization: `Bearer ${session?.access_token}` },
       });
       if (res.error) throw new Error(res.error.message || "Scan failed");
+      var scanData = res.data;
       await loadData(true);
       setScanProgress(null);
+      if (scanData && !scanJustCompleted) {
+        setScanJustCompleted({
+          score: scanData.score,
+          pages: scanData.pages_scanned,
+          issues: scanData.issues_found,
+          time: Date.now(),
+        });
+      }
     } catch (err) {
       setScanError(err.message);
       setScanProgress(null);
@@ -1839,6 +2005,76 @@ export default function SiteDetailPage() {
   const handleFilterByPage = (pageUrl) => {
     setFilters((prev) => ({ ...prev, page: [pageUrl] }));
     setTab("issues");
+  };
+
+  var handleAddIgnoreRule = async function (rule) {
+    if (!site) return;
+    var existing = site.ignore_rules || [];
+    // Check for duplicate
+    var isDuplicate = existing.some(function (r) {
+      return (
+        r.rule_id === rule.rule_id &&
+        (!rule.selector || r.selector === rule.selector)
+      );
+    });
+    if (isDuplicate) return;
+
+    var updated = existing.concat([
+      {
+        rule_id: rule.rule_id,
+        description: rule.description,
+        selector: rule.selector || null,
+        created_at: new Date().toISOString(),
+      },
+    ]);
+
+    var { data } = await supabase
+      .from("sites")
+      .update({ ignore_rules: updated })
+      .eq("id", site.id)
+      .select()
+      .single();
+    if (data) setSite(data);
+
+    // Bulk-mark matching open issues as ignored
+    var matchingIds = issues
+      .filter(function (i) {
+        return i.status === "open" && i.rule_id === rule.rule_id;
+      })
+      .map(function (i) {
+        return i.id;
+      });
+
+    if (matchingIds.length > 0) {
+      await supabase
+        .from("issues")
+        .update({ status: "ignored" })
+        .in("id", matchingIds);
+
+      setIssues(function (prev) {
+        return prev.map(function (i) {
+          if (matchingIds.indexOf(i.id) !== -1) {
+            return Object.assign({}, i, { status: "ignored" });
+          }
+          return i;
+        });
+      });
+    }
+
+    setSelectedIssue(null);
+
+    logAudit({
+      action: "settings.updated",
+      resourceType: "site",
+      resourceId: site.id,
+      description:
+        "Ignore rule added: " +
+        rule.rule_id +
+        " (" +
+        matchingIds.length +
+        " issues auto-ignored)",
+      metadata: { rule_id: rule.rule_id, issues_ignored: matchingIds.length },
+    });
   };
 
   // Apply filters
@@ -2740,6 +2976,38 @@ export default function SiteDetailPage() {
                       </button>
                     </PlanGate>
                   )}
+                  {site.score != null && (
+                    <button
+                      onClick={function () {
+                        setShowStatement(true);
+                      }}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "0.4rem",
+                        padding: "0.5rem 1rem",
+                        borderRadius: 7,
+                        border: "1.5px solid " + t.ink20,
+                        background: "transparent",
+                        color: t.ink50,
+                        fontFamily: "var(--body)",
+                        fontSize: "0.82rem",
+                        fontWeight: 500,
+                        cursor: "pointer",
+                        transition: "all 0.15s",
+                      }}
+                      onMouseEnter={function (e) {
+                        e.currentTarget.style.borderColor = t.ink50;
+                        e.currentTarget.style.color = t.ink;
+                      }}
+                      onMouseLeave={function (e) {
+                        e.currentTarget.style.borderColor = t.ink20;
+                        e.currentTarget.style.color = t.ink50;
+                      }}
+                    >
+                      <FileText size={14} strokeWidth={2} /> Statement
+                    </button>
+                  )}
                 </div>
               </div>
 
@@ -2898,6 +3166,170 @@ export default function SiteDetailPage() {
                 )}
               </div>
               {/* end aria-live */}
+            </div>
+          )}
+
+          {/* Scan just completed — quick actions */}
+          {scanJustCompleted && (
+            <div
+              style={{
+                marginBottom: "1rem",
+                padding: "0.9rem 1.1rem",
+                borderRadius: 10,
+                border: "1px solid " + t.green + "25",
+                background: t.greenBg || t.green + "06",
+                display: "flex",
+                alignItems: "center",
+                gap: "0.8rem",
+                flexWrap: "wrap",
+              }}
+            >
+              <Check
+                size={16}
+                color={t.green}
+                strokeWidth={2.5}
+                style={{ flexShrink: 0 }}
+              />
+              <div style={{ flex: 1, minWidth: 120 }}>
+                <div
+                  style={{
+                    fontSize: "0.84rem",
+                    fontWeight: 600,
+                    color: t.green,
+                  }}
+                >
+                  Scan complete
+                </div>
+                <div
+                  style={{
+                    fontFamily: "var(--mono)",
+                    fontSize: "0.66rem",
+                    color: t.ink50,
+                    marginTop: "0.1rem",
+                  }}
+                >
+                  {scanJustCompleted.pages &&
+                    scanJustCompleted.pages +
+                      " page" +
+                      (scanJustCompleted.pages !== 1 ? "s" : "") +
+                      " · "}
+                  {scanJustCompleted.issues != null &&
+                    scanJustCompleted.issues +
+                      " issue" +
+                      (scanJustCompleted.issues !== 1 ? "s" : "")}
+                  {scanJustCompleted.score != null &&
+                    " · score " + Math.round(scanJustCompleted.score)}
+                </div>
+              </div>
+              <div
+                style={{ display: "flex", gap: "0.35rem", flexWrap: "wrap" }}
+              >
+                {scanJustCompleted.issues > 0 && (
+                  <button
+                    onClick={function () {
+                      setTab("issues");
+                      setScanJustCompleted(null);
+                    }}
+                    style={{
+                      padding: "0.35rem 0.7rem",
+                      borderRadius: 6,
+                      border: "none",
+                      background: t.accent,
+                      color: "white",
+                      fontFamily: "var(--body)",
+                      fontSize: "0.74rem",
+                      fontWeight: 600,
+                      cursor: "pointer",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    View issues
+                  </button>
+                )}
+                {scans.length >= 2 && (
+                  <button
+                    onClick={function () {
+                      setShowCompare(true);
+                      setScanJustCompleted(null);
+                    }}
+                    style={{
+                      padding: "0.35rem 0.7rem",
+                      borderRadius: 6,
+                      border: "1.5px solid " + t.ink20,
+                      background: "none",
+                      color: t.ink50,
+                      fontFamily: "var(--body)",
+                      fontSize: "0.74rem",
+                      fontWeight: 500,
+                      cursor: "pointer",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    Compare
+                  </button>
+                )}
+                {!site.scan_schedule || site.scan_schedule === "manual" ? (
+                  <button
+                    onClick={function () {
+                      setTab("settings");
+                      setScanJustCompleted(null);
+                    }}
+                    style={{
+                      padding: "0.35rem 0.7rem",
+                      borderRadius: 6,
+                      border: "1.5px solid " + t.ink20,
+                      background: "none",
+                      color: t.ink50,
+                      fontFamily: "var(--body)",
+                      fontSize: "0.74rem",
+                      fontWeight: 500,
+                      cursor: "pointer",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    Schedule scans
+                  </button>
+                ) : null}
+                {site.score != null && (
+                  <button
+                    onClick={function () {
+                      setShowStatement(true);
+                      setScanJustCompleted(null);
+                    }}
+                    style={{
+                      padding: "0.35rem 0.7rem",
+                      borderRadius: 6,
+                      border: "1.5px solid " + t.ink20,
+                      background: "none",
+                      color: t.ink50,
+                      fontFamily: "var(--body)",
+                      fontSize: "0.74rem",
+                      fontWeight: 500,
+                      cursor: "pointer",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    Statement
+                  </button>
+                )}
+                <button
+                  onClick={function () {
+                    setScanJustCompleted(null);
+                  }}
+                  aria-label="Dismiss"
+                  style={{
+                    padding: "0.2rem",
+                    borderRadius: 4,
+                    border: "none",
+                    background: "none",
+                    color: t.ink50,
+                    cursor: "pointer",
+                    display: "flex",
+                  }}
+                >
+                  <X size={14} />
+                </button>
+              </div>
             </div>
           )}
 
@@ -4242,6 +4674,14 @@ export default function SiteDetailPage() {
           {/* Badge Embed — free for all plans (branding vehicle) */}
           <BadgeEmbedPanel site={site} />
 
+          {/* Ignore Rules */}
+          <IgnoreRulesPanel
+            site={site}
+            onUpdate={function (s) {
+              setSite(s);
+            }}
+          />
+
           {/* Danger zone */}
           <DangerZonePanel site={site} />
         </div>
@@ -4255,6 +4695,7 @@ export default function SiteDetailPage() {
           onClose={() => setSelectedIssue(null)}
           onUpdate={handleIssueUpdate}
           readOnly={isClient}
+          onIgnoreRule={!isClient ? handleAddIgnoreRule : undefined}
         />
       )}
 
@@ -4299,6 +4740,18 @@ export default function SiteDetailPage() {
           issues={issues}
           onClose={function () {
             setShowCompare(false);
+          }}
+        />
+      )}
+
+      {/* Accessibility statement generator */}
+      {showStatement && (
+        <AccessibilityStatementGenerator
+          site={site}
+          issues={issues}
+          scans={scans}
+          onClose={function () {
+            setShowStatement(false);
           }}
         />
       )}

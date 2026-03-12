@@ -10,12 +10,16 @@ import {
   ExternalLink,
   Eye,
   EyeOff,
+  MessageSquare,
+  Send,
+  Trash2,
 } from "lucide-react";
 import CreatePRButton from "./CreatePRButton";
 import AltTextGenerator from "./AltTextGenerator";
 import PlanGate from "../ui/PlanGate";
 import { useAuth } from "../../context/AuthContext";
 import { logAudit } from "../../lib/audit";
+import { timeAgo } from "../../lib/timeAgo";
 import "../../styles/dashboard.css";
 import "../../styles/dashboard-modals.css";
 
@@ -173,9 +177,10 @@ export default function IssueDetailModal({
   onClose,
   onUpdate,
   readOnly,
+  onIgnoreRule,
 }) {
   const { t } = useTheme();
-  const { org, session } = useAuth();
+  const { org, session, user } = useAuth();
   var plan = org?.plan || "free";
   const [copied, setCopied] = useState(false);
   const [aiFix, setAiFix] = useState(null);
@@ -190,6 +195,13 @@ export default function IssueDetailModal({
   const notesTimeout = useRef(null);
   const dialogRef = useRef(null);
   const previousFocus = useRef(null);
+
+  // Comments
+  const [comments, setComments] = useState([]);
+  const [commentsLoading, setCommentsLoading] = useState(true);
+  const [newComment, setNewComment] = useState("");
+  const [commentSending, setCommentSending] = useState(false);
+  const [deletingComment, setDeletingComment] = useState(null);
 
   useEffect(() => {
     previousFocus.current = document.activeElement;
@@ -225,6 +237,57 @@ export default function IssueDetailModal({
       if (previousFocus.current) previousFocus.current.focus();
     };
   }, [onClose]);
+
+  // Load comments
+  useEffect(
+    function () {
+      if (!issue.id) return;
+      setCommentsLoading(true);
+      supabase
+        .from("issue_comments")
+        .select("id, body, created_at, user_id, profiles(email, full_name)")
+        .eq("issue_id", issue.id)
+        .order("created_at", { ascending: true })
+        .then(function (res) {
+          setComments(res.data || []);
+          setCommentsLoading(false);
+        });
+    },
+    [issue.id]
+  );
+
+  var handlePostComment = async function () {
+    var text = newComment.trim();
+    if (!text || commentSending) return;
+    setCommentSending(true);
+    var { data, error } = await supabase
+      .from("issue_comments")
+      .insert({
+        issue_id: issue.id,
+        user_id: user.id,
+        body: text,
+      })
+      .select("id, body, created_at, user_id, profiles(email, full_name)")
+      .single();
+    if (data) {
+      setComments(function (prev) {
+        return prev.concat([data]);
+      });
+      setNewComment("");
+    }
+    setCommentSending(false);
+  };
+
+  var handleDeleteComment = async function (commentId) {
+    setDeletingComment(commentId);
+    await supabase.from("issue_comments").delete().eq("id", commentId);
+    setComments(function (prev) {
+      return prev.filter(function (c) {
+        return c.id !== commentId;
+      });
+    });
+    setDeletingComment(null);
+  };
 
   const handleCopy = (text) => {
     navigator.clipboard.writeText(text);
@@ -887,6 +950,48 @@ export default function IssueDetailModal({
             )}
           </div>
 
+          {/* Ignore rule — creates a site-wide ignore pattern for this rule */}
+          {!readOnly && onIgnoreRule && issue.rule_id && (
+            <div style={{ marginTop: "0.8rem" }}>
+              <button
+                onClick={function () {
+                  onIgnoreRule({
+                    rule_id: issue.rule_id,
+                    description: issue.description || issue.rule_id,
+                    selector: null,
+                    reason: "",
+                  });
+                }}
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "0.35rem",
+                  padding: "0.35rem 0.7rem",
+                  borderRadius: 6,
+                  border: "1.5px dashed " + t.ink08,
+                  background: "none",
+                  color: t.ink50,
+                  fontFamily: "var(--body)",
+                  fontSize: "0.72rem",
+                  fontWeight: 500,
+                  cursor: "pointer",
+                  transition: "all 0.15s",
+                }}
+                onMouseEnter={function (e) {
+                  e.currentTarget.style.borderColor = t.amber;
+                  e.currentTarget.style.color = t.amber;
+                }}
+                onMouseLeave={function (e) {
+                  e.currentTarget.style.borderColor = t.ink08;
+                  e.currentTarget.style.color = t.ink50;
+                }}
+              >
+                <EyeOff size={12} strokeWidth={2} />
+                Ignore all "{issue.rule_id}" issues on this site
+              </button>
+            </div>
+          )}
+
           {/* Auditor notes */}
           {!readOnly && (
             <div style={{ marginTop: "1.2rem" }}>
@@ -1012,6 +1117,289 @@ export default function IssueDetailModal({
               </div>
             </div>
           )}
+
+          {/* Team comments */}
+          <div style={{ marginTop: "1.4rem" }}>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "0.4rem",
+                marginBottom: "0.5rem",
+              }}
+            >
+              <MessageSquare size={13} color={t.ink50} strokeWidth={2} />
+              <div
+                style={{
+                  fontFamily: "var(--mono)",
+                  fontSize: "0.62rem",
+                  color: t.ink50,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.06em",
+                }}
+              >
+                Team comments
+              </div>
+              {comments.length > 0 && (
+                <span
+                  style={{
+                    fontFamily: "var(--mono)",
+                    fontSize: "0.55rem",
+                    fontWeight: 700,
+                    padding: "0.05rem 0.3rem",
+                    borderRadius: 4,
+                    background: t.accent + "12",
+                    color: t.accent,
+                  }}
+                >
+                  {comments.length}
+                </span>
+              )}
+            </div>
+
+            {/* Comments list */}
+            {commentsLoading ? (
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "0.4rem",
+                }}
+              >
+                {[1, 2].map(function (i) {
+                  return (
+                    <div
+                      key={i}
+                      style={{
+                        padding: "0.5rem 0.7rem",
+                        borderRadius: 7,
+                        border: "1px solid " + t.ink08,
+                      }}
+                    >
+                      <div
+                        className="skeleton"
+                        style={{
+                          width: "30%",
+                          height: 8,
+                          marginBottom: "0.3rem",
+                        }}
+                      />
+                      <div
+                        className="skeleton"
+                        style={{ width: "70%", height: 10 }}
+                      />
+                    </div>
+                  );
+                })}
+              </div>
+            ) : comments.length > 0 ? (
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "0.3rem",
+                  marginBottom: "0.6rem",
+                }}
+              >
+                {comments.map(function (comment) {
+                  var profile = comment.profiles || {};
+                  var displayName =
+                    profile.full_name ||
+                    (profile.email
+                      ? profile.email.split("@")[0]
+                      : "Team member");
+                  var isOwn = user && comment.user_id === user.id;
+
+                  return (
+                    <div
+                      key={comment.id}
+                      style={{
+                        padding: "0.5rem 0.7rem",
+                        borderRadius: 7,
+                        border: "1px solid " + t.ink08,
+                        background: isOwn ? t.accentBg : t.paper,
+                      }}
+                    >
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "0.35rem",
+                          marginBottom: "0.25rem",
+                        }}
+                      >
+                        <div
+                          style={{
+                            width: 18,
+                            height: 18,
+                            borderRadius: "50%",
+                            background: isOwn ? t.accent + "20" : t.ink08,
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            fontFamily: "var(--mono)",
+                            fontSize: "0.5rem",
+                            fontWeight: 700,
+                            color: isOwn ? t.accent : t.ink50,
+                            flexShrink: 0,
+                          }}
+                        >
+                          {(displayName[0] || "?").toUpperCase()}
+                        </div>
+                        <span
+                          style={{
+                            fontFamily: "var(--body)",
+                            fontSize: "0.7rem",
+                            fontWeight: 600,
+                            color: t.ink,
+                          }}
+                        >
+                          {displayName}
+                        </span>
+                        <span
+                          style={{
+                            fontFamily: "var(--mono)",
+                            fontSize: "0.55rem",
+                            color: t.ink50,
+                            marginLeft: "auto",
+                          }}
+                        >
+                          {timeAgo(comment.created_at)}
+                        </span>
+                        {isOwn && (
+                          <button
+                            onClick={function () {
+                              handleDeleteComment(comment.id);
+                            }}
+                            disabled={deletingComment === comment.id}
+                            aria-label="Delete comment"
+                            style={{
+                              padding: "0.15rem",
+                              borderRadius: 3,
+                              border: "none",
+                              background: "none",
+                              color: t.ink50,
+                              cursor: "pointer",
+                              display: "flex",
+                              opacity:
+                                deletingComment === comment.id ? 0.3 : 0.5,
+                              transition: "opacity 0.15s",
+                            }}
+                            onMouseEnter={function (e) {
+                              e.currentTarget.style.opacity = "1";
+                              e.currentTarget.style.color = t.red;
+                            }}
+                            onMouseLeave={function (e) {
+                              e.currentTarget.style.opacity = "0.5";
+                              e.currentTarget.style.color = t.ink50;
+                            }}
+                          >
+                            <Trash2 size={11} />
+                          </button>
+                        )}
+                      </div>
+                      <div
+                        style={{
+                          fontSize: "0.78rem",
+                          color: t.ink,
+                          lineHeight: 1.6,
+                          whiteSpace: "pre-wrap",
+                          wordBreak: "break-word",
+                        }}
+                      >
+                        {comment.body}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <p
+                style={{
+                  fontSize: "0.72rem",
+                  color: t.ink50,
+                  margin: "0 0 0.6rem",
+                  fontStyle: "italic",
+                }}
+              >
+                No comments yet. Add context for your team.
+              </p>
+            )}
+
+            {/* New comment input */}
+            {!readOnly && (
+              <div
+                style={{
+                  display: "flex",
+                  gap: "0.35rem",
+                  alignItems: "flex-end",
+                }}
+              >
+                <textarea
+                  value={newComment}
+                  onChange={function (e) {
+                    setNewComment(e.target.value);
+                  }}
+                  placeholder="Leave a comment for your team..."
+                  rows={2}
+                  style={{
+                    flex: 1,
+                    padding: "0.45rem 0.6rem",
+                    borderRadius: 6,
+                    border: "1.5px solid " + t.ink08,
+                    background: t.paper,
+                    color: t.ink,
+                    fontFamily: "var(--body)",
+                    fontSize: "0.78rem",
+                    lineHeight: 1.5,
+                    resize: "vertical",
+                    outline: "none",
+                    boxSizing: "border-box",
+                  }}
+                  onFocus={function (e) {
+                    e.target.style.borderColor = t.accent + "40";
+                  }}
+                  onBlur={function (e) {
+                    e.target.style.borderColor = t.ink08;
+                  }}
+                  onKeyDown={function (e) {
+                    if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+                      e.preventDefault();
+                      handlePostComment();
+                    }
+                  }}
+                />
+                <button
+                  onClick={handlePostComment}
+                  disabled={commentSending || !newComment.trim()}
+                  title="Post comment (⌘+Enter)"
+                  style={{
+                    padding: "0.5rem",
+                    borderRadius: 6,
+                    border: "none",
+                    background: !newComment.trim() ? t.ink08 : t.accent,
+                    color: !newComment.trim() ? t.ink50 : "white",
+                    cursor:
+                      commentSending || !newComment.trim()
+                        ? "not-allowed"
+                        : "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    flexShrink: 0,
+                    opacity: commentSending ? 0.5 : 1,
+                    transition: "all 0.15s",
+                  }}
+                >
+                  {commentSending ? (
+                    <Loader2 size={14} className="xsbl-spin" />
+                  ) : (
+                    <Send size={14} strokeWidth={2} />
+                  )}
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
       <style>{`@keyframes xsbl-spin { to { transform: rotate(360deg); } } .xsbl-spin { animation: xsbl-spin 0.6s linear infinite; }`}</style>

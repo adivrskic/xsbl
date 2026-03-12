@@ -30,6 +30,7 @@ import {
   Key,
   Copy,
   Globe,
+  Eye,
 } from "lucide-react";
 import { timeAgo, fullDate } from "../../lib/timeAgo";
 
@@ -1825,10 +1826,534 @@ function AlertIntegrations({ org }) {
   );
 }
 
+/* ── Digest Preview Modal ── */
+function DigestPreviewModal({ org, sites, onClose }) {
+  var { t } = useTheme();
+  var [stats, setStats] = useState(null);
+  var [loading, setLoading] = useState(true);
+
+  useEffect(
+    function () {
+      if (!org || !sites || sites.length === 0) {
+        setLoading(false);
+        return;
+      }
+
+      var siteIds = sites.map(function (s) {
+        return s.id;
+      });
+      var oneWeekAgo = new Date(
+        Date.now() - 7 * 24 * 60 * 60 * 1000
+      ).toISOString();
+
+      Promise.all([
+        supabase
+          .from("scans")
+          .select("site_id")
+          .in("site_id", siteIds)
+          .eq("status", "complete")
+          .gte("created_at", oneWeekAgo),
+        supabase
+          .from("issues")
+          .select("site_id, impact")
+          .in("site_id", siteIds)
+          .eq("status", "open"),
+      ]).then(function (results) {
+        var scansData = results[0].data || [];
+        var issuesData = results[1].data || [];
+
+        var weekScans = {};
+        scansData.forEach(function (s) {
+          weekScans[s.site_id] = (weekScans[s.site_id] || 0) + 1;
+        });
+
+        var siteStats = {};
+        issuesData.forEach(function (i) {
+          if (!siteStats[i.site_id])
+            siteStats[i.site_id] = { open: 0, critical: 0 };
+          siteStats[i.site_id].open++;
+          if (i.impact === "critical") siteStats[i.site_id].critical++;
+        });
+
+        setStats({ weekScans: weekScans, siteStats: siteStats });
+        setLoading(false);
+      });
+    },
+    [org?.id]
+  );
+
+  var orgName = org?.name || "Your workspace";
+  var dateStr = new Date().toLocaleDateString("en-US", {
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  });
+
+  var totalSites = sites.length;
+  var totalScans = 0;
+  var totalOpen = 0;
+  var totalCritical = 0;
+  if (stats) {
+    for (var sid in stats.weekScans) totalScans += stats.weekScans[sid];
+    for (var sid2 in stats.siteStats) {
+      totalOpen += stats.siteStats[sid2].open;
+      totalCritical += stats.siteStats[sid2].critical;
+    }
+  }
+
+  return (
+    <div
+      style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 200,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        background: "rgba(0,0,0,0.45)",
+        backdropFilter: "blur(4px)",
+        padding: "1rem",
+      }}
+      onClick={function (e) {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
+      <div
+        style={{
+          width: "100%",
+          maxWidth: 640,
+          maxHeight: "90vh",
+          borderRadius: 16,
+          background: t.paper,
+          border: "1px solid " + t.ink08,
+          boxShadow: "0 24px 64px rgba(0,0,0,0.2)",
+          display: "flex",
+          flexDirection: "column",
+          overflow: "hidden",
+        }}
+      >
+        {/* Modal header */}
+        <div
+          style={{
+            padding: "1rem 1.4rem",
+            borderBottom: "1px solid " + t.ink08,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            flexShrink: 0,
+          }}
+        >
+          <div>
+            <h2
+              style={{
+                fontFamily: "var(--serif)",
+                fontSize: "1.05rem",
+                fontWeight: 700,
+                color: t.ink,
+                margin: 0,
+              }}
+            >
+              Weekly digest preview
+            </h2>
+            <p
+              style={{
+                fontSize: "0.72rem",
+                color: t.ink50,
+                margin: "0.1rem 0 0",
+              }}
+            >
+              This is what your digest email looks like with current data.
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            aria-label="Close preview"
+            style={{
+              background: "none",
+              border: "none",
+              cursor: "pointer",
+              color: t.ink50,
+              padding: "0.3rem",
+              borderRadius: 6,
+              display: "flex",
+            }}
+          >
+            <X size={18} strokeWidth={2} />
+          </button>
+        </div>
+
+        {/* Email preview (rendered as it would appear in inbox) */}
+        <div
+          style={{
+            flex: 1,
+            overflowY: "auto",
+            background: "#f6f1eb",
+            padding: "1.5rem 1rem",
+          }}
+        >
+          {loading ? (
+            <div
+              style={{ textAlign: "center", padding: "3rem", color: t.ink50 }}
+            >
+              <Loader2
+                size={20}
+                className="xsbl-spin"
+                style={{ display: "inline-block" }}
+              />
+              <p style={{ marginTop: "0.5rem", fontSize: "0.82rem" }}>
+                Loading preview data...
+              </p>
+            </div>
+          ) : (
+            <div style={{ maxWidth: 560, margin: "0 auto" }}>
+              {/* Header card */}
+              <div
+                style={{
+                  background: "white",
+                  borderRadius: 12,
+                  padding: "24px 22px",
+                  marginBottom: 10,
+                  border: "1px solid #e8e4df",
+                }}
+              >
+                <div style={{ marginBottom: 14 }}>
+                  <span
+                    style={{
+                      fontFamily: "monospace",
+                      fontWeight: 700,
+                      fontSize: 17,
+                      color: "#1a1a1a",
+                    }}
+                  >
+                    xsbl
+                  </span>
+                  <span
+                    style={{ color: "#4338f0", fontSize: 17, fontWeight: 700 }}
+                  >
+                    .
+                  </span>
+                </div>
+                <div
+                  style={{
+                    fontSize: 20,
+                    fontWeight: 700,
+                    color: "#1a1a1a",
+                    marginBottom: 4,
+                  }}
+                >
+                  Weekly Accessibility Digest
+                </div>
+                <div style={{ color: "#888", fontSize: 12 }}>
+                  {orgName} · Week of {dateStr}
+                </div>
+              </div>
+
+              {/* Stats card */}
+              <div
+                style={{
+                  background: "white",
+                  borderRadius: 12,
+                  padding: "20px 22px",
+                  marginBottom: 10,
+                  border: "1px solid #e8e4df",
+                  display: "flex",
+                  justifyContent: "space-around",
+                  textAlign: "center",
+                }}
+              >
+                <div>
+                  <div
+                    style={{ fontSize: 22, fontWeight: 700, color: "#1a1a1a" }}
+                  >
+                    {totalSites}
+                  </div>
+                  <div
+                    style={{
+                      fontSize: 10,
+                      color: "#999",
+                      textTransform: "uppercase",
+                      letterSpacing: "0.5px",
+                    }}
+                  >
+                    Sites
+                  </div>
+                </div>
+                <div>
+                  <div
+                    style={{ fontSize: 22, fontWeight: 700, color: "#4338f0" }}
+                  >
+                    {totalScans}
+                  </div>
+                  <div
+                    style={{
+                      fontSize: 10,
+                      color: "#999",
+                      textTransform: "uppercase",
+                      letterSpacing: "0.5px",
+                    }}
+                  >
+                    Scans
+                  </div>
+                </div>
+                <div>
+                  <div
+                    style={{ fontSize: 22, fontWeight: 700, color: "#b45309" }}
+                  >
+                    {totalOpen}
+                  </div>
+                  <div
+                    style={{
+                      fontSize: 10,
+                      color: "#999",
+                      textTransform: "uppercase",
+                      letterSpacing: "0.5px",
+                    }}
+                  >
+                    Open Issues
+                  </div>
+                </div>
+                {totalCritical > 0 && (
+                  <div>
+                    <div
+                      style={{
+                        fontSize: 22,
+                        fontWeight: 700,
+                        color: "#c0392b",
+                      }}
+                    >
+                      {totalCritical}
+                    </div>
+                    <div
+                      style={{
+                        fontSize: 10,
+                        color: "#c0392b",
+                        textTransform: "uppercase",
+                        letterSpacing: "0.5px",
+                      }}
+                    >
+                      Critical
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Sites table card */}
+              <div
+                style={{
+                  background: "white",
+                  borderRadius: 12,
+                  padding: "18px 22px",
+                  marginBottom: 10,
+                  border: "1px solid #e8e4df",
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: 14,
+                    fontWeight: 700,
+                    color: "#1a1a1a",
+                    marginBottom: 10,
+                  }}
+                >
+                  Sites Overview
+                </div>
+                <table
+                  style={{
+                    width: "100%",
+                    borderCollapse: "collapse",
+                    fontSize: 12,
+                  }}
+                >
+                  <thead>
+                    <tr style={{ background: "#fafafa" }}>
+                      <th
+                        style={{
+                          padding: "6px 10px",
+                          textAlign: "left",
+                          fontSize: 9,
+                          textTransform: "uppercase",
+                          color: "#999",
+                          letterSpacing: "0.3px",
+                        }}
+                      >
+                        Site
+                      </th>
+                      <th
+                        style={{
+                          padding: "6px 10px",
+                          textAlign: "center",
+                          fontSize: 9,
+                          textTransform: "uppercase",
+                          color: "#999",
+                          letterSpacing: "0.3px",
+                        }}
+                      >
+                        Score
+                      </th>
+                      <th
+                        style={{
+                          padding: "6px 10px",
+                          textAlign: "center",
+                          fontSize: 9,
+                          textTransform: "uppercase",
+                          color: "#999",
+                          letterSpacing: "0.3px",
+                        }}
+                      >
+                        Scans
+                      </th>
+                      <th
+                        style={{
+                          padding: "6px 10px",
+                          textAlign: "center",
+                          fontSize: 9,
+                          textTransform: "uppercase",
+                          color: "#999",
+                          letterSpacing: "0.3px",
+                        }}
+                      >
+                        Open
+                      </th>
+                      <th
+                        style={{
+                          padding: "6px 10px",
+                          textAlign: "center",
+                          fontSize: 9,
+                          textTransform: "uppercase",
+                          color: "#999",
+                          letterSpacing: "0.3px",
+                        }}
+                      >
+                        Critical
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {sites.map(function (s) {
+                      var score = s.score != null ? Math.round(s.score) : "—";
+                      var scoreColor =
+                        s.score >= 80
+                          ? "#1a8754"
+                          : s.score >= 50
+                          ? "#b45309"
+                          : "#c0392b";
+                      var scanCount =
+                        stats && stats.weekScans[s.id]
+                          ? stats.weekScans[s.id]
+                          : 0;
+                      var openIssues =
+                        stats && stats.siteStats[s.id]
+                          ? stats.siteStats[s.id].open
+                          : 0;
+                      var criticals =
+                        stats && stats.siteStats[s.id]
+                          ? stats.siteStats[s.id].critical
+                          : 0;
+                      return (
+                        <tr key={s.id}>
+                          <td
+                            style={{
+                              padding: "8px 10px",
+                              borderBottom: "1px solid #f0f0f0",
+                              fontWeight: 500,
+                              color: "#1a1a1a",
+                            }}
+                          >
+                            {s.display_name || s.domain}
+                          </td>
+                          <td
+                            style={{
+                              padding: "8px 10px",
+                              borderBottom: "1px solid #f0f0f0",
+                              textAlign: "center",
+                              fontWeight: 700,
+                              color: s.score != null ? scoreColor : "#999",
+                            }}
+                          >
+                            {score}
+                          </td>
+                          <td
+                            style={{
+                              padding: "8px 10px",
+                              borderBottom: "1px solid #f0f0f0",
+                              textAlign: "center",
+                              color: "#666",
+                            }}
+                          >
+                            {scanCount}
+                          </td>
+                          <td
+                            style={{
+                              padding: "8px 10px",
+                              borderBottom: "1px solid #f0f0f0",
+                              textAlign: "center",
+                              color: "#666",
+                            }}
+                          >
+                            {openIssues}
+                          </td>
+                          <td
+                            style={{
+                              padding: "8px 10px",
+                              borderBottom: "1px solid #f0f0f0",
+                              textAlign: "center",
+                              color: criticals > 0 ? "#c0392b" : "#999",
+                              fontWeight: criticals > 0 ? 700 : 400,
+                            }}
+                          >
+                            {criticals}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* CTA */}
+              <div style={{ textAlign: "center", padding: "16px 0" }}>
+                <span
+                  style={{
+                    display: "inline-block",
+                    padding: "12px 28px",
+                    background: "#4338f0",
+                    color: "white",
+                    borderRadius: 8,
+                    fontWeight: 600,
+                    fontSize: 13,
+                  }}
+                >
+                  Open dashboard
+                </span>
+              </div>
+
+              {/* Footer */}
+              <p
+                style={{
+                  fontSize: 10,
+                  color: "#ccc",
+                  textAlign: "center",
+                  marginTop: 16,
+                }}
+              >
+                xsbl · AI-powered accessibility scanning · {dateStr}
+              </p>
+              <p style={{ fontSize: 9, color: "#ddd", textAlign: "center" }}>
+                You're receiving this weekly digest because it's enabled in your
+                xsbl notification settings.
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ── Main ── */
 export default function SettingsPage() {
   const { t } = useTheme();
-  const { user, org, session, refreshOrg } = useAuth();
+  const { user, org, session, refreshOrg, sites: authSites } = useAuth();
   const toast = useToast();
   const confirm = useConfirm();
   const [members, setMembers] = useState([]);
@@ -1839,6 +2364,7 @@ export default function SettingsPage() {
   const [notifWeekly, setNotifWeekly] = useState(false);
   const [notifThreshold, setNotifThreshold] = useState(null);
   const [notifSaving, setNotifSaving] = useState(false);
+  const [showDigestPreview, setShowDigestPreview] = useState(false);
 
   const isOwner = org?.role === "owner";
   const canInvite = ["pro", "agency"].includes(org?.plan);
@@ -2915,32 +3441,73 @@ export default function SettingsPage() {
               )}
             </div>
 
-            <button
-              onClick={handleNotifSave}
-              disabled={notifSaving}
+            <div
               style={{
-                padding: "0.45rem 0.9rem",
-                borderRadius: 6,
-                border: "none",
-                background: t.accent,
-                color: "white",
-                fontFamily: "var(--body)",
-                fontSize: "0.8rem",
-                fontWeight: 600,
-                cursor: notifSaving ? "not-allowed" : "pointer",
-                opacity: notifSaving ? 0.5 : 1,
                 display: "flex",
                 alignItems: "center",
-                gap: "0.3rem",
+                gap: "0.5rem",
               }}
             >
-              {notifSaving ? (
-                <Loader2 size={13} className="xsbl-spin" />
-              ) : (
-                <Save size={13} />
-              )}{" "}
-              Save preferences
-            </button>
+              <button
+                onClick={handleNotifSave}
+                disabled={notifSaving}
+                style={{
+                  padding: "0.45rem 0.9rem",
+                  borderRadius: 6,
+                  border: "none",
+                  background: t.accent,
+                  color: "white",
+                  fontFamily: "var(--body)",
+                  fontSize: "0.8rem",
+                  fontWeight: 600,
+                  cursor: notifSaving ? "not-allowed" : "pointer",
+                  opacity: notifSaving ? 0.5 : 1,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.3rem",
+                }}
+              >
+                {notifSaving ? (
+                  <Loader2 size={13} className="xsbl-spin" />
+                ) : (
+                  <Save size={13} />
+                )}{" "}
+                Save preferences
+              </button>
+              {notifWeekly && (
+                <button
+                  onClick={function () {
+                    setShowDigestPreview(true);
+                  }}
+                  style={{
+                    padding: "0.45rem 0.9rem",
+                    borderRadius: 6,
+                    border: "1.5px solid " + t.ink20,
+                    background: "none",
+                    color: t.ink50,
+                    fontFamily: "var(--body)",
+                    fontSize: "0.8rem",
+                    fontWeight: 500,
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "0.3rem",
+                    transition: "all 0.15s",
+                  }}
+                  onMouseEnter={function (e) {
+                    e.currentTarget.style.borderColor = t.accent;
+                    e.currentTarget.style.color = t.accent;
+                  }}
+                  onMouseLeave={function (e) {
+                    e.currentTarget.style.borderColor = t.ink20;
+                    e.currentTarget.style.color = t.ink50;
+                  }}
+                >
+                  <Eye size={13} />
+                  Preview digest
+                </button>
+              )}
+            </div>
           </div>
 
           {/* Integrations — Slack + Email */}
@@ -3047,6 +3614,17 @@ export default function SettingsPage() {
             </button>
           </div>
         </>
+      )}
+
+      {/* Digest preview modal */}
+      {showDigestPreview && (
+        <DigestPreviewModal
+          org={org}
+          sites={authSites || []}
+          onClose={function () {
+            setShowDigestPreview(false);
+          }}
+        />
       )}
 
       <style>{`@keyframes xsbl-spin { to { transform: rotate(360deg); } } .xsbl-spin { animation: xsbl-spin 0.6s linear infinite; }`}</style>

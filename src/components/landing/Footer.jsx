@@ -19,6 +19,7 @@ var footerColumns = [
     links: [
       { label: "Documentation", href: "/docs" },
       { label: "Blog", href: "/blog" },
+      { label: "WCAG reference", href: "/wcag" },
       { label: "RSS feed", href: "/blog/feed.xml" },
       { label: "Contact", href: "/contact" },
       { label: "Agency plan", href: "/agency" },

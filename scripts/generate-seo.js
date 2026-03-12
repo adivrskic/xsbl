@@ -19,6 +19,9 @@ var distDir = join(__dirname, "..", "dist");
 var blogModule = await import("../src/data/blogArticles.js");
 var blogArticles = blogModule.blogArticles || [];
 
+var wcagModule = await import("../src/data/wcagCriteria.js");
+var wcagCriteria = wcagModule.wcagCriteria || [];
+
 var SITE_URL = "https://xsbl.io";
 var NOW = new Date().toISOString();
 
@@ -29,6 +32,7 @@ var staticPages = [
   { path: "/blog", priority: "0.8", changefreq: "daily" },
   { path: "/contact", priority: "0.5", changefreq: "monthly" },
   { path: "/agency", priority: "0.7", changefreq: "monthly" },
+  { path: "/wcag", priority: "0.8", changefreq: "monthly" },
   { path: "/privacy", priority: "0.3", changefreq: "yearly" },
   { path: "/terms", priority: "0.3", changefreq: "yearly" },
   { path: "/security", priority: "0.4", changefreq: "yearly" },
@@ -80,6 +84,25 @@ function generateSitemap() {
         "</lastmod>\n" +
         "    <changefreq>monthly</changefreq>\n" +
         "    <priority>0.7</priority>\n" +
+        "  </url>"
+    );
+  }
+
+  // WCAG criterion pages
+  for (var k = 0; k < wcagCriteria.length; k++) {
+    var crit = wcagCriteria[k];
+    urls.push(
+      "  <url>\n" +
+        "    <loc>" +
+        SITE_URL +
+        "/wcag/" +
+        crit.slug +
+        "</loc>\n" +
+        "    <lastmod>" +
+        NOW.split("T")[0] +
+        "</lastmod>\n" +
+        "    <changefreq>monthly</changefreq>\n" +
+        "    <priority>0.6</priority>\n" +
         "  </url>"
     );
   }
