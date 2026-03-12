@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import { useTheme } from "../../context/ThemeContext";
 import { useScrolled } from "../../hooks/useScrolled";
 import { useAuth } from "../../context/AuthContext";
@@ -30,15 +31,15 @@ export default function Nav() {
   var scrolled = useScrolled();
   var { user, org } = useAuth();
   var [mobileOpen, setMobileOpen] = useState(false);
+  var location = useLocation();
+  var pathname = location.pathname;
 
-  var isLanding =
-    typeof window !== "undefined" &&
-    (window.location.pathname === "/" || window.location.pathname === "");
+  var isLanding = pathname === "/" || pathname === "";
   var hidePricing = user && org && org.plan !== "free";
   var links = isLanding
     ? landingLinks
     : pageLinks.filter(function (link) {
-        return link.href !== window.location.pathname;
+        return link.href !== pathname;
       });
   if (hidePricing) {
     links = links.filter(function (link) {
@@ -66,7 +67,7 @@ export default function Nav() {
     function () {
       setMobileOpen(false);
     },
-    [typeof window !== "undefined" ? window.location.pathname : ""]
+    [pathname]
   );
 
   // Prevent body scroll when mobile menu is open

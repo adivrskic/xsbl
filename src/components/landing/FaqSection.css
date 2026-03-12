@@ -1,0 +1,90 @@
+/* FaqSection.css */
+.faq-list {
+  max-width: 720px;
+  display: flex;
+  flex-direction: column;
+}
+
+.faq-item {
+  border-bottom: 1px solid var(--ink08);
+}
+
+.faq-item:first-child {
+  border-top: 1px solid var(--ink08);
+}
+
+.faq-item__trigger {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  padding: 1.25rem 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  color: var(--ink);
+  font-family: var(--body);
+}
+
+.faq-item__question {
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.45;
+}
+
+.faq-item__chevron {
+  flex-shrink: 0;
+  transition: transform 0.3s ease;
+}
+
+.faq-item__chevron--open {
+  transform: rotate(180deg);
+}
+
+/* Smooth height animation using CSS grid trick */
+.faq-item__body {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.3s ease;
+}
+
+.faq-item--open .faq-item__body {
+  grid-template-rows: 1fr;
+}
+
+.faq-item__answer {
+  overflow: hidden;
+}
+
+.faq-item__text {
+  padding: 0 0 1.25rem;
+  font-size: 0.88rem;
+  color: var(--ink50);
+  line-height: 1.75;
+  max-width: 640px;
+  margin: 0;
+}
+
+/* Hover state */
+.faq-item__trigger:hover .faq-item__question {
+  color: var(--accent);
+}
+
+/* Focus visible */
+.faq-item__trigger:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+@media (max-width: 768px) {
+  .faq-item__question {
+    font-size: 0.92rem;
+  }
+
+  .faq-item__text {
+    font-size: 0.84rem;
+  }
+}

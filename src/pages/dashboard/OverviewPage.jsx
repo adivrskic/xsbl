@@ -4,6 +4,8 @@ import { useTheme } from "../../context/ThemeContext";
 import { useAuth } from "../../context/AuthContext";
 import { Plus, AlertTriangle } from "lucide-react";
 import IssueTrendsChart from "../../components/dashboard/IssueTrendsChart";
+import SetupChecklist from "../../components/dashboard/SetupChecklist";
+import ActivityFeed from "../../components/dashboard/ActivityFeed";
 import "../../styles/dashboard.css";
 import "../../styles/dashboard-pages.css";
 
@@ -35,15 +37,15 @@ export default function OverviewPage() {
   }, [org?.id]);
 
   var siteList = sites || [];
-  var scannedSites = siteList.filter(function (s) {
-    return s.score != null;
+  var scoredSites = siteList.filter(function (x) {
+    return x.score != null;
   });
   var avg =
-    scannedSites.length > 0
+    scoredSites.length > 0
       ? Math.round(
-          scannedSites.reduce(function (s, x) {
+          scoredSites.reduce(function (s, x) {
             return s + x.score;
-          }, 0) / scannedSites.length
+          }, 0) / scoredSites.length
         )
       : null;
 
@@ -85,6 +87,9 @@ export default function OverviewPage() {
           </Link>
         </div>
       )}
+
+      {/* Setup checklist — shows until all steps done or dismissed */}
+      {!isClient && !loading && <SetupChecklist sites={siteList} />}
 
       {loading && !sites ? (
         <>
@@ -179,16 +184,7 @@ export default function OverviewPage() {
                   ? t.red
                   : t.ink50
               }
-              sub={
-                scannedSites.length > 0
-                  ? scannedSites.length === siteList.length
-                    ? "across all sites"
-                    : "across " +
-                      scannedSites.length +
-                      " scanned site" +
-                      (scannedSites.length !== 1 ? "s" : "")
-                  : "no scans yet"
-              }
+              sub="across all sites"
             />
             <Stat
               label="Plan"
@@ -206,6 +202,9 @@ export default function OverviewPage() {
 
           {/* Issue trends chart */}
           {!isClient && <IssueTrendsChart />}
+
+          {/* Activity feed */}
+          <ActivityFeed />
 
           <h2 className="dash-section-title">Your sites</h2>
 

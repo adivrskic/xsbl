@@ -5,6 +5,26 @@ import { ArrowRight } from "lucide-react";
 import FadeIn from "../../components/landing/FadeIn";
 import "../../styles/blog.css";
 
+function RssIcon({ size }) {
+  return (
+    <svg
+      width={size || 14}
+      height={size || 14}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M4 11a9 9 0 0 1 9 9" />
+      <path d="M4 4a16 16 0 0 1 16 16" />
+      <circle cx="5" cy="19" r="1" />
+    </svg>
+  );
+}
+
 function CategoryPill({ label, active, onClick }) {
   return (
     <button
@@ -99,6 +119,16 @@ export default function BlogPage() {
               Guides, industry news, and practical advice for building an
               accessible web.
             </p>
+            <a
+              href="/blog/feed.xml"
+              className="blog-rss-link"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Subscribe to RSS feed"
+            >
+              <RssIcon size={13} />
+              RSS feed
+            </a>
           </div>
         </FadeIn>
 

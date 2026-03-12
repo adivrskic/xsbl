@@ -54,6 +54,27 @@
   max-width: 480px;
 }
 
+.blog-rss-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-top: 0.7rem;
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--ink50);
+  text-decoration: none;
+  padding: 0.3rem 0.6rem;
+  border-radius: 5px;
+  border: 1px solid var(--ink08);
+  transition: all 0.15s;
+}
+
+.blog-rss-link:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
 /* ── CATEGORY PILLS ── */
 .blog-categories {
   display: flex;

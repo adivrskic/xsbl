@@ -70,7 +70,182 @@ export default function BlogArticlePage() {
     [slug]
   );
 
+  // Inject Article structured data (ld+json) for SEO rich results
+  useEffect(
+    function () {
+      if (!article) return;
+
+      var wordCount = article.body
+        .filter(function (b) {
+          return b.type === "p";
+        })
+        .reduce(function (sum, b) {
+          return sum + (b.text || "").split(/\s+/).length;
+        }, 0);
+
+      var ld = {
+        "@context": "https://schema.org",
+        "@type": "Article",
+        headline: article.title,
+        description: article.subtitle || "",
+        datePublished: article.date,
+        dateModified: article.date,
+        author: {
+          "@type": "Organization",
+          name: "xsbl",
+          url: "https://xsbl.io",
+        },
+        publisher: {
+          "@type": "Organization",
+          name: "xsbl",
+          url: "https://xsbl.io",
+          logo: {
+            "@type": "ImageObject",
+            url: "https://xsbl.io/favicon-96x96.png",
+          },
+        },
+        mainEntityOfPage: {
+          "@type": "WebPage",
+          "@id": "https://xsbl.io/blog/" + article.slug,
+        },
+        wordCount: wordCount,
+        articleSection: article.category,
+        inLanguage: "en-US",
+      };
+
+      var script = document.createElement("script");
+      script.type = "application/ld+json";
+      script.id = "article-structured-data";
+      script.textContent = JSON.stringify(ld);
+
+      // Remove any previous article ld+json
+      var existing = document.getElementById("article-structured-data");
+      if (existing) existing.remove();
+
+      document.head.appendChild(script);
+
+      return function () {
+        var el = document.getElementById("article-structured-data");
+        if (el) el.remove();
+      };
+    },
+    [article, slug]
+  );
+
   if (!article) {
+    // Handle /blog/feed.xml — show RSS info page
+    if (slug === "feed.xml") {
+      return (
+        <div className="blog-article-page" style={{ paddingTop: "8rem" }}>
+          <FadeIn>
+            <div
+              style={{ textAlign: "center", maxWidth: 420, margin: "0 auto" }}
+            >
+              <svg
+                width="48"
+                height="48"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="var(--accent)"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                style={{ marginBottom: "1.2rem" }}
+              >
+                <path d="M4 11a9 9 0 0 1 9 9" />
+                <path d="M4 4a16 16 0 0 1 16 16" />
+                <circle cx="5" cy="19" r="1" />
+              </svg>
+              <h1
+                style={{
+                  fontFamily: "var(--serif)",
+                  fontSize: "1.6rem",
+                  fontWeight: 700,
+                  marginBottom: "0.6rem",
+                }}
+              >
+                RSS Feed
+              </h1>
+              <p
+                style={{
+                  fontSize: "0.95rem",
+                  color: "var(--ink50)",
+                  lineHeight: 1.7,
+                  marginBottom: "1.5rem",
+                }}
+              >
+                Subscribe to our RSS feed to get new articles delivered to your
+                favorite reader. Works with Feedly, Reeder, Inoreader, and any
+                RSS-compatible app.
+              </p>
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "0.6rem",
+                  alignItems: "center",
+                }}
+              >
+                <a
+                  href="/blog/feed.xml"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "0.4rem",
+                    padding: "0.7rem 1.5rem",
+                    borderRadius: 8,
+                    background: "var(--accent)",
+                    color: "white",
+                    fontWeight: 600,
+                    fontSize: "0.88rem",
+                    textDecoration: "none",
+                  }}
+                >
+                  Open feed
+                </a>
+                <p
+                  style={{
+                    fontSize: "0.78rem",
+                    color: "var(--ink50)",
+                    margin: 0,
+                  }}
+                >
+                  Copy this URL into your reader:
+                </p>
+                <code
+                  style={{
+                    fontFamily: "var(--mono)",
+                    fontSize: "0.72rem",
+                    padding: "0.4rem 0.8rem",
+                    borderRadius: 6,
+                    background: "var(--ink04)",
+                    color: "var(--accent)",
+                    userSelect: "all",
+                  }}
+                >
+                  https://xsbl.io/blog/feed.xml
+                </code>
+              </div>
+              <div style={{ marginTop: "2rem" }}>
+                <Link
+                  to="/blog"
+                  style={{
+                    color: "var(--accent)",
+                    fontSize: "0.88rem",
+                    textDecoration: "none",
+                  }}
+                >
+                  ← Back to blog
+                </Link>
+              </div>
+            </div>
+          </FadeIn>
+        </div>
+      );
+    }
+
     return (
       <div className="blog-404">
         <div className="blog-404__inner">

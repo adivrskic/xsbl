@@ -31,6 +31,7 @@ import {
   Copy,
   Globe,
 } from "lucide-react";
+import { timeAgo, fullDate } from "../../lib/timeAgo";
 
 /* ── Editable field ── */
 function EditableField({ label, value, onSave, placeholder }) {
@@ -1234,13 +1235,12 @@ function ApiKeysPanel({ org }) {
                     }}
                   >
                     <span>{k.key_prefix}</span>
-                    <span>
-                      Created {new Date(k.created_at).toLocaleDateString()}
+                    <span title={fullDate(k.created_at)}>
+                      Created {timeAgo(k.created_at)}
                     </span>
                     {k.last_used_at && (
-                      <span>
-                        Last used{" "}
-                        {new Date(k.last_used_at).toLocaleDateString()}
+                      <span title={fullDate(k.last_used_at)}>
+                        Last used {timeAgo(k.last_used_at)}
                       </span>
                     )}
                   </div>
@@ -1837,6 +1837,7 @@ export default function SettingsPage() {
   const [notifScans, setNotifScans] = useState(false);
   const [notifIssues, setNotifIssues] = useState(false);
   const [notifWeekly, setNotifWeekly] = useState(false);
+  const [notifThreshold, setNotifThreshold] = useState(null);
   const [notifSaving, setNotifSaving] = useState(false);
 
   const isOwner = org?.role === "owner";
@@ -1904,6 +1905,9 @@ export default function SettingsPage() {
           setNotifScans(data.scan_complete ?? false);
           setNotifIssues(data.critical_issues ?? false);
           setNotifWeekly(data.weekly_digest ?? false);
+          setNotifThreshold(
+            data.score_threshold != null ? data.score_threshold : null
+          );
         }
       });
   }, [user]);
@@ -1945,6 +1949,7 @@ export default function SettingsPage() {
         scan_complete: notifScans,
         critical_issues: notifIssues,
         weekly_digest: notifWeekly,
+        score_threshold: notifThreshold,
       },
       { onConflict: "user_id" }
     );
@@ -1957,6 +1962,7 @@ export default function SettingsPage() {
         scan_complete: notifScans,
         critical_issues: notifIssues,
         weekly_digest: notifWeekly,
+        score_threshold: notifThreshold,
       },
     });
     setNotifSaving(false);
@@ -2782,6 +2788,133 @@ export default function SettingsPage() {
                 label="Weekly digest"
               />
             </div>
+
+            {/* Score regression threshold */}
+            <div
+              style={{
+                padding: "0.8rem 1rem",
+                borderRadius: 8,
+                border: "1px solid " + t.ink08,
+                background: t.paper,
+                marginBottom: "1rem",
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  marginBottom: notifThreshold != null ? "0.6rem" : 0,
+                }}
+              >
+                <div>
+                  <div
+                    style={{
+                      fontSize: "0.84rem",
+                      fontWeight: 500,
+                      color: t.ink,
+                    }}
+                  >
+                    Score regression alert
+                  </div>
+                  <div
+                    style={{
+                      fontSize: "0.72rem",
+                      color: t.ink50,
+                      marginTop: "0.1rem",
+                    }}
+                  >
+                    Get emailed when any site's score drops below a threshold
+                  </div>
+                </div>
+                <Toggle
+                  checked={notifThreshold != null}
+                  onChange={function (on) {
+                    setNotifThreshold(on ? 80 : null);
+                  }}
+                  label=""
+                />
+              </div>
+              {notifThreshold != null && (
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "0.6rem",
+                  }}
+                >
+                  <span
+                    style={{
+                      fontFamily: "var(--mono)",
+                      fontSize: "0.72rem",
+                      color: t.ink50,
+                    }}
+                  >
+                    Alert when score drops below
+                  </span>
+                  <input
+                    type="number"
+                    min={0}
+                    max={100}
+                    value={notifThreshold}
+                    onChange={function (e) {
+                      var val = parseInt(e.target.value, 10);
+                      if (isNaN(val)) val = 0;
+                      if (val > 100) val = 100;
+                      if (val < 0) val = 0;
+                      setNotifThreshold(val);
+                    }}
+                    style={{
+                      width: 56,
+                      padding: "0.35rem 0.5rem",
+                      borderRadius: 6,
+                      border: "1.5px solid " + t.ink08,
+                      background: t.cardBg,
+                      color: t.ink,
+                      fontFamily: "var(--mono)",
+                      fontSize: "0.82rem",
+                      fontWeight: 700,
+                      textAlign: "center",
+                      outline: "none",
+                    }}
+                    onFocus={function (e) {
+                      e.target.style.borderColor = t.accent;
+                    }}
+                    onBlur={function (e) {
+                      e.target.style.borderColor = t.ink08;
+                    }}
+                  />
+                  <div
+                    style={{
+                      flex: 1,
+                      height: 4,
+                      borderRadius: 2,
+                      background: t.ink04,
+                      position: "relative",
+                    }}
+                  >
+                    <div
+                      style={{
+                        position: "absolute",
+                        left: 0,
+                        top: 0,
+                        height: 4,
+                        borderRadius: 2,
+                        width: notifThreshold + "%",
+                        background:
+                          notifThreshold >= 80
+                            ? t.green
+                            : notifThreshold >= 50
+                            ? t.amber
+                            : t.red,
+                        transition: "width 0.2s, background 0.2s",
+                      }}
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+
             <button
               onClick={handleNotifSave}
               disabled={notifSaving}

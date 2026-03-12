@@ -24,6 +24,7 @@ import ComplianceSection from "./components/landing/ComplianceSection";
 import GitHubSection from "./components/landing/GitHubSection";
 import SimulatorSection from "./components/landing/SimulatorSection";
 import PricingSection from "./components/landing/PricingSection";
+import FaqSection from "./components/landing/FaqSection";
 import CtaSection from "./components/landing/CtaSection";
 import Footer from "./components/landing/Footer";
 
@@ -35,6 +36,11 @@ import ContactPage from "./pages/ContactPage";
 import AgencyPage from "./pages/AgencyPage";
 import StatusPage from "./pages/StatusPage";
 import ClientDashboardPage from "./pages/ClientDashboardPage";
+
+// Legal
+import PrivacyPage from "./pages/PrivacyPage";
+import TermsPage from "./pages/TermsPage";
+import SecurityPage from "./pages/SecurityPage";
 
 // Dashboard
 import DashboardLayout from "./pages/dashboard/DashboardLayout";
@@ -48,7 +54,11 @@ import EvidenceExportPage from "./pages/dashboard/EvidenceExportPage";
 import ElementTester from "./pages/dashboard/ElementTester";
 import OnboardingPage from "./pages/dashboard/OnboardingPage";
 import NotFoundPage from "./pages/NotFoundPage";
-import ErrorBoundary from "./components/ui/ErrorBoundary";
+import ErrorBoundary, {
+  GlobalErrorHandler,
+} from "./components/ui/ErrorBoundary";
+import useDocumentMeta, { PAGE_META } from "./hooks/useDocumentMeta";
+import { blogArticles } from "./data/blogArticles";
 
 function LandingPage() {
   const { org } = useAuth();
@@ -69,6 +79,7 @@ function LandingPage() {
         <SimulatorSection />
         <ComplianceSection />
         {showPricing && <PricingSection />}
+        <FaqSection />
         <CtaSection />
       </main>
       <Footer />
@@ -91,54 +102,66 @@ function PublicLayout({ children }) {
   );
 }
 
-const PAGE_TITLES = {
-  "/": "xsbl — Web Accessibility Scanner, Automation & WCAG 2.2 Compliance Tool",
-  "/login": "Sign in — xsbl",
-  "/signup": "Sign up — xsbl",
-  "/reset-password": "Reset password — xsbl",
-  "/docs": "Documentation — xsbl",
-  "/blog": "Blog — xsbl",
-  "/contact": "Contact — xsbl",
-  "/agency": "Agency plan — xsbl",
-  "/dashboard": "Dashboard — xsbl",
-  "/dashboard/sites": "Sites — xsbl",
-  "/dashboard/settings": "Settings — xsbl",
-  "/dashboard/billing": "Billing — xsbl",
-  "/dashboard/onboarding": "Get started — xsbl",
-  "/dashboard/tester": "Element tester — xsbl",
-  "/dashboard/audit-log": "Audit log — xsbl",
-  "/dashboard/evidence": "Evidence export — xsbl",
-};
+function PageMeta() {
+  var location = useLocation();
+  var path = location.pathname;
 
-function PageTitle() {
-  const location = useLocation();
-  useEffect(() => {
-    var path = location.pathname;
-    if (PAGE_TITLES[path]) {
-      document.title = PAGE_TITLES[path];
-    } else if (path.startsWith("/dashboard/sites/")) {
-      document.title = "Site details — xsbl";
+  // Look up known routes first
+  var meta = PAGE_META[path];
+
+  // Dynamic routes
+  if (!meta) {
+    if (path.startsWith("/dashboard/sites/")) {
+      meta = {
+        title: "Site details — xsbl",
+        description:
+          "View accessibility scan results, issues, score history, and fix suggestions for your site.",
+      };
     } else if (path.startsWith("/blog/")) {
-      // Try to extract slug and find article title
       var slug = path.replace("/blog/", "");
-      try {
-        var el = document.querySelector(".blog-article__title");
-        if (el && el.textContent) {
-          document.title = el.textContent + " — xsbl";
-        } else {
-          document.title = "Blog — xsbl";
-        }
-      } catch (e) {
-        document.title = "Blog — xsbl";
+      var article = blogArticles.find(function (a) {
+        return a.slug === slug;
+      });
+      if (article) {
+        meta = {
+          title: article.title + " — xsbl",
+          description: article.subtitle || "Read on the xsbl blog.",
+        };
+      } else {
+        meta = {
+          title: "Blog — xsbl",
+          description:
+            "Articles on web accessibility, WCAG compliance, and inclusive design.",
+        };
       }
     } else if (path.startsWith("/status/")) {
-      document.title = "Accessibility status — xsbl";
+      meta = {
+        title: "Accessibility status — xsbl",
+        description:
+          "Public accessibility status page showing WCAG compliance score and issue breakdown.",
+      };
     } else if (path.startsWith("/client-dashboard/")) {
-      document.title = "Client dashboard — xsbl";
+      meta = {
+        title: "Client dashboard — xsbl",
+        description:
+          "View your site's accessibility scan results and compliance status.",
+      };
     } else {
-      document.title = "xsbl — make your web accessible";
+      meta = {
+        title: "xsbl — make your web accessible",
+        description:
+          "AI-powered web accessibility scanner and WCAG 2.2 compliance tool.",
+      };
     }
-  }, [location.pathname]);
+  }
+
+  useDocumentMeta({
+    title: meta.title,
+    description: meta.description,
+    path: path,
+    image: meta.image,
+  });
+
   return null;
 }
 
@@ -199,7 +222,8 @@ export default function App() {
     >
       <BrowserRouter>
         <ErrorBoundary>
-          <PageTitle />
+          <GlobalErrorHandler />
+          <PageMeta />
           <ScrollToHash />
           <ToastProvider>
             <ConfirmProvider>
@@ -246,6 +270,30 @@ export default function App() {
                   element={
                     <PublicLayout>
                       <AgencyPage />
+                    </PublicLayout>
+                  }
+                />
+                <Route
+                  path="/privacy"
+                  element={
+                    <PublicLayout>
+                      <PrivacyPage />
+                    </PublicLayout>
+                  }
+                />
+                <Route
+                  path="/terms"
+                  element={
+                    <PublicLayout>
+                      <TermsPage />
+                    </PublicLayout>
+                  }
+                />
+                <Route
+                  path="/security"
+                  element={
+                    <PublicLayout>
+                      <SecurityPage />
                     </PublicLayout>
                   }
                 />

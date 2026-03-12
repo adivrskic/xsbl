@@ -26,10 +26,12 @@ export default function BulkFixBar({
   const toast = useToast();
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
+  const [creatingIssues, setCreatingIssues] = useState(false);
+  const [issueResult, setIssueResult] = useState(null);
 
   var hasGitHub = site && site.github_repo && site.github_token;
   var count = selectedIds.length;
-  if (count === 0 && !result) return null;
+  if (count === 0 && !result && !issueResult) return null;
   var limit = maxPerPr || 999;
 
   // Count by impact
@@ -81,6 +83,44 @@ export default function BulkFixBar({
     setLoading(false);
   };
 
+  var handleCreateIssues = async function () {
+    if (!hasGitHub) {
+      toast.warning("Connect a GitHub repo in site settings first");
+      return;
+    }
+    setCreatingIssues(true);
+    setIssueResult(null);
+    try {
+      var {
+        data: { session },
+      } = await supabase.auth.getSession();
+      var { data, error } = await supabase.functions.invoke(
+        "create-github-issues",
+        {
+          body: { issue_ids: selectedIds, site_id: site.id },
+          headers: { Authorization: "Bearer " + (session?.access_token || "") },
+        }
+      );
+      if (error) throw new Error(error.message);
+      if (data?.error) throw new Error(data.error);
+      setIssueResult(data);
+      if (data.created > 0) {
+        toast.success(
+          data.created +
+            " GitHub issue" +
+            (data.created !== 1 ? "s" : "") +
+            " created"
+        );
+      }
+      if (data.failed > 0) {
+        toast.warning(data.failed + " issue(s) failed to create");
+      }
+    } catch (err) {
+      toast.error("Failed: " + String(err).substring(0, 100));
+    }
+    setCreatingIssues(false);
+  };
+
   return (
     <div
       style={{
@@ -101,8 +141,8 @@ export default function BulkFixBar({
         maxWidth: "90vw",
       }}
     >
-      {/* Count + impact badges — hide after PR created */}
-      {!result && (
+      {/* Count + impact badges — hide after PR or issues created */}
+      {!result && !issueResult && (
         <div style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
           <span
             style={{
@@ -158,7 +198,9 @@ export default function BulkFixBar({
       )}
 
       {/* Divider */}
-      {!result && <div style={{ width: 1, height: 24, background: t.ink08 }} />}
+      {!result && !issueResult && (
+        <div style={{ width: 1, height: 24, background: t.ink08 }} />
+      )}
 
       {/* Result */}
       {result ? (
@@ -197,64 +239,142 @@ export default function BulkFixBar({
           </div>
           <PRFeedback prNumber={result.pr_number} siteId={site?.id} />
         </div>
-      ) : (
-        <button
-          onClick={handleBulkFix}
-          disabled={loading || !hasGitHub}
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "0.4rem",
-            padding: "0.45rem 1rem",
-            borderRadius: 7,
-            border: "none",
-            background: hasGitHub ? "#24292e" : t.ink20,
-            color: "white",
-            fontFamily: "var(--body)",
-            fontSize: "0.82rem",
-            fontWeight: 600,
-            cursor: loading || !hasGitHub ? "not-allowed" : "pointer",
-            opacity: loading ? 0.6 : 1,
-          }}
-        >
-          {loading ? (
-            <Loader2 size={14} className="xsbl-spin" />
-          ) : (
-            <GitHubIcon size={14} />
+      ) : issueResult ? (
+        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+          <Check size={15} color={t.green} strokeWidth={2.5} />
+          <span
+            style={{
+              fontFamily: "var(--mono)",
+              fontSize: "0.78rem",
+              fontWeight: 600,
+              color: t.green,
+            }}
+          >
+            {issueResult.created} issue{issueResult.created !== 1 ? "s" : ""}{" "}
+            created
+          </span>
+          {issueResult.results && issueResult.results.length > 0 && (
+            <a
+              href={issueResult.results[0].github_issue_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "0.2rem",
+                fontFamily: "var(--mono)",
+                fontSize: "0.68rem",
+                color: t.accent,
+                textDecoration: "none",
+              }}
+            >
+              View <ExternalLink size={10} />
+            </a>
           )}
-          {loading
-            ? "Creating PR..."
-            : hasGitHub
-            ? "Create fix PR (" +
-              count +
-              " issue" +
-              (count !== 1 ? "s" : "") +
-              ")"
-            : "Connect GitHub first"}
-          {!loading && hasGitHub && (
+          {issueResult.failed > 0 && (
             <span
               style={{
                 fontFamily: "var(--mono)",
-                fontSize: "0.5rem",
-                fontWeight: 700,
-                padding: "0.1rem 0.3rem",
-                borderRadius: 3,
-                background: "rgba(255,255,255,0.15)",
-                color: "rgba(255,255,255,0.7)",
-                textTransform: "uppercase",
-                letterSpacing: "0.05em",
+                fontSize: "0.58rem",
+                color: t.red,
               }}
             >
-              beta
+              {issueResult.failed} failed
             </span>
           )}
-        </button>
+        </div>
+      ) : (
+        <div style={{ display: "flex", gap: "0.4rem", alignItems: "center" }}>
+          <button
+            onClick={handleBulkFix}
+            disabled={loading || creatingIssues || !hasGitHub}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "0.4rem",
+              padding: "0.45rem 1rem",
+              borderRadius: 7,
+              border: "none",
+              background: hasGitHub ? "#24292e" : t.ink20,
+              color: "white",
+              fontFamily: "var(--body)",
+              fontSize: "0.82rem",
+              fontWeight: 600,
+              cursor:
+                loading || creatingIssues || !hasGitHub
+                  ? "not-allowed"
+                  : "pointer",
+              opacity: loading ? 0.6 : 1,
+            }}
+          >
+            {loading ? (
+              <Loader2 size={14} className="xsbl-spin" />
+            ) : (
+              <GitHubIcon size={14} />
+            )}
+            {loading
+              ? "Creating PR..."
+              : hasGitHub
+              ? "Fix PR (" + count + " issue" + (count !== 1 ? "s" : "") + ")"
+              : "Connect GitHub first"}
+            {!loading && hasGitHub && (
+              <span
+                style={{
+                  fontFamily: "var(--mono)",
+                  fontSize: "0.5rem",
+                  fontWeight: 700,
+                  padding: "0.1rem 0.3rem",
+                  borderRadius: 3,
+                  background: "rgba(255,255,255,0.15)",
+                  color: "rgba(255,255,255,0.7)",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.05em",
+                }}
+              >
+                beta
+              </span>
+            )}
+          </button>
+
+          {hasGitHub && (
+            <button
+              onClick={handleCreateIssues}
+              disabled={loading || creatingIssues}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "0.35rem",
+                padding: "0.45rem 0.9rem",
+                borderRadius: 7,
+                border: "1.5px solid " + t.ink20,
+                background: "none",
+                color: t.ink,
+                fontFamily: "var(--body)",
+                fontSize: "0.78rem",
+                fontWeight: 500,
+                cursor: loading || creatingIssues ? "not-allowed" : "pointer",
+                opacity: creatingIssues ? 0.6 : 1,
+                whiteSpace: "nowrap",
+              }}
+            >
+              {creatingIssues ? (
+                <Loader2 size={13} className="xsbl-spin" />
+              ) : (
+                <GitHubIcon size={13} />
+              )}
+              {creatingIssues
+                ? "Creating…"
+                : count + " issue" + (count !== 1 ? "s" : "")}
+            </button>
+          )}
+        </div>
       )}
 
       {/* Close */}
       <button
         onClick={function () {
           setResult(null);
+          setIssueResult(null);
           onClear();
         }}
         style={{

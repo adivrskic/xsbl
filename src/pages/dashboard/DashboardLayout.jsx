@@ -28,6 +28,10 @@ import {
 } from "lucide-react";
 import XsblBull from "../../components/landing/XsblBull";
 import HelpSearch from "../../components/ui/HelpSearch";
+import {
+  useKeyboardShortcuts,
+  ShortcutHelpOverlay,
+} from "../../components/ui/KeyboardShortcuts";
 
 const navItems = [
   { label: "Overview", path: "/dashboard", icon: LayoutDashboard, end: true },
@@ -329,11 +333,45 @@ export default function DashboardLayout() {
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
+  const [showShortcutHelp, setShowShortcutHelp] = useState(false);
 
   const handleSignOut = async () => {
     await signOut();
     navigate("/");
   };
+
+  // ── Global dashboard keyboard shortcuts ──
+  // Page-level shortcuts (e.g. SiteDetailPage) add their own via useKeyboardShortcuts.
+  // These globals are intentionally minimal to avoid conflicts.
+  var globalShortcuts = [
+    {
+      key: "?",
+      description: "Show keyboard shortcuts",
+      category: "General",
+      handler: function () {
+        setShowShortcutHelp(function (v) {
+          return !v;
+        });
+      },
+    },
+    {
+      key: "t",
+      description: "Toggle dark/light theme",
+      category: "General",
+      handler: toggle,
+    },
+    {
+      key: "escape",
+      description: "Close overlay",
+      category: "General",
+      handler: function () {
+        if (showShortcutHelp) setShowShortcutHelp(false);
+        if (showFeedback) setShowFeedback(false);
+        if (mobileOpen) setMobileOpen(false);
+      },
+    },
+  ];
+  useKeyboardShortcuts(globalShortcuts);
 
   // Close mobile sidebar on Escape
   useEffect(() => {

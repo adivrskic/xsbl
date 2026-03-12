@@ -28,6 +28,7 @@ import {
   Download,
   HelpCircle,
   X,
+  Lightbulb,
 } from "lucide-react";
 import IssueDetailModal from "../../components/dashboard/IssueDetailModal";
 import ScoreChart from "../../components/dashboard/ScoreChart";
@@ -41,6 +42,8 @@ import SchedulePicker from "../../components/dashboard/SchedulePicker";
 import ScanProfileEditor from "../../components/dashboard/ScanProfileEditor";
 import PlanGate from "../../components/ui/PlanGate";
 import CIWorkflowPanel from "../../components/dashboard/CIWorkflowPanel";
+import ScanCompare from "../../components/dashboard/ScanCompare";
+import { timeAgo, fullDate } from "../../lib/timeAgo";
 
 /* ── GitHub icon (no lucide brand icons) ── */
 /* ── CSV Export ── */
@@ -212,6 +215,35 @@ function ImpactBadge({ impact }) {
       }}
     >
       {impact}
+    </span>
+  );
+}
+
+function FixBadge({ count, total }) {
+  const { t } = useTheme();
+  if (!count) return null;
+  var label = count === total ? "fix" : count + "/" + total + " fix";
+  return (
+    <span
+      style={{
+        fontFamily: "var(--mono)",
+        fontSize: "0.55rem",
+        fontWeight: 600,
+        padding: "0.12rem 0.35rem",
+        borderRadius: 3,
+        background: t.greenBg,
+        color: t.green,
+        textTransform: "uppercase",
+        letterSpacing: "0.04em",
+        flexShrink: 0,
+        display: "inline-flex",
+        alignItems: "center",
+        gap: "0.2rem",
+        whiteSpace: "nowrap",
+      }}
+    >
+      <Lightbulb size={9} strokeWidth={2.5} />
+      {label}
     </span>
   );
 }
@@ -1683,10 +1715,13 @@ export default function SiteDetailPage() {
   const [selectedForFix, setSelectedForFix] = useState([]);
   const [viewMode, setViewMode] = useState("grouped");
   const [groupBy, setGroupBy] = useState("rule");
+  const [sortMode, setSortMode] = useState("severity");
   const [showSimulator, setShowSimulator] = useState(false);
   const [expandedGroups, setExpandedGroups] = useState({});
   const [showScoreExplainer, setShowScoreExplainer] = useState(false);
   const [showShortcutHelp, setShowShortcutHelp] = useState(false);
+  const [showCompare, setShowCompare] = useState(false);
+  const [scoreCopied, setScoreCopied] = useState(false);
 
   // Module-level cache for site detail data
   const cacheRef = useRef({ id: null, site: null, scans: null, issues: null });
@@ -1750,7 +1785,11 @@ export default function SiteDetailPage() {
         (payload) => {
           const scan = payload.new;
           if (scan.status === "running") {
-            setScanProgress("Scanning...");
+            setScanProgress({
+              status: "running",
+              pagesScanned: scan.pages_scanned || 0,
+              issuesFound: scan.issues_found || 0,
+            });
           } else if (scan.status === "complete") {
             setScanProgress(null);
             setScanning(false);
@@ -1772,7 +1811,7 @@ export default function SiteDetailPage() {
   const handleScan = async (config = {}) => {
     setScanning(true);
     setScanError(null);
-    setScanProgress("Starting scan...");
+    setScanProgress({ status: "starting", pagesScanned: 0, issuesFound: 0 });
     setShowScanConfig(false);
     try {
       const body = { site_id: id };
@@ -1818,11 +1857,20 @@ export default function SiteDetailPage() {
     return true;
   });
 
-  // Sort: critical > serious > moderate > minor
+  // Sort: severity (default) or quick-wins (fixable + high-impact first)
   const impactOrder = { critical: 0, serious: 1, moderate: 2, minor: 3 };
-  const sortedIssues = [...filteredIssues].sort(
-    (a, b) => (impactOrder[a.impact] ?? 4) - (impactOrder[b.impact] ?? 4)
-  );
+  const sortedIssues = [...filteredIssues].sort(function (a, b) {
+    if (sortMode === "quick-wins") {
+      // Issues with fix suggestions come first
+      var aHasFix = a.fix_suggestion ? 1 : 0;
+      var bHasFix = b.fix_suggestion ? 1 : 0;
+      if (bHasFix !== aHasFix) return bHasFix - aHasFix;
+      // Within same fix-availability tier, sort by severity
+      return (impactOrder[a.impact] ?? 4) - (impactOrder[b.impact] ?? 4);
+    }
+    // Default: severity only
+    return (impactOrder[a.impact] ?? 4) - (impactOrder[b.impact] ?? 4);
+  });
 
   // Group issues by rule_id + description (deduplication)
   var groupedIssues = [];
@@ -1881,6 +1929,24 @@ export default function SiteDetailPage() {
     groupedIssues[gk].count = groupedIssues[gk].instances.length;
     groupedIssues[gk].allIds = groupedIssues[gk].instances.map(function (i) {
       return i.id;
+    });
+    // Count how many instances have fix suggestions (used for quick-wins sort)
+    groupedIssues[gk].fixableCount = groupedIssues[gk].instances.filter(
+      function (i) {
+        return !!i.fix_suggestion;
+      }
+    ).length;
+  }
+
+  // In quick-wins mode, re-sort groups: fully fixable groups first, then by severity
+  if (sortMode === "quick-wins") {
+    groupedIssues.sort(function (a, b) {
+      var aAllFixable =
+        a.fixableCount === a.count ? 1 : a.fixableCount > 0 ? 0.5 : 0;
+      var bAllFixable =
+        b.fixableCount === b.count ? 1 : b.fixableCount > 0 ? 0.5 : 0;
+      if (bAllFixable !== aAllFixable) return bAllFixable - aAllFixable;
+      return (impactOrder[a.impact] ?? 4) - (impactOrder[b.impact] ?? 4);
     });
   }
 
@@ -1986,72 +2052,306 @@ export default function SiteDetailPage() {
   ];
   useKeyboardShortcuts(shortcutDefs);
 
+  // #25 — Dynamic browser tab title with issue count
+  useEffect(
+    function () {
+      if (!site) return;
+      var siteName = site.display_name || site.domain || "";
+      var open = issues.filter(function (i) {
+        return i.status === "open";
+      }).length;
+      var parts = [];
+      if (tab === "issues" && open > 0) {
+        parts.push(open + " issue" + (open !== 1 ? "s" : ""));
+      }
+      parts.push(siteName);
+      parts.push("xsbl");
+      document.title = parts.join(" — ");
+      return function () {
+        document.title = "xsbl — Accessibility Scanner";
+      };
+    },
+    [site, tab, issues]
+  );
+
   if (loading)
     return (
       <div>
+        {/* ← Sites back link */}
+        <div
+          style={{
+            width: 60,
+            height: 13,
+            borderRadius: 4,
+            background: t.ink08,
+            marginBottom: "0.5rem",
+            animation: "skeletonPulse 1.5s ease-in-out infinite",
+          }}
+        />
+
+        {/* Title row: site name + verified badge */}
         <div
           style={{
             display: "flex",
             alignItems: "center",
-            gap: "0.6rem",
-            marginBottom: "1.5rem",
+            gap: "0.8rem",
+            marginBottom: "0.3rem",
           }}
         >
           <div
             style={{
-              width: 120,
-              height: 16,
+              width: 200,
+              height: 26,
               borderRadius: 6,
               background: t.ink08,
               animation: "skeletonPulse 1.5s ease-in-out infinite",
             }}
           />
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "0.3rem",
+            }}
+          >
+            <div
+              style={{
+                width: 8,
+                height: 8,
+                borderRadius: "50%",
+                background: t.ink08,
+              }}
+            />
+            <div
+              style={{
+                width: 55,
+                height: 10,
+                borderRadius: 3,
+                background: t.ink08,
+                animation: "skeletonPulse 1.5s ease-in-out infinite",
+                animationDelay: "0.05s",
+              }}
+            />
+          </div>
         </div>
+
+        {/* Domain */}
         <div
           style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
-            gap: "0.8rem",
-            marginBottom: "2rem",
+            width: 140,
+            height: 12,
+            borderRadius: 4,
+            background: t.ink08,
+            marginBottom: "1.5rem",
+            animation: "skeletonPulse 1.5s ease-in-out infinite",
+            animationDelay: "0.05s",
+          }}
+        />
+
+        {/* Tab bar */}
+        <div
+          style={{
+            display: "flex",
+            gap: "0.15rem",
+            borderBottom: "1px solid " + t.ink08,
+            marginBottom: "1.5rem",
+            paddingBottom: "0.15rem",
           }}
         >
-          {[1, 2, 3, 4].map(function (i) {
+          {[65, 55, 48, 60].map(function (w, i) {
             return (
               <div
                 key={i}
                 style={{
-                  padding: "1.2rem",
+                  width: w,
+                  height: 14,
+                  borderRadius: 4,
+                  background: i === 0 ? t.accentBg : t.ink04,
+                  margin: "0.55rem 0.45rem",
+                  animation: "skeletonPulse 1.5s ease-in-out infinite",
+                  animationDelay: i * 0.04 + "s",
+                }}
+              />
+            );
+          })}
+        </div>
+
+        {/* Scan panel skeleton */}
+        <div
+          style={{
+            padding: "1.2rem 1.4rem",
+            borderRadius: 12,
+            border: "1px solid " + t.ink04,
+            background: t.accentBg,
+            marginBottom: "1.5rem",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+          }}
+        >
+          <div>
+            <div
+              style={{
+                width: 100,
+                height: 16,
+                borderRadius: 4,
+                background: t.ink08,
+                marginBottom: "0.3rem",
+                animation: "skeletonPulse 1.5s ease-in-out infinite",
+                animationDelay: "0.08s",
+              }}
+            />
+            <div
+              style={{
+                width: 170,
+                height: 11,
+                borderRadius: 3,
+                background: t.ink08,
+                animation: "skeletonPulse 1.5s ease-in-out infinite",
+                animationDelay: "0.12s",
+              }}
+            />
+          </div>
+          <div style={{ display: "flex", gap: "0.5rem" }}>
+            <div
+              style={{
+                width: 72,
+                height: 34,
+                borderRadius: 8,
+                background: t.ink08,
+                animation: "skeletonPulse 1.5s ease-in-out infinite",
+                animationDelay: "0.1s",
+              }}
+            />
+            <div
+              style={{
+                width: 34,
+                height: 34,
+                borderRadius: 8,
+                background: t.ink08,
+                animation: "skeletonPulse 1.5s ease-in-out infinite",
+                animationDelay: "0.14s",
+              }}
+            />
+          </div>
+        </div>
+
+        {/* Stats grid — 5 cards matching actual layout */}
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
+            gap: "0.8rem",
+            marginBottom: "1.5rem",
+          }}
+        >
+          {[1, 2, 3, 4, 5].map(function (i) {
+            return (
+              <div
+                key={i}
+                style={{
+                  padding: "1rem",
                   borderRadius: 10,
-                  border: "1px solid " + t.ink04,
+                  border: "1px solid " + t.ink08,
                   background: t.cardBg,
                 }}
               >
                 <div
                   style={{
-                    width: "40%",
-                    height: 10,
-                    borderRadius: 4,
+                    width: 55 + (i % 3) * 12,
+                    height: 9,
+                    borderRadius: 3,
                     background: t.ink08,
+                    marginBottom: "0.3rem",
                     animation: "skeletonPulse 1.5s ease-in-out infinite",
-                    marginBottom: "0.5rem",
+                    animationDelay: i * 0.06 + "s",
                   }}
                 />
                 <div
                   style={{
-                    width: "60%",
-                    height: 22,
-                    borderRadius: 6,
+                    width: i === 5 ? 70 : 40,
+                    height: i === 5 ? 13 : 24,
+                    borderRadius: 5,
                     background: t.ink08,
                     animation: "skeletonPulse 1.5s ease-in-out infinite",
+                    animationDelay: i * 0.06 + 0.03 + "s",
                   }}
                 />
               </div>
             );
           })}
         </div>
+
+        {/* Score chart placeholder */}
         <div
-          style={{ display: "flex", flexDirection: "column", gap: "0.4rem" }}
+          style={{
+            borderRadius: 10,
+            border: "1px solid " + t.ink08,
+            background: t.cardBg,
+            padding: "1.2rem",
+            marginBottom: "1.5rem",
+          }}
         >
+          <div
+            style={{
+              width: 90,
+              height: 10,
+              borderRadius: 3,
+              background: t.ink08,
+              marginBottom: "1rem",
+              animation: "skeletonPulse 1.5s ease-in-out infinite",
+              animationDelay: "0.15s",
+            }}
+          />
+          <div
+            style={{
+              height: 140,
+              borderRadius: 6,
+              background: t.ink04,
+              animation: "skeletonPulse 1.5s ease-in-out infinite",
+              animationDelay: "0.2s",
+            }}
+          />
+        </div>
+
+        {/* Page breakdown placeholder */}
+        <div
+          style={{
+            borderRadius: 10,
+            border: "1px solid " + t.ink08,
+            background: t.cardBg,
+            overflow: "hidden",
+          }}
+        >
+          <div
+            style={{
+              padding: "0.9rem 1.1rem",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+            }}
+          >
+            <div
+              style={{
+                width: 110,
+                height: 13,
+                borderRadius: 4,
+                background: t.ink08,
+                animation: "skeletonPulse 1.5s ease-in-out infinite",
+                animationDelay: "0.2s",
+              }}
+            />
+            <div
+              style={{
+                width: 30,
+                height: 16,
+                borderRadius: 3,
+                background: t.ink04,
+                animation: "skeletonPulse 1.5s ease-in-out infinite",
+                animationDelay: "0.22s",
+              }}
+            />
+          </div>
           {[1, 2, 3].map(function (i) {
             return (
               <div
@@ -2059,47 +2359,50 @@ export default function SiteDetailPage() {
                 style={{
                   display: "flex",
                   alignItems: "center",
-                  gap: "0.8rem",
-                  padding: "0.9rem 1.1rem",
-                  borderRadius: 8,
-                  border: "1px solid " + t.ink04,
-                  background: t.cardBg,
+                  justifyContent: "space-between",
+                  padding: "0.65rem 1.1rem",
+                  borderTop: "1px solid " + t.ink04,
                 }}
               >
-                <div
-                  style={{
-                    width: 8,
-                    height: 8,
-                    borderRadius: "50%",
-                    background: t.ink08,
-                  }}
-                />
-                <div style={{ flex: 1 }}>
+                <div>
                   <div
                     style={{
-                      width: "50%",
+                      width: 120 + i * 20,
                       height: 12,
-                      borderRadius: 4,
+                      borderRadius: 3,
                       background: t.ink08,
+                      marginBottom: "0.25rem",
                       animation: "skeletonPulse 1.5s ease-in-out infinite",
-                      marginBottom: "0.3rem",
+                      animationDelay: 0.22 + i * 0.06 + "s",
                     }}
                   />
                   <div
                     style={{
-                      width: "30%",
-                      height: 10,
-                      borderRadius: 4,
-                      background: t.ink08,
+                      width: 80 + i * 15,
+                      height: 9,
+                      borderRadius: 3,
+                      background: t.ink04,
                       animation: "skeletonPulse 1.5s ease-in-out infinite",
+                      animationDelay: 0.24 + i * 0.06 + "s",
                     }}
                   />
                 </div>
+                <div
+                  style={{
+                    width: 28,
+                    height: 18,
+                    borderRadius: 4,
+                    background: t.ink08,
+                    animation: "skeletonPulse 1.5s ease-in-out infinite",
+                    animationDelay: 0.26 + i * 0.06 + "s",
+                  }}
+                />
               </div>
             );
           })}
         </div>
-        <style>{`@keyframes skeletonPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }`}</style>
+
+        <style>{`@keyframes skeletonPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }`}</style>
       </div>
     );
   if (!site)
@@ -2129,6 +2432,32 @@ export default function SiteDetailPage() {
   const criticalCount = issues.filter(
     (i) => i.impact === "critical" && i.status === "open"
   ).length;
+  const seriousCount = issues.filter(
+    (i) => i.impact === "serious" && i.status === "open"
+  ).length;
+
+  var handleCopyScore = function () {
+    var domain = site.display_name || site.domain || "";
+    var score = site.score != null ? Math.round(site.score) : "N/A";
+    var parts = [domain + " — Accessibility: " + score + "/100 (WCAG 2.2 AA)"];
+    var issueParts = [];
+    if (criticalCount > 0) issueParts.push(criticalCount + " critical");
+    if (seriousCount > 0) issueParts.push(seriousCount + " serious");
+    if (issueParts.length > 0) {
+      parts.push(openCount + " open issues (" + issueParts.join(", ") + ")");
+    } else if (openCount > 0) {
+      parts.push(openCount + " open issues");
+    } else {
+      parts.push("No open issues");
+    }
+    parts.push("xsbl.io");
+    navigator.clipboard.writeText(parts.join(" — ")).then(function () {
+      setScoreCopied(true);
+      setTimeout(function () {
+        setScoreCopied(false);
+      }, 2000);
+    });
+  };
 
   var plan = org?.plan || "free";
   var isClient = org?.role === "client";
@@ -2313,6 +2642,7 @@ export default function SiteDetailPage() {
                     Run a scan
                   </h2>
                   <p
+                    title={site.last_scan_at ? fullDate(site.last_scan_at) : ""}
                     style={{
                       fontFamily: "var(--body)",
                       fontSize: "0.78rem",
@@ -2321,16 +2651,7 @@ export default function SiteDetailPage() {
                     }}
                   >
                     {site.last_scan_at
-                      ? "Last scanned " +
-                        new Date(site.last_scan_at).toLocaleDateString(
-                          "en-US",
-                          {
-                            month: "short",
-                            day: "numeric",
-                            hour: "numeric",
-                            minute: "2-digit",
-                          }
-                        )
+                      ? "Last scanned " + timeAgo(site.last_scan_at)
                       : "No scans yet"}
                   </p>
                 </div>
@@ -2428,20 +2749,126 @@ export default function SiteDetailPage() {
                   <div
                     style={{
                       marginTop: "0.8rem",
-                      padding: "0.5rem 0.8rem",
-                      borderRadius: 8,
+                      padding: "0.7rem 1rem",
+                      borderRadius: 10,
                       background: t.cardBg,
                       border: "1px solid " + t.ink08,
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "0.5rem",
-                      fontFamily: "var(--mono)",
-                      fontSize: "0.75rem",
-                      color: t.accent,
+                      overflow: "hidden",
                     }}
                   >
-                    <Loader2 size={13} className="xsbl-spin" />
-                    {scanProgress}
+                    {/* Header row */}
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "0.5rem",
+                        marginBottom: "0.55rem",
+                      }}
+                    >
+                      <Loader2
+                        size={13}
+                        className="xsbl-spin"
+                        color={t.accent}
+                      />
+                      <span
+                        style={{
+                          fontFamily: "var(--mono)",
+                          fontSize: "0.72rem",
+                          fontWeight: 600,
+                          color: t.accent,
+                        }}
+                      >
+                        {scanProgress.status === "starting"
+                          ? "Starting scan\u2026"
+                          : "Scanning your site\u2026"}
+                      </span>
+                    </div>
+
+                    {/* Animated progress bar (indeterminate) */}
+                    <div
+                      style={{
+                        height: 3,
+                        borderRadius: 2,
+                        background: t.ink08,
+                        marginBottom: "0.6rem",
+                        overflow: "hidden",
+                        position: "relative",
+                      }}
+                    >
+                      <div
+                        style={{
+                          position: "absolute",
+                          top: 0,
+                          left: 0,
+                          height: "100%",
+                          width: "40%",
+                          borderRadius: 2,
+                          background: t.accent,
+                          animation:
+                            "xsbl-progress-slide 1.4s ease-in-out infinite",
+                        }}
+                      />
+                    </div>
+
+                    {/* Live counters */}
+                    <div
+                      style={{
+                        display: "flex",
+                        gap: "1.5rem",
+                      }}
+                    >
+                      <div>
+                        <div
+                          style={{
+                            fontFamily: "var(--mono)",
+                            fontSize: "0.55rem",
+                            color: t.ink50,
+                            textTransform: "uppercase",
+                            letterSpacing: "0.06em",
+                            marginBottom: "0.15rem",
+                          }}
+                        >
+                          Pages scanned
+                        </div>
+                        <div
+                          style={{
+                            fontFamily: "var(--serif)",
+                            fontSize: "1.15rem",
+                            fontWeight: 700,
+                            color: t.ink,
+                            lineHeight: 1,
+                          }}
+                        >
+                          {scanProgress.pagesScanned}
+                        </div>
+                      </div>
+                      <div>
+                        <div
+                          style={{
+                            fontFamily: "var(--mono)",
+                            fontSize: "0.55rem",
+                            color: t.ink50,
+                            textTransform: "uppercase",
+                            letterSpacing: "0.06em",
+                            marginBottom: "0.15rem",
+                          }}
+                        >
+                          Issues found
+                        </div>
+                        <div
+                          style={{
+                            fontFamily: "var(--serif)",
+                            fontSize: "1.15rem",
+                            fontWeight: 700,
+                            color:
+                              scanProgress.issuesFound > 0 ? t.amber : t.ink,
+                            lineHeight: 1,
+                          }}
+                        >
+                          {scanProgress.issuesFound}
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 )}
                 {scanError && (
@@ -2494,15 +2921,51 @@ export default function SiteDetailPage() {
             >
               <div
                 style={{
-                  fontFamily: "var(--mono)",
-                  fontSize: "0.58rem",
-                  color: t.ink50,
-                  textTransform: "uppercase",
-                  letterSpacing: "0.08em",
-                  marginBottom: "0.3rem",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
                 }}
               >
-                Score
+                <div
+                  style={{
+                    fontFamily: "var(--mono)",
+                    fontSize: "0.58rem",
+                    color: t.ink50,
+                    textTransform: "uppercase",
+                    letterSpacing: "0.08em",
+                    marginBottom: "0.3rem",
+                  }}
+                >
+                  Score
+                </div>
+                {site.score != null && (
+                  <button
+                    onClick={handleCopyScore}
+                    title={scoreCopied ? "Copied!" : "Copy score summary"}
+                    aria-label={
+                      scoreCopied
+                        ? "Copied to clipboard"
+                        : "Copy score summary to clipboard"
+                    }
+                    style={{
+                      background: "none",
+                      border: "none",
+                      padding: "0.2rem",
+                      cursor: "pointer",
+                      color: scoreCopied ? t.green : t.ink50,
+                      display: "flex",
+                      alignItems: "center",
+                      borderRadius: 4,
+                      transition: "color 0.15s",
+                    }}
+                  >
+                    {scoreCopied ? (
+                      <Check size={12} strokeWidth={2.5} />
+                    ) : (
+                      <Copy size={12} strokeWidth={2} />
+                    )}
+                  </button>
+                )}
               </div>
               <div
                 style={{
@@ -2560,15 +3023,15 @@ export default function SiteDetailPage() {
               { label: "Total scans", value: scans.length, color: t.ink },
               {
                 label: "Last scan",
-                value: site.last_scan_at
-                  ? new Date(site.last_scan_at).toLocaleDateString()
-                  : "Never",
+                value: site.last_scan_at ? timeAgo(site.last_scan_at) : "Never",
+                title: site.last_scan_at ? fullDate(site.last_scan_at) : "",
                 color: t.ink,
                 small: true,
               },
-            ].map(({ label, value, color, small }) => (
+            ].map(({ label, value, color, small, title }) => (
               <div
                 key={label}
+                title={title || ""}
                 style={{
                   padding: "1rem",
                   borderRadius: 10,
@@ -2665,7 +3128,7 @@ export default function SiteDetailPage() {
             </PlanGate>
           </div>
 
-          <style>{`@keyframes xsbl-spin { to { transform: rotate(360deg); } } .xsbl-spin { animation: xsbl-spin 0.6s linear infinite; }`}</style>
+          <style>{`@keyframes xsbl-spin { to { transform: rotate(360deg); } } .xsbl-spin { animation: xsbl-spin 0.6s linear infinite; } @keyframes xsbl-progress-slide { 0% { left: -40%; } 100% { left: 100%; } }`}</style>
         </div>
       )}
 
@@ -2738,6 +3201,52 @@ export default function SiteDetailPage() {
                   );
                 })}
               </div>
+
+              {/* Sort mode toggle */}
+              <div
+                style={{
+                  display: "flex",
+                  background: t.ink04,
+                  borderRadius: 6,
+                  padding: "0.15rem",
+                }}
+              >
+                {[
+                  { v: "severity", l: "Severity" },
+                  { v: "quick-wins", l: "Quick wins" },
+                ].map(function (opt) {
+                  var isActive = sortMode === opt.v;
+                  return (
+                    <button
+                      key={opt.v}
+                      onClick={function () {
+                        setSortMode(opt.v);
+                      }}
+                      style={{
+                        padding: "0.25rem 0.6rem",
+                        borderRadius: 5,
+                        border: "none",
+                        background: isActive ? t.cardBg : "transparent",
+                        color: isActive
+                          ? opt.v === "quick-wins"
+                            ? t.green
+                            : t.ink
+                          : t.ink50,
+                        fontFamily: "var(--mono)",
+                        fontSize: "0.6rem",
+                        fontWeight: 600,
+                        cursor: "pointer",
+                        boxShadow: isActive
+                          ? "0 1px 3px rgba(0,0,0,0.08)"
+                          : "none",
+                      }}
+                    >
+                      {opt.l}
+                    </button>
+                  );
+                })}
+              </div>
+
               {sortedIssues.length > 0 && (
                 <button
                   onClick={function () {
@@ -3078,6 +3587,12 @@ export default function SiteDetailPage() {
                           }}
                         >
                           <ImpactBadge impact={group.impact} />
+                          {sortMode === "quick-wins" && (
+                            <FixBadge
+                              count={group.fixableCount}
+                              total={group.count}
+                            />
+                          )}
                           <span
                             style={{
                               fontFamily: "var(--mono)",
@@ -3420,6 +3935,10 @@ export default function SiteDetailPage() {
                           }}
                         >
                           <ImpactBadge impact={issue.impact} />
+                          {sortMode === "quick-wins" &&
+                            issue.fix_suggestion && (
+                              <FixBadge count={1} total={1} />
+                            )}
                           <span
                             style={{
                               fontFamily: "var(--mono)",
@@ -3555,6 +4074,43 @@ export default function SiteDetailPage() {
                 gap: "0.4rem",
               }}
             >
+              {/* Compare button — needs at least 2 completed scans */}
+              {scans.filter(function (s) {
+                return s.status === "complete";
+              }).length >= 2 && (
+                <div style={{ marginBottom: "0.4rem" }}>
+                  <button
+                    onClick={function () {
+                      setShowCompare(true);
+                    }}
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "0.4rem",
+                      padding: "0.4rem 0.85rem",
+                      borderRadius: 7,
+                      border: "1.5px solid " + t.ink20,
+                      background: "none",
+                      color: t.ink50,
+                      fontFamily: "var(--body)",
+                      fontSize: "0.78rem",
+                      fontWeight: 500,
+                      cursor: "pointer",
+                      transition: "all 0.15s",
+                    }}
+                    onMouseEnter={function (e) {
+                      e.currentTarget.style.borderColor = t.accent;
+                      e.currentTarget.style.color = t.accent;
+                    }}
+                    onMouseLeave={function (e) {
+                      e.currentTarget.style.borderColor = t.ink20;
+                      e.currentTarget.style.color = t.ink50;
+                    }}
+                  >
+                    Compare scans
+                  </button>
+                </div>
+              )}
               {scans.map((scan) => (
                 <div
                   key={scan.id}
@@ -3576,7 +4132,9 @@ export default function SiteDetailPage() {
                         color: t.ink,
                       }}
                     >
-                      {new Date(scan.created_at).toLocaleString()}
+                      <span title={fullDate(scan.created_at)}>
+                        {timeAgo(scan.created_at)}
+                      </span>
                     </div>
                     <div
                       style={{
@@ -3681,14 +4239,8 @@ export default function SiteDetailPage() {
 
           <CIWorkflowPanel site={site} onUpdate={(s) => setSite(s)} />
 
-          {/* Badge Embed */}
-          <PlanGate
-            currentPlan={plan}
-            requiredPlan="starter"
-            feature="Accessibility score badge"
-          >
-            <BadgeEmbedPanel site={site} />
-          </PlanGate>
+          {/* Badge Embed — free for all plans (branding vehicle) */}
+          <BadgeEmbedPanel site={site} />
 
           {/* Danger zone */}
           <DangerZonePanel site={site} />
@@ -3736,6 +4288,17 @@ export default function SiteDetailPage() {
           scans={scans}
           onClose={function () {
             setShowScoreExplainer(false);
+          }}
+        />
+      )}
+
+      {/* Scan comparison modal */}
+      {showCompare && (
+        <ScanCompare
+          scans={scans}
+          issues={issues}
+          onClose={function () {
+            setShowCompare(false);
           }}
         />
       )}

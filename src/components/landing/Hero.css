@@ -163,6 +163,27 @@
   font-family: var(--serif);
   font-size: 1.3rem;
   font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.hero__copy-btn {
+  background: none;
+  border: none;
+  padding: 0.25rem;
+  cursor: pointer;
+  color: var(--ink50);
+  display: flex;
+  align-items: center;
+  border-radius: 4px;
+  transition: color 0.15s;
+  opacity: 0.5;
+}
+
+.hero__copy-btn:hover {
+  opacity: 1;
+  color: var(--accent);
 }
 
 .hero__result-impacts {
@@ -246,8 +267,232 @@
   background: var(--ink20);
 }
 
+/* ── Fix Preview Teaser ── */
+.hero__fixes-teaser {
+  margin-top: 0.8rem;
+  border-top: 1px solid var(--ink08);
+  padding-top: 0.8rem;
+}
+
+.hero__fixes-label {
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--accent);
+  margin-bottom: 0.6rem;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.hero__fixes-preview {
+  position: relative;
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--code-bg);
+  margin-bottom: 0.7rem;
+}
+
+.hero__fix-card {
+  padding: 0.65rem 0.8rem;
+  filter: blur(2.5px);
+  user-select: none;
+  pointer-events: none;
+}
+
+.hero__fix-card + .hero__fix-card {
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.hero__fix-card-label {
+  font-family: var(--mono);
+  font-size: 0.58rem;
+  color: rgba(255, 255, 255, 0.4);
+  margin-bottom: 0.35rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.hero__fix-card-code {
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  line-height: 1.65;
+  white-space: pre;
+  overflow: hidden;
+}
+
+.hero__fix-line {
+  padding: 0.05rem 0;
+}
+
+.hero__fix-line--del {
+  color: #f87171;
+  text-decoration: line-through;
+  text-decoration-color: rgba(248, 113, 113, 0.35);
+}
+
+.hero__fix-line--add {
+  color: #4ade80;
+}
+
+/* Overlay on top of blurred code */
+.hero__fixes-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  background: rgba(0, 0, 0, 0.15);
+  backdrop-filter: blur(1px);
+  color: white;
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  pointer-events: none;
+}
+
+/* ── Email Capture ── */
+.hero__email-capture {
+  margin-top: 0.8rem;
+}
+
+.hero__email-divider {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 0.6rem;
+}
+
+.hero__email-divider-line {
+  flex: 1;
+  height: 1px;
+  background: var(--ink08);
+}
+
+.hero__email-divider-text {
+  font-family: var(--mono);
+  font-size: 0.58rem;
+  color: var(--ink50);
+  white-space: nowrap;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.hero__email-row {
+  display: flex;
+  gap: 0.35rem;
+  position: relative;
+}
+
+.hero__email-input {
+  flex: 1;
+  padding: 0.55rem 0.8rem 0.55rem 2rem;
+  border-radius: 7px;
+  border: 1.5px solid var(--ink08);
+  background: var(--card-bg);
+  color: var(--ink);
+  font-family: var(--body);
+  font-size: 0.82rem;
+  outline: none;
+  min-width: 0;
+  transition: border-color 0.2s;
+}
+
+.hero__email-input:focus {
+  border-color: var(--accent);
+}
+
+.hero__email-btn {
+  padding: 0.55rem 1rem;
+  border-radius: 7px;
+  border: none;
+  background: var(--ink);
+  color: var(--paper);
+  font-family: var(--body);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  transition: all 0.2s;
+}
+
+.hero__email-btn:hover {
+  background: var(--accent);
+}
+
+.hero__email-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.hero__email-note {
+  font-size: 0.65rem;
+  color: var(--ink50);
+  margin: 0.35rem 0 0;
+  font-family: var(--mono);
+  letter-spacing: 0.02em;
+}
+
+.hero__email-sent {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.6rem 0.8rem;
+  border-radius: 7px;
+  background: color-mix(in srgb, var(--green) 6%, transparent);
+  border: 1px solid color-mix(in srgb, var(--green) 15%, transparent);
+  color: var(--green);
+  font-size: 0.82rem;
+  font-weight: 500;
+}
+
+/* ── Scan Another ── */
+.hero__scan-another {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  width: 100%;
+  margin-top: 0.8rem;
+  padding: 0.5rem;
+  border-radius: 7px;
+  border: 1.5px dashed var(--ink08);
+  background: none;
+  color: var(--ink50);
+  font-family: var(--body);
+  font-size: 0.78rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.hero__scan-another:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
 @media (max-width: 680px) {
   .hero__pipe {
     display: none !important;
+  }
+
+  .hero__fix-card-code {
+    font-size: 0.56rem;
+  }
+
+  .hero__email-row {
+    flex-direction: column;
+  }
+
+  .hero__email-btn {
+    justify-content: center;
   }
 }

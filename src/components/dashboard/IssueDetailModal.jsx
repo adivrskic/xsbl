@@ -19,6 +19,147 @@ import { logAudit } from "../../lib/audit";
 import "../../styles/dashboard.css";
 import "../../styles/dashboard-modals.css";
 
+function GitHubIcon({ size, fill }) {
+  return (
+    <svg
+      width={size || 16}
+      height={size || 16}
+      viewBox="0 0 24 24"
+      fill={fill || "currentColor"}
+      aria-hidden="true"
+      style={{ flexShrink: 0 }}
+    >
+      <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z" />
+    </svg>
+  );
+}
+
+/**
+ * CreateGitHubIssueButton — one-click GitHub issue creation via edge function.
+ */
+function CreateGitHubIssueButton({ issue, site }) {
+  var { t } = useTheme();
+  var [loading, setLoading] = useState(false);
+  var [result, setResult] = useState(
+    issue.github_issue_url
+      ? { url: issue.github_issue_url, existing: true }
+      : null
+  );
+  var [error, setError] = useState(null);
+
+  var handleCreate = async function () {
+    setLoading(true);
+    setError(null);
+    try {
+      var {
+        data: { session },
+      } = await supabase.auth.getSession();
+      var { data, error: fnErr } = await supabase.functions.invoke(
+        "create-github-issues",
+        {
+          body: { site_id: site.id, issue_ids: [issue.id] },
+          headers: { Authorization: "Bearer " + (session?.access_token || "") },
+        }
+      );
+      if (fnErr) throw new Error(fnErr.message);
+      if (data?.error) throw new Error(data.error);
+      if (data?.errors?.length > 0) throw new Error(data.errors[0].error);
+      if (data?.results?.length > 0) {
+        setResult({
+          url: data.results[0].github_issue_url,
+          number: data.results[0].github_issue_number,
+        });
+      }
+    } catch (err) {
+      setError(String(err).substring(0, 200));
+    }
+    setLoading(false);
+  };
+
+  if (result) {
+    return (
+      <div style={{ marginTop: "0.5rem" }}>
+        <a
+          href={result.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "0.35rem",
+            padding: "0.4rem 0.8rem",
+            borderRadius: 6,
+            background: t.greenBg,
+            border: "1px solid " + t.green + "20",
+            fontFamily: "var(--mono)",
+            fontSize: "0.72rem",
+            fontWeight: 600,
+            color: t.green,
+            textDecoration: "none",
+          }}
+        >
+          <Check size={12} strokeWidth={3} />
+          {result.number ? "Issue #" + result.number : "View GitHub Issue"}
+          <ExternalLink size={10} strokeWidth={2} />
+        </a>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ marginTop: "0.5rem" }}>
+      <button
+        onClick={handleCreate}
+        disabled={loading}
+        style={{
+          display: "inline-flex",
+          alignItems: "center",
+          gap: "0.4rem",
+          padding: "0.45rem 0.9rem",
+          borderRadius: 7,
+          border: "1.5px solid " + t.ink20,
+          background: "none",
+          color: t.ink50,
+          fontFamily: "var(--body)",
+          fontSize: "0.78rem",
+          fontWeight: 500,
+          cursor: loading ? "not-allowed" : "pointer",
+          opacity: loading ? 0.6 : 1,
+          transition: "all 0.15s",
+        }}
+        onMouseEnter={function (e) {
+          if (!loading) {
+            e.currentTarget.style.borderColor = t.ink50;
+            e.currentTarget.style.color = t.ink;
+          }
+        }}
+        onMouseLeave={function (e) {
+          e.currentTarget.style.borderColor = t.ink20;
+          e.currentTarget.style.color = t.ink50;
+        }}
+      >
+        {loading ? (
+          <Loader2 size={13} className="xsbl-spin" />
+        ) : (
+          <GitHubIcon size={14} fill={t.ink50} />
+        )}
+        {loading ? "Creating…" : "Create GitHub Issue"}
+      </button>
+      {error && (
+        <div
+          style={{
+            marginTop: "0.35rem",
+            fontSize: "0.72rem",
+            color: t.red,
+          }}
+        >
+          {error}
+        </div>
+      )}
+    </div>
+  );
+}
+
 const STATUS_OPTIONS = [
   { value: "open", label: "Open" },
   { value: "fixed", label: "Fixed" },
@@ -642,6 +783,11 @@ export default function IssueDetailModal({
 
           {/* GitHub PR button — only shows when site has GitHub connected */}
           {!readOnly && <CreatePRButton issue={issue} site={site} />}
+
+          {/* Create GitHub Issue — one-click via API */}
+          {!readOnly && site.github_repo && site.github_token && (
+            <CreateGitHubIssueButton issue={issue} site={site} />
+          )}
 
           {/* Status */}
           <div style={{ marginTop: "1.2rem" }}>

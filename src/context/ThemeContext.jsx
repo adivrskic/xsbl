@@ -1,28 +1,39 @@
-import { createContext, useContext, useState, useEffect } from "react";
+import {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useCallback,
+} from "react";
 import { themes } from "../data/themes";
 
 const ThemeCtx = createContext();
 
-function getInitialDark() {
-  // Check localStorage first
+function getSavedPreference() {
   try {
-    var saved = localStorage.getItem("xsbl-theme");
-    if (saved === "dark") return true;
-    if (saved === "light") return false;
+    return localStorage.getItem("xsbl-theme"); // "dark" | "light" | null
   } catch (e) {
-    // localStorage unavailable
+    return null;
   }
-  // Fall back to system preference
+}
+
+function getSystemPrefersDark() {
   if (typeof window !== "undefined" && window.matchMedia) {
     return window.matchMedia("(prefers-color-scheme: dark)").matches;
   }
   return true;
 }
 
+function getInitialDark() {
+  var saved = getSavedPreference();
+  if (saved === "dark") return true;
+  if (saved === "light") return false;
+  return getSystemPrefersDark();
+}
+
 function applyCssVars(themeObj) {
   var root = document.documentElement;
   Object.entries(themeObj).forEach(function ([key, value]) {
-    // Convert camelCase to kebab-case: paperWarm -> paper-warm
     var cssKey = key.replace(/([A-Z])/g, "-$1").toLowerCase();
     root.style.setProperty("--" + cssKey, value);
   });
@@ -30,6 +41,9 @@ function applyCssVars(themeObj) {
 
 export function ThemeProvider({ children }) {
   const [dark, setDark] = useState(getInitialDark);
+  const [hasExplicitPref, setHasExplicitPref] = useState(
+    () => getSavedPreference() !== null
+  );
   const t = dark ? themes.dark : themes.light;
 
   // Sync CSS custom properties whenever theme changes
@@ -40,19 +54,46 @@ export function ThemeProvider({ children }) {
     [dark, t]
   );
 
-  const toggle = () =>
-    setDark((d) => {
+  // Listen for OS theme changes — only follow them if user hasn't set a manual preference
+  useEffect(function () {
+    if (typeof window === "undefined" || !window.matchMedia) return;
+    var mql = window.matchMedia("(prefers-color-scheme: dark)");
+    var handler = function (e) {
+      // Only auto-switch if user hasn't explicitly toggled
+      if (!getSavedPreference()) {
+        setDark(e.matches);
+      }
+    };
+    mql.addEventListener("change", handler);
+    return function () {
+      mql.removeEventListener("change", handler);
+    };
+  }, []);
+
+  const toggle = useCallback(function () {
+    setDark(function (d) {
       var next = !d;
       try {
         localStorage.setItem("xsbl-theme", next ? "dark" : "light");
-      } catch (e) {
-        // localStorage unavailable
-      }
+      } catch (e) {}
+      setHasExplicitPref(true);
       return next;
     });
+  }, []);
+
+  // Allow resetting to "follow system" (useful for a future settings UI)
+  const followSystem = useCallback(function () {
+    try {
+      localStorage.removeItem("xsbl-theme");
+    } catch (e) {}
+    setHasExplicitPref(false);
+    setDark(getSystemPrefersDark());
+  }, []);
 
   return (
-    <ThemeCtx.Provider value={{ t, dark, toggle }}>
+    <ThemeCtx.Provider
+      value={{ t, dark, toggle, hasExplicitPref, followSystem }}
+    >
       {children}
     </ThemeCtx.Provider>
   );
