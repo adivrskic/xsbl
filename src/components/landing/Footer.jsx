@@ -6,31 +6,30 @@ var footerColumns = [
   {
     title: "Product",
     links: [
-      { label: "How it works", href: "/#how" },
       { label: "Features", href: "/#features" },
       { label: "GitHub PRs", href: "/#github" },
-      { label: "Simulator", href: "/#simulator" },
+      { label: "How it works", href: "/#how" },
       { label: "Pricing", href: "/#pricing" },
-      { label: "FAQ", href: "/#faq" },
+      { label: "Simulator", href: "/#simulator" },
     ],
   },
   {
     title: "Resources",
     links: [
-      { label: "Documentation", href: "/docs" },
-      { label: "Blog", href: "/blog" },
-      { label: "WCAG reference", href: "/wcag" },
-      { label: "RSS feed", href: "/blog/feed.xml" },
-      { label: "Contact", href: "/contact" },
       { label: "Agency plan", href: "/agency" },
+      { label: "Blog", href: "/blog" },
+      { label: "Contact", href: "/contact" },
+      { label: "Documentation", href: "/docs" },
+      { label: "RSS feed", href: "/blog/feed.xml" },
+      { label: "WCAG reference", href: "/wcag" },
     ],
   },
   {
     title: "Legal",
     links: [
       { label: "Privacy policy", href: "/privacy" },
-      { label: "Terms of service", href: "/terms" },
       { label: "Security", href: "/security" },
+      { label: "Terms of service", href: "/terms" },
     ],
   },
 ];
@@ -87,7 +86,7 @@ export default function Footer() {
           &copy; {year} xsbl. All rights reserved.
         </span>
         <span className="footer__built">
-          Built for the web that works for everyone.
+          Building a web that works for everyone.
         </span>
       </div>
     </footer>

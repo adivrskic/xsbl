@@ -603,19 +603,6 @@ export default function Hero() {
           )}
         </div>
         {/* end aria-live region */}
-
-        {/* Trust badges */}
-        {!result && (
-          <FadeIn delay={0.26}>
-            <div className="hero__trust">
-              <span>No signup required</span>
-              <span className="hero__pipe" />
-              <span>WCAG 2.2 AA + AAA</span>
-              <span className="hero__pipe" />
-              <span>Auto GitHub PRs</span>
-            </div>
-          </FadeIn>
-        )}
       </div>
 
       <FadeIn delay={0.2}>
