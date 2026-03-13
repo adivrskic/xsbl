@@ -142,7 +142,7 @@ function DemoSite(props) {
   );
 }
 
-export default function SimulatorSection() {
+export default function SimulatorSection({ bare }) {
   var { t } = useTheme();
   var { user } = useAuth();
 
@@ -203,22 +203,26 @@ export default function SimulatorSection() {
         }}
       />
 
-      <Section id="simulator">
-        <FadeIn>
-          <Eyebrow>Accessibility simulator</Eyebrow>
-        </FadeIn>
-        <FadeIn delay={0.05}>
-          <H2>
-            See through your <Italic>users&apos; eyes.</Italic>
-          </H2>
-        </FadeIn>
-        <FadeIn delay={0.1}>
-          <SubText>
-            Preview how your site looks to people with different types of color
-            blindness and low vision. Catch contrast issues before your users
-            do.
-          </SubText>
-        </FadeIn>
+      <Section id={bare ? undefined : "simulator"}>
+        {!bare && (
+          <>
+            <FadeIn>
+              <Eyebrow>Accessibility simulator</Eyebrow>
+            </FadeIn>
+            <FadeIn delay={0.05}>
+              <H2>
+                See through your <Italic>users&apos; eyes.</Italic>
+              </H2>
+            </FadeIn>
+            <FadeIn delay={0.1}>
+              <SubText>
+                Preview how your site looks to people with different types of
+                color blindness and low vision. Catch contrast issues before
+                your users do.
+              </SubText>
+            </FadeIn>
+          </>
+        )}
 
         <div className="sim-layout">
           <FadeIn delay={0.15}>

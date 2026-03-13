@@ -16,16 +16,13 @@ import SignupPage from "./pages/auth/SignupPage";
 // Landing page
 import Nav from "./components/landing/Nav";
 import Hero from "./components/landing/Hero";
-import Marquee from "./components/landing/Marquee";
+import UrgencyBar from "./components/landing/UrgencyBar";
 import VsSection from "./components/landing/VsSection";
 import HowSection from "./components/landing/HowSection";
-import AgentSection from "./components/landing/AgentSection";
-import ComplianceSection from "./components/landing/ComplianceSection";
-import GitHubSection from "./components/landing/GitHubSection";
-import SimulatorSection from "./components/landing/SimulatorSection";
+import FeatureGrid from "./components/landing/FeatureGrid";
+import DemoSection from "./components/landing/DemoSection";
 import PricingSection from "./components/landing/PricingSection";
 import FaqSection from "./components/landing/FaqSection";
-import CtaSection from "./components/landing/CtaSection";
 import Footer from "./components/landing/Footer";
 
 // Pages
@@ -86,16 +83,13 @@ function LandingPage() {
       <Nav />
       <main id="main-content">
         <Hero />
-        <Marquee />
+        <UrgencyBar />
         <VsSection />
         <HowSection />
-        <AgentSection />
-        <GitHubSection />
-        <SimulatorSection />
-        <ComplianceSection />
+        <FeatureGrid />
+        <DemoSection />
         {showPricing && <PricingSection />}
         <FaqSection />
-        <CtaSection />
       </main>
       <Footer />
     </>

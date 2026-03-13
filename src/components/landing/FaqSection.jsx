@@ -101,21 +101,51 @@ export default function FaqSection() {
         <SubText>Straight answers, no bull.</SubText>
       </FadeIn>
 
-      <div className="faq-list">
-        {FAQ_ITEMS.map(function (item, i) {
-          return (
-            <FaqItem
-              key={i}
-              q={item.q}
-              a={item.a}
-              open={openIndex === i}
-              onToggle={function () {
-                handleToggle(i);
-              }}
-              delay={0.03 * i}
-            />
-          );
-        })}
+      <div className="faq-layout">
+        <div className="faq-list">
+          {FAQ_ITEMS.map(function (item, i) {
+            return (
+              <FaqItem
+                key={i}
+                q={item.q}
+                a={item.a}
+                open={openIndex === i}
+                onToggle={function () {
+                  handleToggle(i);
+                }}
+                delay={0.03 * i}
+              />
+            );
+          })}
+        </div>
+
+        <FadeIn delay={0.15}>
+          <div className="faq-cta">
+            <div className="faq-cta__inner">
+              <h3 className="faq-cta__title">
+                Start fixing accessibility issues today
+              </h3>
+              <p className="faq-cta__desc">
+                Free plan included. No credit card. See your first results in 30
+                seconds.
+              </p>
+              <a href="/signup" className="faq-cta__btn">
+                Get started free
+              </a>
+              <div className="faq-cta__sub">
+                or{" "}
+                <a href="/contact" className="faq-cta__link">
+                  book a demo
+                </a>{" "}
+                for teams
+              </div>
+              <div className="faq-cta__proof">
+                <span className="faq-cta__proof-dot" />
+                2,400+ sites scanned
+              </div>
+            </div>
+          </div>
+        </FadeIn>
       </div>
     </Section>
   );

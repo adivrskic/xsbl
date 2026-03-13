@@ -430,26 +430,30 @@ function CICard() {
   );
 }
 
-export default function GitHubSection() {
+export default function GitHubSection({ bare }) {
   var { t } = useTheme();
 
-  return (
-    <Section id="github">
-      <FadeIn>
-        <Eyebrow>GitHub integration</Eyebrow>
-      </FadeIn>
-      <FadeIn delay={0.05}>
-        <H2>
-          One click. <Italic>Real PRs.</Italic>
-        </H2>
-      </FadeIn>
-      <FadeIn delay={0.1}>
-        <SubText>
-          Connect your repo. Select the issues you want fixed. xsbl reads your
-          source code, generates the fixes with AI, and opens a pull request —
-          ready to review and merge.
-        </SubText>
-      </FadeIn>
+  var content = (
+    <>
+      {!bare && (
+        <>
+          <FadeIn>
+            <Eyebrow>GitHub integration</Eyebrow>
+          </FadeIn>
+          <FadeIn delay={0.05}>
+            <H2>
+              One click. <Italic>Real PRs.</Italic>
+            </H2>
+          </FadeIn>
+          <FadeIn delay={0.1}>
+            <SubText>
+              Connect your repo. Select the issues you want fixed. xsbl reads
+              your source code, generates the fixes with AI, and opens a pull
+              request — ready to review and merge.
+            </SubText>
+          </FadeIn>
+        </>
+      )}
       <div className="gh-layout">
         <FadeIn delay={0.15}>
           <div className="gh-features">
@@ -552,6 +556,9 @@ export default function GitHubSection() {
           </div>
         </FadeIn>
       </div>
-    </Section>
+    </>
   );
+
+  if (bare) return content;
+  return <Section id="github">{content}</Section>;
 }
