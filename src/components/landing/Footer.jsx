@@ -99,7 +99,7 @@ export default function Footer() {
           &copy; {year} xsbl. All rights reserved.
         </span>
         <span className="footer__built">
-          Built for the web that works for everyone.
+          Building a web that works for everyone.
         </span>
       </div>
     </footer>

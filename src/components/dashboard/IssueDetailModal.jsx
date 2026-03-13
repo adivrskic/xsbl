@@ -13,6 +13,8 @@ import {
   MessageSquare,
   Send,
   Trash2,
+  UserPlus,
+  ChevronDown,
 } from "lucide-react";
 import CreatePRButton from "./CreatePRButton";
 import AltTextGenerator from "./AltTextGenerator";
@@ -239,12 +241,119 @@ export default function IssueDetailModal({
   const [commentSending, setCommentSending] = useState(false);
   const [deletingComment, setDeletingComment] = useState(null);
 
-  // Assignment
-  const [assignee, setAssignee] = useState(issue.assigned_to || null);
+  // Assignee
+  const [assignedTo, setAssignedTo] = useState(issue.assigned_to || null);
   const [assigneeSaving, setAssigneeSaving] = useState(false);
-  const [orgMembers, setOrgMembers] = useState([]);
-  const [membersLoaded, setMembersLoaded] = useState(false);
-  const [showAssignDropdown, setShowAssignDropdown] = useState(false);
+  const [members, setMembers] = useState([]);
+  const [membersLoading, setMembersLoading] = useState(true);
+  const [assigneeOpen, setAssigneeOpen] = useState(false);
+  const assigneeRef = useRef(null);
+
+  // Fetch org members for assignee dropdown
+  useEffect(
+    function () {
+      if (!org?.id) {
+        setMembersLoading(false);
+        return;
+      }
+      // Two-step fetch: org_members doesn't have a direct FK to profiles,
+      // so we fetch members first, then profiles separately by user_id.
+      supabase
+        .from("org_members")
+        .select("user_id, role")
+        .eq("org_id", org.id)
+        .then(function (res) {
+          var rows = res.data || [];
+          if (rows.length === 0) {
+            setMembersLoading(false);
+            return;
+          }
+          var userIds = rows.map(function (r) {
+            return r.user_id;
+          });
+          var roleMap = {};
+          rows.forEach(function (r) {
+            roleMap[r.user_id] = r.role;
+          });
+          supabase
+            .from("profiles")
+            .select("id, email, full_name")
+            .in("id", userIds)
+            .then(function (pRes) {
+              var profiles = pRes.data || [];
+              var list = profiles.map(function (p) {
+                return {
+                  id: p.id,
+                  name:
+                    p.full_name ||
+                    (p.email ? p.email.split("@")[0] : "Team member"),
+                  email: p.email || "",
+                  role: roleMap[p.id] || "member",
+                  isYou: user && p.id === user.id,
+                };
+              });
+              // Sort: current user first, then alphabetical
+              list.sort(function (a, b) {
+                if (a.isYou && !b.isYou) return -1;
+                if (!a.isYou && b.isYou) return 1;
+                return a.name.localeCompare(b.name);
+              });
+              setMembers(list);
+              setMembersLoading(false);
+            });
+        });
+    },
+    [org?.id, user?.id]
+  );
+
+  // Close assignee dropdown on outside click
+  useEffect(
+    function () {
+      if (!assigneeOpen) return;
+      var handleClick = function (e) {
+        if (assigneeRef.current && !assigneeRef.current.contains(e.target)) {
+          setAssigneeOpen(false);
+        }
+      };
+      document.addEventListener("mousedown", handleClick);
+      return function () {
+        document.removeEventListener("mousedown", handleClick);
+      };
+    },
+    [assigneeOpen]
+  );
+
+  var handleAssigneeChange = async function (userId) {
+    setAssigneeSaving(true);
+    setAssigneeOpen(false);
+    var { error } = await supabase
+      .from("issues")
+      .update({ assigned_to: userId || null })
+      .eq("id", issue.id);
+    if (!error) {
+      setAssignedTo(userId || null);
+      onUpdate?.({ ...issue, assigned_to: userId || null });
+      logAudit({
+        action: "issue.assigned",
+        resourceType: "issue",
+        resourceId: issue.id,
+        description: userId
+          ? "Assigned " +
+            issue.rule_id +
+            " to " +
+            (members.find(function (m) {
+              return m.id === userId;
+            })?.name || userId)
+          : "Unassigned " + issue.rule_id,
+        metadata: {
+          rule_id: issue.rule_id,
+          assigned_to: userId || null,
+          site_id: issue.site_id,
+        },
+      });
+    }
+    setAssigneeSaving(false);
+  };
 
   useEffect(() => {
     previousFocus.current = document.activeElement;
@@ -299,88 +408,6 @@ export default function IssueDetailModal({
     [issue.id]
   );
 
-  // Load org members for assignment dropdown
-  useEffect(
-    function () {
-      if (readOnly || !org?.id || membersLoaded) return;
-      supabase
-        .from("org_members")
-        .select("user_id, role")
-        .eq("org_id", org.id)
-        .then(function (res) {
-          var members = res.data || [];
-          var userIds = members.map(function (m) {
-            return m.user_id;
-          });
-          if (userIds.length === 0) {
-            setMembersLoaded(true);
-            return;
-          }
-          supabase
-            .from("profiles")
-            .select("id, email, full_name, github_username")
-            .in("id", userIds)
-            .then(function (pRes) {
-              var profileMap = {};
-              (pRes.data || []).forEach(function (p) {
-                profileMap[p.id] = p;
-              });
-              setOrgMembers(
-                members.map(function (m) {
-                  var p = profileMap[m.user_id] || {};
-                  return {
-                    user_id: m.user_id,
-                    role: m.role,
-                    email: p.email || "",
-                    full_name: p.full_name || "",
-                    github_username: p.github_username || "",
-                    initials: (p.full_name || p.email || "?")
-                      .substring(0, 2)
-                      .toUpperCase(),
-                  };
-                })
-              );
-              setMembersLoaded(true);
-            });
-        });
-    },
-    [org?.id, readOnly]
-  );
-
-  var handleAssign = async function (userId) {
-    setAssigneeSaving(true);
-    setShowAssignDropdown(false);
-    var { error } = await supabase
-      .from("issues")
-      .update({ assigned_to: userId || null })
-      .eq("id", issue.id);
-    if (!error) {
-      setAssignee(userId || null);
-      onUpdate?.({ ...issue, assigned_to: userId || null });
-      var assigneeName = userId
-        ? (
-            orgMembers.find(function (m) {
-              return m.user_id === userId;
-            }) || {}
-          ).full_name || "someone"
-        : "nobody";
-      logAudit({
-        action: "issue.assigned",
-        resourceType: "issue",
-        resourceId: issue.id,
-        description: issue.rule_id + " assigned to " + assigneeName,
-        metadata: { rule_id: issue.rule_id, assigned_to: userId },
-      });
-    }
-    setAssigneeSaving(false);
-  };
-
-  var assignedMember = assignee
-    ? orgMembers.find(function (m) {
-        return m.user_id === assignee;
-      })
-    : null;
-
   var handlePostComment = async function () {
     var text = newComment.trim();
     if (!text || commentSending) return;
@@ -399,22 +426,6 @@ export default function IssueDetailModal({
         return prev.concat([data]);
       });
       setNewComment("");
-
-      // Mirror to Slack thread (fire-and-forget — don't block UI on Slack failures)
-      try {
-        supabase.functions
-          .invoke("mirror-slack-comment", {
-            body: {
-              issue_id: issue.id,
-              comment_body: text,
-              site_id: site.id,
-            },
-            headers: {
-              Authorization: "Bearer " + (session?.access_token || ""),
-            },
-          })
-          .catch(function () {});
-      } catch (e) {}
     }
     setCommentSending(false);
   };
@@ -641,60 +652,6 @@ export default function IssueDetailModal({
                   {tag}
                 </span>
               ))}
-            </div>
-          )}
-
-          {/* Viewport */}
-          {issue.viewport && (
-            <div
-              style={{
-                display: "flex",
-                gap: "0.3rem",
-                flexWrap: "wrap",
-                marginBottom: "1rem",
-                alignItems: "center",
-              }}
-            >
-              <span
-                style={{
-                  fontFamily: "var(--mono)",
-                  fontSize: "0.58rem",
-                  color: t.ink50,
-                  textTransform: "uppercase",
-                  letterSpacing: "0.06em",
-                  marginRight: "0.2rem",
-                }}
-              >
-                Viewport
-              </span>
-              {issue.viewport.split(",").map(function (vp, vi) {
-                var vpLabel = vp.trim();
-                var vpIcon =
-                  vpLabel === "mobile"
-                    ? "📱"
-                    : vpLabel === "tablet"
-                    ? "📋"
-                    : "🖥";
-                return (
-                  <span
-                    key={vi}
-                    style={{
-                      fontFamily: "var(--mono)",
-                      fontSize: "0.6rem",
-                      color: vpLabel === "mobile" ? t.amber : t.accent,
-                      padding: "0.15rem 0.45rem",
-                      borderRadius: 4,
-                      background:
-                        vpLabel === "mobile" ? t.amber + "10" : t.accentBg,
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: "0.2rem",
-                    }}
-                  >
-                    {vpIcon} {vpLabel}
-                  </span>
-                );
-              })}
             </div>
           )}
 
@@ -1142,9 +1099,9 @@ export default function IssueDetailModal({
             )}
           </div>
 
-          {/* Assigned to */}
+          {/* Assignee */}
           {!readOnly && (
-            <div style={{ marginTop: "1rem", position: "relative" }}>
+            <div style={{ marginTop: "1.2rem" }}>
               <div
                 style={{
                   fontFamily: "var(--mono)",
@@ -1155,234 +1112,294 @@ export default function IssueDetailModal({
                   marginBottom: "0.4rem",
                 }}
               >
-                Assigned to
+                Assignee
               </div>
-              <button
-                onClick={function () {
-                  setShowAssignDropdown(!showAssignDropdown);
-                }}
-                disabled={assigneeSaving}
+              <div
+                ref={assigneeRef}
                 style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "0.4rem",
-                  padding: "0.4rem 0.7rem",
-                  borderRadius: 6,
-                  border: "1.5px solid " + (assignee ? t.accent : t.ink08),
-                  background: assignee ? t.accentBg : "transparent",
-                  color: assignee ? t.ink : t.ink50,
-                  fontFamily: "var(--body)",
-                  fontSize: "0.78rem",
-                  fontWeight: 500,
-                  cursor: "pointer",
-                  opacity: assigneeSaving ? 0.5 : 1,
-                  transition: "all 0.15s",
-                  minWidth: 140,
+                  position: "relative",
+                  display: "inline-block",
+                  minWidth: 200,
                 }}
               >
-                {assignedMember ? (
-                  <>
-                    <span
-                      style={{
-                        width: 20,
-                        height: 20,
-                        borderRadius: "50%",
-                        background: t.accent,
-                        color: "white",
-                        fontFamily: "var(--mono)",
-                        fontSize: "0.5rem",
-                        fontWeight: 700,
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        flexShrink: 0,
-                      }}
-                    >
-                      {assignedMember.initials}
-                    </span>
-                    {assignedMember.full_name || assignedMember.email}
-                  </>
-                ) : (
-                  <>
-                    <span
-                      style={{
-                        width: 20,
-                        height: 20,
-                        borderRadius: "50%",
-                        border: "1.5px dashed " + t.ink20,
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        flexShrink: 0,
-                        fontSize: "0.62rem",
-                        color: t.ink50,
-                      }}
-                    >
-                      +
-                    </span>
-                    Unassigned
-                  </>
-                )}
-              </button>
-
-              {/* Dropdown */}
-              {showAssignDropdown && (
-                <div
+                <button
+                  onClick={function () {
+                    setAssigneeOpen(!assigneeOpen);
+                  }}
+                  disabled={membersLoading || assigneeSaving}
                   style={{
-                    position: "absolute",
-                    top: "100%",
-                    left: 0,
-                    marginTop: 4,
-                    minWidth: 220,
-                    maxHeight: 200,
-                    overflowY: "auto",
-                    borderRadius: 8,
-                    border: "1px solid " + t.ink08,
-                    background: t.cardBg,
-                    boxShadow: "0 8px 24px rgba(0,0,0,0.12)",
-                    zIndex: 10,
-                    padding: "0.3rem",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "0.4rem",
+                    padding: "0.4rem 0.65rem",
+                    borderRadius: 7,
+                    border:
+                      "1.5px solid " +
+                      (assigneeOpen ? t.accent + "60" : t.ink08),
+                    background: assigneeOpen ? t.accentBg : "transparent",
+                    color: assignedTo ? t.ink : t.ink50,
+                    fontFamily: "var(--body)",
+                    fontSize: "0.78rem",
+                    fontWeight: 500,
+                    cursor:
+                      membersLoading || assigneeSaving
+                        ? "not-allowed"
+                        : "pointer",
+                    transition: "all 0.15s",
+                    width: "100%",
+                    textAlign: "left",
+                    opacity: assigneeSaving ? 0.5 : 1,
                   }}
                 >
-                  {/* Unassign option */}
-                  {assignee && (
+                  {assigneeSaving ? (
+                    <Loader2 size={13} className="xsbl-spin" />
+                  ) : (
+                    <UserPlus
+                      size={13}
+                      strokeWidth={2}
+                      style={{ flexShrink: 0 }}
+                    />
+                  )}
+                  <span style={{ flex: 1 }}>
+                    {assignedTo
+                      ? (function () {
+                          var m = members.find(function (m) {
+                            return m.id === assignedTo;
+                          });
+                          return m
+                            ? m.name + (m.isYou ? " (you)" : "")
+                            : "Assigned";
+                        })()
+                      : "Unassigned"}
+                  </span>
+                  <ChevronDown
+                    size={13}
+                    strokeWidth={2}
+                    style={{
+                      flexShrink: 0,
+                      transform: assigneeOpen ? "rotate(180deg)" : "none",
+                      transition: "transform 0.15s",
+                    }}
+                  />
+                </button>
+
+                {assigneeOpen && (
+                  <div
+                    style={{
+                      position: "absolute",
+                      top: "calc(100% + 4px)",
+                      left: 0,
+                      right: 0,
+                      background: t.cardBg,
+                      border: "1px solid " + t.ink08,
+                      borderRadius: 8,
+                      boxShadow: "0 6px 20px " + t.ink08,
+                      zIndex: 50,
+                      maxHeight: 200,
+                      overflowY: "auto",
+                      padding: "0.2rem",
+                    }}
+                  >
+                    {/* Unassign option */}
                     <button
                       onClick={function () {
-                        handleAssign(null);
+                        handleAssigneeChange(null);
                       }}
                       style={{
                         display: "flex",
                         alignItems: "center",
-                        gap: "0.4rem",
+                        gap: "0.35rem",
                         width: "100%",
-                        padding: "0.4rem 0.5rem",
+                        padding: "0.4rem 0.55rem",
                         borderRadius: 5,
                         border: "none",
-                        background: "none",
+                        background: !assignedTo ? t.ink04 : "transparent",
                         color: t.ink50,
                         fontFamily: "var(--body)",
-                        fontSize: "0.76rem",
+                        fontSize: "0.74rem",
                         cursor: "pointer",
                         textAlign: "left",
+                        transition: "background 0.1s",
+                        fontStyle: "italic",
                       }}
                       onMouseEnter={function (e) {
                         e.currentTarget.style.background = t.ink04;
                       }}
                       onMouseLeave={function (e) {
-                        e.currentTarget.style.background = "none";
+                        e.currentTarget.style.background = !assignedTo
+                          ? t.ink04
+                          : "transparent";
                       }}
                     >
-                      <X size={14} color={t.ink50} />
-                      Unassign
+                      Unassigned
                     </button>
-                  )}
-                  {orgMembers.map(function (m) {
-                    var isActive = m.user_id === assignee;
-                    var isMe = m.user_id === user?.id;
-                    return (
-                      <button
-                        key={m.user_id}
-                        onClick={function () {
-                          handleAssign(m.user_id);
-                        }}
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: "0.4rem",
-                          width: "100%",
-                          padding: "0.4rem 0.5rem",
-                          borderRadius: 5,
-                          border: "none",
-                          background: isActive ? t.accentBg : "none",
-                          color: isActive ? t.accent : t.ink,
-                          fontFamily: "var(--body)",
-                          fontSize: "0.76rem",
-                          fontWeight: isActive ? 600 : 400,
-                          cursor: "pointer",
-                          textAlign: "left",
-                        }}
-                        onMouseEnter={function (e) {
-                          if (!isActive)
-                            e.currentTarget.style.background = t.ink04;
-                        }}
-                        onMouseLeave={function (e) {
-                          if (!isActive)
-                            e.currentTarget.style.background = isActive
-                              ? t.accentBg
-                              : "none";
-                        }}
-                      >
-                        <span
+
+                    {members.map(function (member) {
+                      var isSelected = assignedTo === member.id;
+                      return (
+                        <button
+                          key={member.id}
+                          onClick={function () {
+                            handleAssigneeChange(member.id);
+                          }}
                           style={{
-                            width: 22,
-                            height: 22,
-                            borderRadius: "50%",
-                            background: isActive ? t.accent : t.ink08,
-                            color: isActive ? "white" : t.ink50,
-                            fontFamily: "var(--mono)",
-                            fontSize: "0.52rem",
-                            fontWeight: 700,
                             display: "flex",
                             alignItems: "center",
-                            justifyContent: "center",
-                            flexShrink: 0,
+                            gap: "0.4rem",
+                            width: "100%",
+                            padding: "0.4rem 0.55rem",
+                            borderRadius: 5,
+                            border: "none",
+                            background: isSelected ? t.accentBg : "transparent",
+                            color: isSelected ? t.accent : t.ink,
+                            fontFamily: "var(--body)",
+                            fontSize: "0.74rem",
+                            fontWeight: isSelected ? 600 : 400,
+                            cursor: "pointer",
+                            textAlign: "left",
+                            transition: "background 0.1s",
+                          }}
+                          onMouseEnter={function (e) {
+                            e.currentTarget.style.background = isSelected
+                              ? t.accentBg
+                              : t.ink04;
+                          }}
+                          onMouseLeave={function (e) {
+                            e.currentTarget.style.background = isSelected
+                              ? t.accentBg
+                              : "transparent";
                           }}
                         >
-                          {m.initials}
-                        </span>
-                        <div style={{ flex: 1, minWidth: 0 }}>
                           <div
                             style={{
-                              overflow: "hidden",
-                              textOverflow: "ellipsis",
-                              whiteSpace: "nowrap",
+                              width: 20,
+                              height: 20,
+                              borderRadius: "50%",
+                              background: isSelected
+                                ? t.accent + "20"
+                                : t.ink08,
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              fontFamily: "var(--mono)",
+                              fontSize: "0.52rem",
+                              fontWeight: 700,
+                              color: isSelected ? t.accent : t.ink50,
+                              flexShrink: 0,
                             }}
                           >
-                            {m.full_name || m.email}
-                            {isMe && (
-                              <span
-                                style={{
-                                  fontSize: "0.62rem",
-                                  color: t.ink50,
-                                  marginLeft: "0.3rem",
-                                }}
-                              >
-                                (you)
-                              </span>
-                            )}
+                            {(member.name[0] || "?").toUpperCase()}
                           </div>
-                          {m.full_name && (
+                          <div style={{ flex: 1, minWidth: 0 }}>
                             <div
                               style={{
-                                fontFamily: "var(--mono)",
-                                fontSize: "0.58rem",
-                                color: t.ink50,
+                                lineHeight: 1.3,
+                                overflow: "hidden",
+                                textOverflow: "ellipsis",
+                                whiteSpace: "nowrap",
                               }}
                             >
-                              {m.email}
+                              {member.name}
+                              {member.isYou && (
+                                <span
+                                  style={{
+                                    fontFamily: "var(--mono)",
+                                    fontSize: "0.58rem",
+                                    fontWeight: 500,
+                                    color: t.ink50,
+                                    marginLeft: "0.3rem",
+                                  }}
+                                >
+                                  (you)
+                                </span>
+                              )}
                             </div>
+                            {member.email && (
+                              <div
+                                style={{
+                                  fontFamily: "var(--mono)",
+                                  fontSize: "0.55rem",
+                                  color: t.ink50,
+                                  overflow: "hidden",
+                                  textOverflow: "ellipsis",
+                                  whiteSpace: "nowrap",
+                                }}
+                              >
+                                {member.email}
+                              </div>
+                            )}
+                          </div>
+                          {isSelected && (
+                            <Check
+                              size={13}
+                              strokeWidth={2.5}
+                              style={{ flexShrink: 0 }}
+                            />
                           )}
-                        </div>
-                        {isActive && (
-                          <Check size={14} color={t.accent} strokeWidth={2.5} />
-                        )}
-                      </button>
-                    );
-                  })}
-                  {!membersLoaded && (
-                    <div
-                      style={{
-                        padding: "0.5rem",
-                        textAlign: "center",
-                        color: t.ink50,
-                        fontSize: "0.72rem",
-                      }}
-                    >
-                      Loading…
-                    </div>
-                  )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+          {readOnly && assignedTo && (
+            <div style={{ marginTop: "1.2rem" }}>
+              <div
+                style={{
+                  fontFamily: "var(--mono)",
+                  fontSize: "0.62rem",
+                  color: t.ink50,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.06em",
+                  marginBottom: "0.4rem",
+                }}
+              >
+                Assignee
+              </div>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.4rem",
+                  padding: "0.35rem 0.65rem",
+                  borderRadius: 7,
+                  background: t.ink04,
+                  fontSize: "0.78rem",
+                  color: t.ink,
+                  fontWeight: 500,
+                }}
+              >
+                <div
+                  style={{
+                    width: 20,
+                    height: 20,
+                    borderRadius: "50%",
+                    background: t.accent + "20",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontFamily: "var(--mono)",
+                    fontSize: "0.52rem",
+                    fontWeight: 700,
+                    color: t.accent,
+                    flexShrink: 0,
+                  }}
+                >
+                  {(
+                    (members.find(function (m) {
+                      return m.id === assignedTo;
+                    })?.name || "?")[0] || "?"
+                  ).toUpperCase()}
                 </div>
-              )}
+                {(function () {
+                  var m = members.find(function (m) {
+                    return m.id === assignedTo;
+                  });
+                  return m ? m.name + (m.isYou ? " (you)" : "") : "Assigned";
+                })()}
+              </div>
             </div>
           )}
 

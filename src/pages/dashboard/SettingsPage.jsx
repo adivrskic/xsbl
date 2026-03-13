@@ -31,6 +31,9 @@ import {
   Copy,
   Globe,
   Eye,
+  Chrome,
+  ExternalLink,
+  Sparkles,
 } from "lucide-react";
 import { timeAgo, fullDate } from "../../lib/timeAgo";
 
@@ -1592,12 +1595,6 @@ function ScheduledReports({ org }) {
 function AlertIntegrations({ org }) {
   const { t } = useTheme();
   const [slackUrl, setSlackUrl] = useState(org?.slack_webhook_url || "");
-  const [slackBotToken, setSlackBotToken] = useState(
-    org?.slack_bot_token || ""
-  );
-  const [slackChannelId, setSlackChannelId] = useState(
-    org?.slack_channel_id || ""
-  );
   const [emails, setEmails] = useState((org?.alert_emails || []).join(", "));
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -1620,8 +1617,6 @@ function AlertIntegrations({ org }) {
       .from("organizations")
       .update({
         slack_webhook_url: slackUrl.trim() || null,
-        slack_bot_token: slackBotToken.trim() || null,
-        slack_channel_id: slackChannelId.trim() || null,
         alert_emails: emailList,
       })
       .eq("id", org.id);
@@ -1633,7 +1628,6 @@ function AlertIntegrations({ org }) {
       description: "Alert integrations updated",
       metadata: {
         has_slack: !!slackUrl.trim(),
-        has_slack_threads: !!(slackBotToken.trim() && slackChannelId.trim()),
         alert_emails: emailList.length,
       },
     });
@@ -1769,135 +1763,6 @@ function AlertIntegrations({ org }) {
             Create a Slack webhook →
           </a>
         </p>
-      </div>
-
-      {/* Slack comment threading */}
-      <div
-        style={{
-          marginBottom: "1rem",
-          padding: "0.9rem",
-          borderRadius: 8,
-          border: "1px solid " + t.ink08,
-          background: t.ink04 + "60",
-        }}
-      >
-        <div
-          style={{
-            fontSize: "0.78rem",
-            fontWeight: 600,
-            color: t.ink,
-            marginBottom: "0.3rem",
-            display: "flex",
-            alignItems: "center",
-            gap: "0.3rem",
-          }}
-        >
-          💬 Comment → Slack threads
-        </div>
-        <p
-          style={{
-            fontSize: "0.68rem",
-            color: t.ink50,
-            marginBottom: "0.6rem",
-            lineHeight: 1.5,
-          }}
-        >
-          Mirror issue comments to Slack threads. First comment creates a
-          thread, subsequent comments reply in it. Requires a Slack Bot Token
-          (from a Slack app with{" "}
-          <code style={{ fontSize: "0.62rem" }}>chat:write</code> scope) and a
-          channel ID.
-        </p>
-        <div style={{ marginBottom: "0.5rem" }}>
-          <label
-            style={{
-              display: "block",
-              fontFamily: "var(--mono)",
-              fontSize: "0.58rem",
-              textTransform: "uppercase",
-              letterSpacing: "0.06em",
-              color: t.ink50,
-              marginBottom: "0.2rem",
-            }}
-          >
-            Bot Token
-          </label>
-          <input
-            aria-label="Slack bot token"
-            value={slackBotToken}
-            onChange={function (e) {
-              setSlackBotToken(e.target.value);
-            }}
-            placeholder="xoxb-..."
-            type="password"
-            style={{
-              width: "100%",
-              padding: "0.4rem 0.65rem",
-              borderRadius: 6,
-              border: "1.5px solid " + t.ink20,
-              background: t.paper,
-              color: t.ink,
-              fontFamily: "var(--mono)",
-              fontSize: "0.7rem",
-              outline: "none",
-              boxSizing: "border-box",
-            }}
-          />
-        </div>
-        <div style={{ marginBottom: "0.3rem" }}>
-          <label
-            style={{
-              display: "block",
-              fontFamily: "var(--mono)",
-              fontSize: "0.58rem",
-              textTransform: "uppercase",
-              letterSpacing: "0.06em",
-              color: t.ink50,
-              marginBottom: "0.2rem",
-            }}
-          >
-            Channel ID
-          </label>
-          <input
-            aria-label="Slack channel ID"
-            value={slackChannelId}
-            onChange={function (e) {
-              setSlackChannelId(e.target.value);
-            }}
-            placeholder="C0123456789"
-            style={{
-              width: "100%",
-              padding: "0.4rem 0.65rem",
-              borderRadius: 6,
-              border: "1.5px solid " + t.ink20,
-              background: t.paper,
-              color: t.ink,
-              fontFamily: "var(--mono)",
-              fontSize: "0.7rem",
-              outline: "none",
-              boxSizing: "border-box",
-            }}
-          />
-          <p
-            style={{ fontSize: "0.6rem", color: t.ink50, marginTop: "0.15rem" }}
-          >
-            Right-click a channel → "View channel details" → copy the Channel ID
-            at the bottom.
-          </p>
-        </div>
-        {slackBotToken && slackChannelId && (
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "0.3rem",
-              fontSize: "0.68rem",
-              color: t.green,
-            }}
-          >
-            ✓ Comment threading will mirror to Slack
-          </div>
-        )}
       </div>
 
       {/* Email alerts */}
@@ -2484,6 +2349,252 @@ function DigestPreviewModal({ org, sites, onClose }) {
           )}
         </div>
       </div>
+    </div>
+  );
+}
+
+/* ── Chrome Extension Panel ── */
+var CHROME_STORE_URL =
+  "https://chrome.google.com/webstore/detail/xsbl-accessibility/placeholder";
+
+function ChromeExtensionPanel({ org }) {
+  var { t } = useTheme();
+  var plan = org?.plan || "free";
+  var hasPro = plan !== "free" && plan !== "starter";
+  var [dismissed, setDismissed] = useState(false);
+
+  // Check if extension is installed by looking for a sentinel the extension injects
+  var [extInstalled, setExtInstalled] = useState(false);
+  useEffect(function () {
+    // The extension sets this attribute on <html> when active
+    var check = function () {
+      setExtInstalled(
+        document.documentElement.hasAttribute("data-xsbl-ext-installed")
+      );
+    };
+    check();
+    // Re-check after a short delay (extension content scripts may load async)
+    var timer = setTimeout(check, 1500);
+    return function () {
+      clearTimeout(timer);
+    };
+  }, []);
+
+  return (
+    <div
+      style={{
+        padding: "1.5rem",
+        borderRadius: 12,
+        border: "1px solid " + t.ink08,
+        background: t.cardBg,
+        marginBottom: "1.5rem",
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: "0.5rem",
+          marginBottom: "0.6rem",
+        }}
+      >
+        <Chrome size={17} color={t.accent} strokeWidth={1.8} />
+        <h3
+          style={{
+            fontSize: "0.95rem",
+            fontWeight: 600,
+            color: t.ink,
+            margin: 0,
+          }}
+        >
+          Chrome extension
+        </h3>
+        {extInstalled && (
+          <span
+            style={{
+              fontFamily: "var(--mono)",
+              fontSize: "0.5rem",
+              fontWeight: 700,
+              textTransform: "uppercase",
+              letterSpacing: "0.06em",
+              padding: "0.1rem 0.35rem",
+              borderRadius: 3,
+              background: t.greenBg,
+              color: t.green,
+            }}
+          >
+            Installed
+          </span>
+        )}
+      </div>
+      <p
+        style={{
+          fontSize: "0.82rem",
+          color: t.ink50,
+          lineHeight: 1.6,
+          marginBottom: "1rem",
+          maxWidth: 480,
+        }}
+      >
+        Make any website accessible while you browse. Boost contrast, enable
+        keyboard navigation, turn on dyslexia-friendly mode, and generate AI alt
+        text for images — on every site you visit.
+      </p>
+
+      {extInstalled ? (
+        <div>
+          {/* Connected status */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "0.4rem",
+              padding: "0.5rem 0.75rem",
+              borderRadius: 7,
+              background: t.greenBg,
+              marginBottom: "0.8rem",
+              maxWidth: 320,
+            }}
+          >
+            <Check size={13} strokeWidth={2.5} color={t.green} />
+            <span
+              style={{
+                fontSize: "0.78rem",
+                fontWeight: 600,
+                color: t.green,
+              }}
+            >
+              Extension connected to your account
+            </span>
+          </div>
+
+          {/* Pro features status */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "0.5rem",
+              fontSize: "0.78rem",
+              color: t.ink50,
+            }}
+          >
+            {hasPro ? (
+              <>
+                <Sparkles size={13} strokeWidth={2} color={t.accent} />
+                <span>
+                  <strong style={{ color: t.accent, fontWeight: 600 }}>
+                    Pro features active
+                  </strong>{" "}
+                  — AI alt text and cloud sync enabled
+                </span>
+              </>
+            ) : (
+              <>
+                <Lock size={12} strokeWidth={2} />
+                <span>
+                  Free features active.{" "}
+                  <a
+                    href="/dashboard/billing"
+                    style={{
+                      color: t.accent,
+                      fontWeight: 600,
+                      textDecoration: "none",
+                    }}
+                  >
+                    Upgrade to Pro
+                  </a>{" "}
+                  to unlock AI alt text and cloud sync.
+                </span>
+              </>
+            )}
+          </div>
+        </div>
+      ) : (
+        <div>
+          {/* Feature grid */}
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr",
+              gap: "0.4rem",
+              marginBottom: "1rem",
+              maxWidth: 400,
+            }}
+          >
+            {[
+              { label: "Contrast & text scaling", free: true },
+              { label: "Keyboard navigation", free: true },
+              { label: "Dyslexia-friendly mode", free: true },
+              { label: "AI alt text", free: false },
+            ].map(function (f, i) {
+              return (
+                <div
+                  key={i}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "0.3rem",
+                    fontSize: "0.72rem",
+                    color: t.ink50,
+                  }}
+                >
+                  <Check
+                    size={11}
+                    strokeWidth={2.5}
+                    color={t.green}
+                    style={{ flexShrink: 0 }}
+                  />
+                  <span>{f.label}</span>
+                  {!f.free && (
+                    <span
+                      style={{
+                        fontFamily: "var(--mono)",
+                        fontSize: "0.42rem",
+                        fontWeight: 700,
+                        padding: "0.05rem 0.25rem",
+                        borderRadius: 2,
+                        background: t.accent + "10",
+                        color: t.accent,
+                        textTransform: "uppercase",
+                        flexShrink: 0,
+                      }}
+                    >
+                      Pro
+                    </span>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Install CTA */}
+          <a
+            href={CHROME_STORE_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "0.45rem",
+              padding: "0.5rem 1rem",
+              borderRadius: 7,
+              border: "none",
+              background: t.accent,
+              color: "white",
+              fontFamily: "var(--body)",
+              fontSize: "0.84rem",
+              fontWeight: 600,
+              textDecoration: "none",
+              cursor: "pointer",
+              transition: "filter 0.15s",
+            }}
+          >
+            <Chrome size={14} strokeWidth={2} />
+            Add to Chrome — it's free
+            <ExternalLink size={11} strokeWidth={2} />
+          </a>
+        </div>
+      )}
     </div>
   );
 }
@@ -4056,6 +4167,9 @@ export default function SettingsPage() {
       {/* ═══ Integrations tab ═══ */}
       {settingsTab === "integrations" && (
         <>
+          {/* Chrome Extension */}
+          <ChromeExtensionPanel org={org} />
+
           {/* API Keys — Pro+ */}
           <PlanGate
             currentPlan={org?.plan || "free"}

@@ -1,92 +1,76 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { useTheme } from "../../context/ThemeContext";
 import {
-  Settings2,
-  X,
   GripVertical,
   Eye,
   EyeOff,
   RotateCcw,
+  Settings,
+  BarChart3,
+  Zap,
+  TrendingUp,
+  Bell,
+  Globe,
+  ChevronDown,
 } from "lucide-react";
-
-/**
- * WidgetConfigurator — lets users toggle and reorder dashboard overview widgets.
- *
- * Config is stored in localStorage as JSON: { order: string[], hidden: string[] }
- * Widgets not in the config get appended at the end (forward-compatible).
- */
-
-var STORAGE_KEY = "xsbl-dashboard-widgets";
 
 var WIDGET_DEFS = [
   {
     id: "stats",
     label: "Stats overview",
+    icon: BarChart3,
     description: "Sites, avg score, plan usage",
-    icon: "📊",
   },
   {
     id: "quick_wins",
     label: "Quick wins",
-    description: "Fix-these-first card for your worst site",
-    icon: "⚡",
+    icon: Zap,
+    description: "Highest-impact issues to fix first",
   },
   {
     id: "trends",
     label: "Issue trends",
-    description: "Chart of issues over time",
-    icon: "📈",
+    icon: TrendingUp,
+    description: "Open issue count over time",
   },
   {
     id: "activity",
     label: "Activity feed",
-    description: "Recent scan and issue events",
-    icon: "🔔",
+    icon: Bell,
+    description: "Recent scans, status changes",
   },
   {
     id: "sites",
     label: "Your sites",
-    description: "Site list with scores",
-    icon: "🌐",
+    icon: Globe,
+    description: "All monitored sites and scores",
   },
 ];
 
 var DEFAULT_ORDER = WIDGET_DEFS.map(function (w) {
   return w.id;
 });
+var STORAGE_KEY = "xsbl-dash-widgets";
 
 export function loadWidgetConfig() {
   try {
     var raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return { order: DEFAULT_ORDER.slice(), hidden: [] };
     var parsed = JSON.parse(raw);
-    var order = parsed.order || [];
+    var order = parsed.order || DEFAULT_ORDER.slice();
     var hidden = parsed.hidden || [];
-    // Ensure all known widget IDs are in the order (forward-compatible)
-    var orderSet = new Set(order);
-    for (var i = 0; i < DEFAULT_ORDER.length; i++) {
-      if (!orderSet.has(DEFAULT_ORDER[i])) {
-        order.push(DEFAULT_ORDER[i]);
-      }
-    }
-    // Remove any IDs that no longer exist
-    var knownSet = new Set(DEFAULT_ORDER);
-    order = order.filter(function (id) {
-      return knownSet.has(id);
+    // Forward-compatible: append any new widgets not in saved order
+    DEFAULT_ORDER.forEach(function (id) {
+      if (order.indexOf(id) === -1) order.push(id);
     });
-    hidden = hidden.filter(function (id) {
-      return knownSet.has(id);
+    // Remove any widgets that no longer exist
+    order = order.filter(function (id) {
+      return DEFAULT_ORDER.indexOf(id) !== -1;
     });
     return { order: order, hidden: hidden };
   } catch (e) {
     return { order: DEFAULT_ORDER.slice(), hidden: [] };
   }
-}
-
-function saveWidgetConfig(config) {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(config));
-  } catch (e) {}
 }
 
 export function getVisibleWidgets() {
@@ -96,267 +80,316 @@ export function getVisibleWidgets() {
   });
 }
 
-export default function WidgetConfigurator({ onUpdate }) {
+function saveWidgetConfig(config) {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(config));
+  } catch (e) {}
+}
+
+export default function WidgetConfigurator({ onChange }) {
   var { t } = useTheme();
   var [open, setOpen] = useState(false);
   var [config, setConfig] = useState(loadWidgetConfig);
-  var dragItem = useRef(null);
-  var dragOverItem = useRef(null);
+  var containerRef = useRef(null);
 
-  var handleToggle = function (widgetId) {
-    setConfig(function (prev) {
-      var hidden = prev.hidden.slice();
-      var idx = hidden.indexOf(widgetId);
-      if (idx !== -1) {
-        hidden.splice(idx, 1);
-      } else {
-        hidden.push(widgetId);
-      }
-      var next = { order: prev.order, hidden: hidden };
-      saveWidgetConfig(next);
-      if (onUpdate) onUpdate(next);
-      return next;
-    });
-  };
+  // Close on outside click
+  useEffect(
+    function () {
+      if (!open) return;
+      var handleClick = function (e) {
+        if (containerRef.current && !containerRef.current.contains(e.target)) {
+          setOpen(false);
+        }
+      };
+      document.addEventListener("mousedown", handleClick);
+      return function () {
+        document.removeEventListener("mousedown", handleClick);
+      };
+    },
+    [open]
+  );
 
-  var handleDragStart = function (idx) {
-    dragItem.current = idx;
-  };
+  // Use a ref to always have latest order available to drag handlers
+  // This is the fix for the "1 render behind" drag-and-drop bug:
+  // drag event handlers close over stale state, so we read from a ref instead
+  var orderRef = useRef(config.order);
+  var dragItemRef = useRef(null);
+  var dragOverRef = useRef(null);
 
-  var handleDragEnter = function (idx) {
-    dragOverItem.current = idx;
-  };
+  var updateConfig = useCallback(
+    function (newConfig) {
+      orderRef.current = newConfig.order;
+      setConfig(newConfig);
+      saveWidgetConfig(newConfig);
+      if (onChange) onChange(newConfig);
+    },
+    [onChange]
+  );
 
-  var handleDragEnd = function () {
-    if (dragItem.current === null || dragOverItem.current === null) return;
-    setConfig(function (prev) {
-      var order = prev.order.slice();
-      var dragged = order.splice(dragItem.current, 1)[0];
-      order.splice(dragOverItem.current, 0, dragged);
-      var next = { order: order, hidden: prev.hidden };
-      saveWidgetConfig(next);
-      if (onUpdate) onUpdate(next);
-      dragItem.current = null;
-      dragOverItem.current = null;
-      return next;
-    });
+  var handleToggle = function (id) {
+    var newHidden =
+      config.hidden.indexOf(id) !== -1
+        ? config.hidden.filter(function (h) {
+            return h !== id;
+          })
+        : config.hidden.concat([id]);
+    updateConfig({ order: config.order, hidden: newHidden });
   };
 
   var handleReset = function () {
-    var next = { order: DEFAULT_ORDER.slice(), hidden: [] };
-    saveWidgetConfig(next);
-    setConfig(next);
-    if (onUpdate) onUpdate(next);
+    updateConfig({ order: DEFAULT_ORDER.slice(), hidden: [] });
   };
 
-  var widgetMap = {};
-  WIDGET_DEFS.forEach(function (w) {
-    widgetMap[w.id] = w;
-  });
+  // --- Drag handlers using refs to avoid stale closures ---
+  var handleDragStart = function (e, index) {
+    dragItemRef.current = index;
+    e.dataTransfer.effectAllowed = "move";
+    // Make the drag ghost slightly transparent
+    e.currentTarget.style.opacity = "0.5";
+  };
 
-  if (!open) {
-    return (
+  var handleDragEnd = function (e) {
+    e.currentTarget.style.opacity = "1";
+    dragItemRef.current = null;
+    dragOverRef.current = null;
+  };
+
+  var handleDragOver = function (e, index) {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    if (dragItemRef.current === null || dragItemRef.current === index) return;
+    if (dragOverRef.current === index) return;
+    dragOverRef.current = index;
+
+    // Immediately compute new order from the ref (not stale state)
+    var currentOrder = orderRef.current.slice();
+    var draggedId = currentOrder[dragItemRef.current];
+    currentOrder.splice(dragItemRef.current, 1);
+    currentOrder.splice(index, 0, draggedId);
+    dragItemRef.current = index;
+
+    // Update both ref and state synchronously
+    orderRef.current = currentOrder;
+    var newConfig = { order: currentOrder, hidden: config.hidden };
+    setConfig(newConfig);
+    saveWidgetConfig(newConfig);
+    if (onChange) onChange(newConfig);
+  };
+
+  var handleDrop = function (e) {
+    e.preventDefault();
+  };
+
+  return (
+    <div ref={containerRef} style={{ position: "relative" }}>
       <button
         onClick={function () {
-          setOpen(true);
+          setOpen(!open);
         }}
-        title="Customize dashboard"
         style={{
           display: "inline-flex",
           alignItems: "center",
-          gap: "0.3rem",
-          padding: "0.3rem 0.6rem",
-          borderRadius: 6,
-          border: "1px solid " + t.ink08,
-          background: "none",
-          color: t.ink50,
+          gap: "0.35rem",
+          padding: "0.4rem 0.7rem",
+          borderRadius: 7,
+          border: "1.5px solid " + (open ? t.accent + "40" : t.ink08),
+          background: open ? t.accentBg : "transparent",
+          color: open ? t.accent : t.ink50,
           fontFamily: "var(--mono)",
-          fontSize: "0.62rem",
+          fontSize: "0.66rem",
           fontWeight: 600,
           cursor: "pointer",
           transition: "all 0.15s",
-        }}
-        onMouseEnter={function (e) {
-          e.currentTarget.style.borderColor = t.accent;
-          e.currentTarget.style.color = t.accent;
-        }}
-        onMouseLeave={function (e) {
-          e.currentTarget.style.borderColor = t.ink08;
-          e.currentTarget.style.color = t.ink50;
+          textTransform: "uppercase",
+          letterSpacing: "0.04em",
         }}
       >
-        <Settings2 size={12} strokeWidth={2} />
+        <Settings size={13} strokeWidth={2} />
         Customize
+        <ChevronDown
+          size={12}
+          strokeWidth={2}
+          style={{
+            transform: open ? "rotate(180deg)" : "none",
+            transition: "transform 0.15s",
+          }}
+        />
       </button>
-    );
-  }
 
-  return (
-    <div
-      style={{
-        borderRadius: 12,
-        border: "1px solid " + t.ink08,
-        background: t.cardBg,
-        padding: "1rem 1.2rem",
-        marginBottom: "1.5rem",
-      }}
-    >
-      {/* Header */}
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          marginBottom: "0.7rem",
-        }}
-      >
-        <div style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
-          <Settings2 size={15} color={t.accent} strokeWidth={2} />
-          <span style={{ fontSize: "0.86rem", fontWeight: 600, color: t.ink }}>
-            Customize dashboard
-          </span>
-        </div>
-        <div style={{ display: "flex", gap: "0.3rem" }}>
-          <button
-            onClick={handleReset}
-            title="Reset to defaults"
+      {open && (
+        <div
+          style={{
+            position: "absolute",
+            top: "calc(100% + 6px)",
+            right: 0,
+            width: 300,
+            padding: "0.8rem",
+            borderRadius: 10,
+            border: "1px solid " + t.ink08,
+            background: t.cardBg,
+            boxShadow: "0 8px 30px " + t.ink08,
+            zIndex: 40,
+          }}
+        >
+          <div
             style={{
               display: "flex",
               alignItems: "center",
-              gap: "0.25rem",
-              padding: "0.25rem 0.5rem",
-              borderRadius: 5,
-              border: "1px solid " + t.ink08,
-              background: "none",
-              color: t.ink50,
-              fontFamily: "var(--mono)",
-              fontSize: "0.58rem",
-              cursor: "pointer",
+              justifyContent: "space-between",
+              marginBottom: "0.6rem",
             }}
           >
-            <RotateCcw size={10} /> Reset
-          </button>
-          <button
-            onClick={function () {
-              setOpen(false);
-            }}
-            style={{
-              display: "flex",
-              padding: "0.2rem",
-              borderRadius: 4,
-              border: "none",
-              background: "none",
-              color: t.ink50,
-              cursor: "pointer",
-            }}
-          >
-            <X size={16} />
-          </button>
-        </div>
-      </div>
-
-      <p
-        style={{
-          fontSize: "0.72rem",
-          color: t.ink50,
-          marginBottom: "0.7rem",
-          lineHeight: 1.5,
-        }}
-      >
-        Drag to reorder. Toggle visibility with the eye icon.
-      </p>
-
-      {/* Widget list */}
-      <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
-        {config.order.map(function (widgetId, idx) {
-          var def = widgetMap[widgetId];
-          if (!def) return null;
-          var isHidden = config.hidden.indexOf(widgetId) !== -1;
-
-          return (
-            <div
-              key={widgetId}
-              draggable
-              onDragStart={function () {
-                handleDragStart(idx);
+            <span
+              style={{
+                fontFamily: "var(--mono)",
+                fontSize: "0.58rem",
+                fontWeight: 600,
+                color: t.ink50,
+                textTransform: "uppercase",
+                letterSpacing: "0.06em",
               }}
-              onDragEnter={function () {
-                handleDragEnter(idx);
-              }}
-              onDragEnd={handleDragEnd}
-              onDragOver={function (e) {
-                e.preventDefault();
-              }}
+            >
+              Dashboard widgets
+            </span>
+            <button
+              onClick={handleReset}
               style={{
                 display: "flex",
                 alignItems: "center",
-                gap: "0.5rem",
-                padding: "0.5rem 0.6rem",
-                borderRadius: 7,
-                border: "1px solid " + t.ink08,
-                background: isHidden ? t.ink04 : t.paper,
-                opacity: isHidden ? 0.5 : 1,
-                cursor: "grab",
-                transition: "opacity 0.15s",
-                userSelect: "none",
+                gap: "0.25rem",
+                padding: "0.2rem 0.45rem",
+                borderRadius: 4,
+                border: "none",
+                background: "none",
+                color: t.ink50,
+                fontFamily: "var(--mono)",
+                fontSize: "0.55rem",
+                fontWeight: 500,
+                cursor: "pointer",
+                transition: "color 0.15s",
+              }}
+              onMouseEnter={function (e) {
+                e.currentTarget.style.color = t.accent;
+              }}
+              onMouseLeave={function (e) {
+                e.currentTarget.style.color = t.ink50;
               }}
             >
-              {/* Drag handle */}
-              <GripVertical
-                size={14}
-                color={t.ink50}
-                style={{ flexShrink: 0, cursor: "grab" }}
-              />
+              <RotateCcw size={10} strokeWidth={2} /> Reset
+            </button>
+          </div>
 
-              {/* Icon + label */}
-              <span style={{ fontSize: "0.82rem", flexShrink: 0 }}>
-                {def.icon}
-              </span>
-              <div style={{ flex: 1, minWidth: 0 }}>
+          <div
+            style={{ display: "flex", flexDirection: "column", gap: "0.2rem" }}
+          >
+            {config.order.map(function (id, index) {
+              var def = WIDGET_DEFS.find(function (w) {
+                return w.id === id;
+              });
+              if (!def) return null;
+              var isHidden = config.hidden.indexOf(id) !== -1;
+              var Icon = def.icon;
+
+              return (
                 <div
+                  key={id}
+                  draggable
+                  onDragStart={function (e) {
+                    handleDragStart(e, index);
+                  }}
+                  onDragEnd={handleDragEnd}
+                  onDragOver={function (e) {
+                    handleDragOver(e, index);
+                  }}
+                  onDrop={handleDrop}
                   style={{
-                    fontSize: "0.78rem",
-                    fontWeight: 600,
-                    color: isHidden ? t.ink50 : t.ink,
-                    textDecoration: isHidden ? "line-through" : "none",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "0.5rem",
+                    padding: "0.45rem 0.5rem",
+                    borderRadius: 7,
+                    border: "1px solid transparent",
+                    background: "transparent",
+                    opacity: isHidden ? 0.45 : 1,
+                    cursor: "grab",
+                    transition: "opacity 0.15s, background 0.1s",
+                    userSelect: "none",
+                  }}
+                  onMouseEnter={function (e) {
+                    e.currentTarget.style.background = t.ink04;
+                  }}
+                  onMouseLeave={function (e) {
+                    e.currentTarget.style.background = "transparent";
                   }}
                 >
-                  {def.label}
+                  <GripVertical
+                    size={14}
+                    strokeWidth={1.5}
+                    style={{ color: t.ink50, flexShrink: 0, cursor: "grab" }}
+                  />
+                  <Icon
+                    size={14}
+                    strokeWidth={2}
+                    style={{
+                      color: isHidden ? t.ink50 : t.accent,
+                      flexShrink: 0,
+                    }}
+                  />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div
+                      style={{
+                        fontFamily: "var(--body)",
+                        fontSize: "0.76rem",
+                        fontWeight: 500,
+                        color: isHidden ? t.ink50 : t.ink,
+                        textDecoration: isHidden ? "line-through" : "none",
+                        lineHeight: 1.3,
+                      }}
+                    >
+                      {def.label}
+                    </div>
+                    <div
+                      style={{
+                        fontFamily: "var(--mono)",
+                        fontSize: "0.55rem",
+                        color: t.ink50,
+                      }}
+                    >
+                      {def.description}
+                    </div>
+                  </div>
+                  <button
+                    onClick={function (e) {
+                      e.stopPropagation();
+                      handleToggle(id);
+                    }}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      padding: "0.25rem",
+                      borderRadius: 5,
+                      border: "none",
+                      background: "none",
+                      color: isHidden ? t.ink50 : t.accent,
+                      cursor: "pointer",
+                      flexShrink: 0,
+                      transition: "color 0.15s",
+                    }}
+                    title={isHidden ? "Show widget" : "Hide widget"}
+                  >
+                    {isHidden ? (
+                      <EyeOff size={14} strokeWidth={2} />
+                    ) : (
+                      <Eye size={14} strokeWidth={2} />
+                    )}
+                  </button>
                 </div>
-                <div
-                  style={{
-                    fontFamily: "var(--mono)",
-                    fontSize: "0.58rem",
-                    color: t.ink50,
-                  }}
-                >
-                  {def.description}
-                </div>
-              </div>
-
-              {/* Toggle */}
-              <button
-                onClick={function () {
-                  handleToggle(widgetId);
-                }}
-                title={isHidden ? "Show widget" : "Hide widget"}
-                style={{
-                  display: "flex",
-                  padding: "0.25rem",
-                  borderRadius: 4,
-                  border: "none",
-                  background: "none",
-                  color: isHidden ? t.ink50 : t.accent,
-                  cursor: "pointer",
-                  flexShrink: 0,
-                }}
-              >
-                {isHidden ? <EyeOff size={14} /> : <Eye size={14} />}
-              </button>
-            </div>
-          );
-        })}
-      </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

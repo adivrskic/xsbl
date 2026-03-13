@@ -21,6 +21,8 @@ import {
   Clock,
   ExternalLink,
   SkipForward,
+  Chrome,
+  Lock,
 } from "lucide-react";
 import CIWorkflowPanel from "../../components/dashboard/CIWorkflowPanel";
 
@@ -1041,6 +1043,203 @@ function StepSetup({ site, onNext }) {
   );
 }
 
+var CHROME_STORE_URL =
+  "https://chrome.google.com/webstore/detail/xsbl-accessibility/placeholder";
+
+function StepExtension({ onNext, onSkip }) {
+  var { t } = useTheme();
+  var { org } = useAuth();
+  var plan = org?.plan || "free";
+  var hasPro = plan !== "free" && plan !== "starter";
+
+  var features = [
+    { label: "Real-time contrast boost & text scaling", free: true },
+    { label: "Keyboard navigation overlay & focus rings", free: true },
+    { label: "Dyslexia-friendly mode (font, spacing, ruler)", free: true },
+    { label: "AI-generated alt text for images", free: false },
+    { label: "Per-site preference saving (cloud sync)", free: false },
+  ];
+
+  return (
+    <div>
+      <div style={{ fontSize: "1.6rem", marginBottom: "0.8rem" }}>
+        <Chrome size={28} color={t.accent} strokeWidth={1.5} />
+      </div>
+      <h1
+        style={{
+          fontFamily: "var(--serif)",
+          fontSize: "1.8rem",
+          fontWeight: 700,
+          color: t.ink,
+          marginBottom: "0.5rem",
+          lineHeight: 1.2,
+        }}
+      >
+        Get the Chrome extension
+      </h1>
+      <p
+        style={{
+          color: t.ink50,
+          fontSize: "0.95rem",
+          marginBottom: "1.5rem",
+          lineHeight: 1.7,
+          maxWidth: 440,
+        }}
+      >
+        Make <em>any</em> website accessible while you browse. Boost contrast,
+        generate alt text with AI, enable keyboard navigation, and turn on
+        dyslexia-friendly mode — on every site you visit.
+      </p>
+
+      {/* Feature list */}
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: "0.35rem",
+          marginBottom: "1.5rem",
+          maxWidth: 400,
+        }}
+      >
+        {features.map(function (f, i) {
+          var unlocked = f.free || hasPro;
+          return (
+            <div
+              key={i}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "0.5rem",
+                padding: "0.45rem 0.65rem",
+                borderRadius: 7,
+                background: unlocked ? t.green + "06" : t.ink04,
+                border: "1px solid " + (unlocked ? t.green + "15" : t.ink08),
+              }}
+            >
+              {unlocked ? (
+                <Check
+                  size={13}
+                  strokeWidth={2.5}
+                  color={t.green}
+                  style={{ flexShrink: 0 }}
+                />
+              ) : (
+                <Lock
+                  size={12}
+                  strokeWidth={2}
+                  color={t.ink50}
+                  style={{ flexShrink: 0 }}
+                />
+              )}
+              <span
+                style={{
+                  fontSize: "0.8rem",
+                  color: unlocked ? t.ink : t.ink50,
+                  fontWeight: unlocked ? 500 : 400,
+                  flex: 1,
+                }}
+              >
+                {f.label}
+              </span>
+              <span
+                style={{
+                  fontFamily: "var(--mono)",
+                  fontSize: "0.46rem",
+                  fontWeight: 700,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.06em",
+                  padding: "0.08rem 0.3rem",
+                  borderRadius: 3,
+                  background: f.free ? t.green + "10" : t.accent + "10",
+                  color: f.free ? t.green : t.accent,
+                  flexShrink: 0,
+                }}
+              >
+                {f.free ? "Free" : "Pro"}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* CTA */}
+      <div
+        style={{
+          display: "flex",
+          gap: "0.6rem",
+          alignItems: "center",
+          flexWrap: "wrap",
+        }}
+      >
+        <a
+          href={CHROME_STORE_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={function () {
+            try {
+              localStorage.setItem("xsbl-ext-prompted", "true");
+            } catch (e) {}
+          }}
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "0.5rem",
+            padding: "0.65rem 1.3rem",
+            borderRadius: 8,
+            border: "none",
+            background: t.accent,
+            color: "white",
+            fontFamily: "var(--body)",
+            fontSize: "0.9rem",
+            fontWeight: 600,
+            textDecoration: "none",
+            cursor: "pointer",
+          }}
+        >
+          <Chrome size={16} strokeWidth={2} />
+          Add to Chrome
+        </a>
+        <button
+          onClick={function () {
+            try {
+              localStorage.setItem("xsbl-ext-prompted", "true");
+            } catch (e) {}
+            onNext();
+          }}
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "0.35rem",
+            padding: "0.65rem 1rem",
+            borderRadius: 8,
+            border: "1.5px solid " + t.ink08,
+            background: "none",
+            color: t.ink50,
+            fontFamily: "var(--body)",
+            fontSize: "0.84rem",
+            fontWeight: 500,
+            cursor: "pointer",
+          }}
+        >
+          <SkipForward size={14} strokeWidth={2} />
+          Skip for now
+        </button>
+      </div>
+
+      <p
+        style={{
+          fontSize: "0.72rem",
+          color: t.ink50,
+          marginTop: "0.6rem",
+          maxWidth: 400,
+        }}
+      >
+        You can always install it later from Settings → Integrations.
+      </p>
+    </div>
+  );
+}
+
 function StepDone({ site, scanResult, scanning, onFinish }) {
   var { t } = useTheme();
   return (
@@ -1415,6 +1614,9 @@ export default function OnboardingPage() {
   var handleSetupDone = function () {
     setStep(4);
   };
+  var handleExtensionDone = function () {
+    setStep(5);
+  };
 
   var handleFinish = async function () {
     clearStep();
@@ -1465,7 +1667,7 @@ export default function OnboardingPage() {
         >
           xsbl<span style={{ color: t.accent }}>.</span>
         </div>
-        <Steps current={step} total={5} />
+        <Steps current={step} total={6} />
         {error && (
           <div
             style={{
@@ -1503,6 +1705,12 @@ export default function OnboardingPage() {
         )}
         {step === 3 && <StepSetup site={site} onNext={handleSetupDone} />}
         {step === 4 && (
+          <StepExtension
+            onNext={handleExtensionDone}
+            onSkip={handleExtensionDone}
+          />
+        )}
+        {step === 5 && (
           <StepDone
             site={site}
             scanResult={scanResult}

@@ -1184,10 +1184,10 @@ export default function DashboardToolsPage() {
       {/* Tool body */}
       <div
         style={{
-          padding: activeTool === "tester" ? 0 : "1.5rem",
+          padding: "1.5rem",
           borderRadius: 12,
-          border: activeTool === "tester" ? "none" : "1px solid " + t.ink08,
-          background: activeTool === "tester" ? "transparent" : t.cardBg,
+          border: "1px solid " + t.ink08,
+          background: t.cardBg,
         }}
       >
         {activeTool === "tester" && <ElementTester />}

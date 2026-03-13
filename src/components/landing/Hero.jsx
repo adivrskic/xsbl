@@ -359,15 +359,20 @@ export default function Hero() {
         {/* URL scan input */}
         <FadeIn delay={0.2}>
           <div
-            className="hero__scan-row"
+            className={
+              "hero__scan-row" + (scanning ? " hero__scan-row--disabled" : "")
+            }
             style={{ marginBottom: result ? "1rem" : "2rem" }}
           >
+            <span className="hero__input-prefix" aria-hidden="true">
+              https://
+            </span>
             <input
               type="url"
               ref={scanInputRef}
               value={url}
               onChange={(e) => setUrl(e.target.value)}
-              placeholder="https://your-site.com"
+              placeholder="your-site.com"
               disabled={scanning}
               className="hero__input"
               aria-label="Website URL to scan"

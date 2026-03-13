@@ -20,7 +20,6 @@
 
 .fg-card:hover {
   border-color: var(--accent);
-  transform: translateY(-2px);
 }
 
 .fg-card__icon {

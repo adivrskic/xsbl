@@ -1,16 +1,14 @@
-import { useEffect, useState, useCallback } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useEffect, useState, useMemo } from "react";
+import { Link } from "react-router-dom";
 import { useTheme } from "../../context/ThemeContext";
 import { useAuth } from "../../context/AuthContext";
-import { Plus, AlertTriangle } from "lucide-react";
+import { Plus, AlertTriangle, Zap, ArrowRight, Chrome, X } from "lucide-react";
 import IssueTrendsChart from "../../components/dashboard/IssueTrendsChart";
 import SetupChecklist from "../../components/dashboard/SetupChecklist";
 import ActivityFeed from "../../components/dashboard/ActivityFeed";
-import QuickWinsCard from "../../components/dashboard/QuickWinsCard";
 import WidgetConfigurator, {
-  getVisibleWidgets,
+  loadWidgetConfig,
 } from "../../components/dashboard/WidgetConfigurator";
-import { supabase } from "../../lib/supabase";
 import "../../styles/dashboard.css";
 import "../../styles/dashboard-pages.css";
 
@@ -29,21 +27,280 @@ function Stat({ label, value, sub, accent }) {
   );
 }
 
+var CHROME_STORE_URL =
+  "https://chrome.google.com/webstore/detail/xsbl-accessibility/placeholder";
+
+function ExtensionBanner({ t }) {
+  var [dismissed, setDismissed] = useState(false);
+
+  // Check if already dismissed or installed
+  if (dismissed) return null;
+  var wasDismissed = false;
+  try {
+    wasDismissed = localStorage.getItem("xsbl-ext-banner-dismissed") === "true";
+  } catch (e) {}
+  if (wasDismissed) return null;
+
+  // Check if extension is installed
+  var extInstalled = document.documentElement.hasAttribute(
+    "data-xsbl-ext-installed"
+  );
+  if (extInstalled) return null;
+
+  var handleDismiss = function () {
+    setDismissed(true);
+    try {
+      localStorage.setItem("xsbl-ext-banner-dismissed", "true");
+    } catch (e) {}
+  };
+
+  return (
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: "0.8rem",
+        padding: "0.8rem 1rem",
+        borderRadius: 10,
+        border: "1px solid " + t.accent + "20",
+        background: t.accentBg,
+        marginBottom: "1.5rem",
+      }}
+    >
+      <div
+        style={{
+          width: 34,
+          height: 34,
+          borderRadius: 8,
+          background: t.accent + "15",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          flexShrink: 0,
+        }}
+      >
+        <Chrome size={17} strokeWidth={2} color={t.accent} />
+      </div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div
+          style={{
+            fontSize: "0.84rem",
+            fontWeight: 600,
+            color: t.ink,
+            lineHeight: 1.3,
+            marginBottom: "0.1rem",
+          }}
+        >
+          Make any site accessible with the xsbl extension
+        </div>
+        <div style={{ fontSize: "0.72rem", color: t.ink50, lineHeight: 1.4 }}>
+          Contrast boost, keyboard nav, dyslexia mode, and AI alt text — on
+          every page you visit.
+        </div>
+      </div>
+      <a
+        href={CHROME_STORE_URL}
+        target="_blank"
+        rel="noopener noreferrer"
+        style={{
+          display: "inline-flex",
+          alignItems: "center",
+          gap: "0.35rem",
+          padding: "0.4rem 0.8rem",
+          borderRadius: 6,
+          border: "none",
+          background: t.accent,
+          color: "white",
+          fontFamily: "var(--body)",
+          fontSize: "0.74rem",
+          fontWeight: 600,
+          textDecoration: "none",
+          whiteSpace: "nowrap",
+          flexShrink: 0,
+        }}
+      >
+        <Chrome size={12} strokeWidth={2} />
+        Get extension
+      </a>
+      <button
+        onClick={handleDismiss}
+        aria-label="Dismiss extension banner"
+        style={{
+          padding: "0.2rem",
+          border: "none",
+          background: "none",
+          color: t.ink50,
+          cursor: "pointer",
+          flexShrink: 0,
+          display: "flex",
+          opacity: 0.5,
+          transition: "opacity 0.15s",
+        }}
+        onMouseEnter={function (e) {
+          e.currentTarget.style.opacity = "1";
+        }}
+        onMouseLeave={function (e) {
+          e.currentTarget.style.opacity = "0.5";
+        }}
+      >
+        <X size={14} strokeWidth={2} />
+      </button>
+    </div>
+  );
+}
+
+function QuickWins({ sites, t }) {
+  var scored = (sites || []).filter(function (s) {
+    return s.score != null;
+  });
+  var lowScoreSites = scored
+    .filter(function (s) {
+      return s.score < 80;
+    })
+    .sort(function (a, b) {
+      return (a.score || 0) - (b.score || 0);
+    })
+    .slice(0, 3);
+
+  if (lowScoreSites.length === 0 && scored.length > 0) {
+    return (
+      <div
+        style={{
+          padding: "1.2rem",
+          borderRadius: 10,
+          border: "1px solid " + t.green + "20",
+          background: t.green + "06",
+          display: "flex",
+          alignItems: "center",
+          gap: "0.6rem",
+        }}
+      >
+        <Zap size={18} color={t.green} strokeWidth={2} />
+        <div>
+          <div
+            style={{
+              fontFamily: "var(--body)",
+              fontSize: "0.88rem",
+              fontWeight: 600,
+              color: t.green,
+              marginBottom: "0.15rem",
+            }}
+          >
+            All sites scoring 80+
+          </div>
+          <div style={{ fontSize: "0.78rem", color: t.ink50 }}>
+            No critical quick wins right now. Keep up the great work!
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (lowScoreSites.length === 0) return null;
+
+  return (
+    <div>
+      <h2
+        className="dash-section-title"
+        style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}
+      >
+        <Zap size={15} strokeWidth={2} /> Quick wins
+      </h2>
+      <div style={{ display: "flex", flexDirection: "column", gap: "0.4rem" }}>
+        {lowScoreSites.map(function (site) {
+          return (
+            <Link
+              key={site.id}
+              to={"/dashboard/sites/" + site.id}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "0.6rem",
+                padding: "0.7rem 0.9rem",
+                borderRadius: 8,
+                border: "1px solid " + t.ink08,
+                background: t.cardBg,
+                textDecoration: "none",
+                transition: "border-color 0.15s, box-shadow 0.15s",
+              }}
+              onMouseEnter={function (e) {
+                e.currentTarget.style.borderColor = t.accent + "40";
+                e.currentTarget.style.boxShadow = "0 2px 8px " + t.ink08;
+              }}
+              onMouseLeave={function (e) {
+                e.currentTarget.style.borderColor = t.ink08;
+                e.currentTarget.style.boxShadow = "none";
+              }}
+            >
+              <div
+                style={{
+                  width: 32,
+                  height: 32,
+                  borderRadius: 8,
+                  background: (site.score < 50 ? t.red : t.amber) + "12",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontFamily: "var(--serif)",
+                  fontSize: "0.9rem",
+                  fontWeight: 700,
+                  color: site.score < 50 ? t.red : t.amber,
+                  flexShrink: 0,
+                }}
+              >
+                {Math.round(site.score)}
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div
+                  style={{
+                    fontFamily: "var(--body)",
+                    fontSize: "0.82rem",
+                    fontWeight: 600,
+                    color: t.ink,
+                    lineHeight: 1.3,
+                  }}
+                >
+                  {site.display_name || site.domain}
+                </div>
+                <div
+                  style={{
+                    fontFamily: "var(--mono)",
+                    fontSize: "0.62rem",
+                    color: t.ink50,
+                  }}
+                >
+                  Score is below 80 — review issues to improve
+                </div>
+              </div>
+              <ArrowRight
+                size={14}
+                color={t.ink50}
+                strokeWidth={2}
+                style={{ flexShrink: 0 }}
+              />
+            </Link>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 export default function OverviewPage() {
   const { t } = useTheme();
   const { org, usage, sites, loading, fetchUsage, fetchSites } = useAuth();
-  const navigate = useNavigate();
   var isClient = org?.role === "client";
 
-  // Widget layout config
-  var [visibleWidgets, setVisibleWidgets] = useState(getVisibleWidgets);
-  var handleWidgetUpdate = useCallback(function () {
-    setVisibleWidgets(getVisibleWidgets());
-  }, []);
-
-  // Quick wins: fetch issues for the worst-scoring site
-  var [quickWinSite, setQuickWinSite] = useState(null);
-  var [quickWinIssues, setQuickWinIssues] = useState([]);
+  // Widget config state — re-renders when configurator changes
+  var [widgetConfig, setWidgetConfig] = useState(loadWidgetConfig);
+  var visibleWidgets = useMemo(
+    function () {
+      return widgetConfig.order.filter(function (id) {
+        return widgetConfig.hidden.indexOf(id) === -1;
+      });
+    },
+    [widgetConfig]
+  );
 
   useEffect(() => {
     if (org) {
@@ -51,60 +308,6 @@ export default function OverviewPage() {
       fetchSites(org.id);
     }
   }, [org?.id]);
-
-  // Find worst-scoring site with issues and fetch its open issues
-  useEffect(
-    function () {
-      var siteList = sites || [];
-      var scored = siteList
-        .filter(function (s) {
-          return s.score != null && s.score < 95;
-        })
-        .sort(function (a, b) {
-          return a.score - b.score;
-        });
-      var target = scored.length > 0 ? scored[0] : null;
-      if (!target || target.id === quickWinSite?.id) return;
-      setQuickWinSite(target);
-      supabase
-        .from("issues")
-        .select(
-          "id, rule_id, impact, status, description, fix_suggestion, page_url, element_selector"
-        )
-        .eq("site_id", target.id)
-        .eq("status", "open")
-        .order("created_at", { ascending: false })
-        .limit(50)
-        .then(function (res) {
-          setQuickWinIssues(res.data || []);
-        });
-    },
-    [sites]
-  );
-
-  // Check if any site has a fixed issue (for onboarding checklist step 3)
-  var [hasFixedIssue, setHasFixedIssue] = useState(false);
-  useEffect(
-    function () {
-      var sl = sites || [];
-      if (sl.length === 0) return;
-      supabase
-        .from("issues")
-        .select("id")
-        .in(
-          "site_id",
-          sl.map(function (s) {
-            return s.id;
-          })
-        )
-        .eq("status", "fixed")
-        .limit(1)
-        .then(function (res) {
-          setHasFixedIssue(res.data && res.data.length > 0);
-        });
-    },
-    [sites]
-  );
 
   var siteList = sites || [];
   var scoredSites = siteList.filter(function (x) {
@@ -123,11 +326,7 @@ export default function OverviewPage() {
     !isClient && usage && usage.scans_used >= usage.scans_limit * 0.8;
   var atLimit = !isClient && usage && usage.scans_used >= usage.scans_limit;
 
-  // ── Widget renderers ──
-  function isVisible(id) {
-    return visibleWidgets.indexOf(id) !== -1;
-  }
-
+  // Named widget renderers
   var widgetRenderers = {
     stats: function () {
       return (
@@ -173,72 +372,32 @@ export default function OverviewPage() {
     },
 
     quick_wins: function () {
-      if (isClient || !quickWinSite || quickWinIssues.length === 0) return null;
-      return (
-        <div key="quick_wins" style={{ marginBottom: "0.5rem" }}>
-          <div
-            style={{
-              fontFamily: "var(--mono)",
-              fontSize: "0.6rem",
-              color: t.ink50,
-              textTransform: "uppercase",
-              letterSpacing: "0.06em",
-              marginBottom: "0.4rem",
-              display: "flex",
-              alignItems: "center",
-              gap: "0.4rem",
-            }}
-          >
-            {quickWinSite.display_name || quickWinSite.domain}
-            <span
-              style={{
-                fontFamily: "var(--mono)",
-                fontSize: "0.58rem",
-                fontWeight: 700,
-                padding: "0.06rem 0.3rem",
-                borderRadius: 3,
-                background:
-                  quickWinSite.score >= 80
-                    ? t.green + "12"
-                    : quickWinSite.score >= 50
-                    ? t.amber + "12"
-                    : t.red + "12",
-                color:
-                  quickWinSite.score >= 80
-                    ? t.green
-                    : quickWinSite.score >= 50
-                    ? t.amber
-                    : t.red,
-              }}
-            >
-              {Math.round(quickWinSite.score)}
-            </span>
-          </div>
-          <QuickWinsCard
-            issues={quickWinIssues}
-            siteId={quickWinSite.id}
-            compact
-            onSelect={function () {
-              navigate("/dashboard/sites/" + quickWinSite.id + "?tab=issues");
-            }}
-          />
-        </div>
-      );
+      if (isClient) return null;
+      return <QuickWins key="quick_wins" sites={siteList} t={t} />;
     },
 
     trends: function () {
       if (isClient) return null;
-      return <IssueTrendsChart key="trends" />;
+      return (
+        <div key="trends">
+          <IssueTrendsChart />
+        </div>
+      );
     },
 
     activity: function () {
-      return <ActivityFeed key="activity" />;
+      return (
+        <div key="activity">
+          <ActivityFeed />
+        </div>
+      );
     },
 
     sites: function () {
       return (
         <div key="sites">
           <h2 className="dash-section-title">Your sites</h2>
+
           {siteList.length === 0 ? (
             <div className="dash-empty">
               <p className="dash-empty__text">
@@ -317,8 +476,15 @@ export default function OverviewPage() {
           <h1 className="dash-page-title">Dashboard</h1>
           <p className="dash-page-subtitle">Your accessibility overview.</p>
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-          <WidgetConfigurator onUpdate={handleWidgetUpdate} />
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "0.5rem",
+            flexWrap: "wrap",
+          }}
+        >
+          {!isClient && <WidgetConfigurator onChange={setWidgetConfig} />}
           {!isClient && (
             <Link to="/dashboard/sites?add=true" className="dash-add-btn">
               <Plus size={15} strokeWidth={2.5} /> Add site
@@ -327,6 +493,7 @@ export default function OverviewPage() {
         </div>
       </div>
 
+      {/* Non-reorderable contextual items — always at top */}
       {nearLimit && (
         <div
           className={
@@ -352,10 +519,11 @@ export default function OverviewPage() {
         </div>
       )}
 
-      {/* Setup checklist — always at top, not reorderable */}
-      {!isClient && !loading && (
-        <SetupChecklist sites={siteList} hasFixedIssue={hasFixedIssue} />
-      )}
+      {/* Setup checklist — shows until all steps done or dismissed */}
+      {!isClient && !loading && <SetupChecklist sites={siteList} />}
+
+      {/* Chrome extension install banner — dismissible */}
+      {!isClient && !loading && <ExtensionBanner t={t} />}
 
       {loading && !sites ? (
         <>
@@ -428,7 +596,6 @@ export default function OverviewPage() {
         </>
       ) : (
         <>
-          {/* Render widgets in configured order */}
           {visibleWidgets.map(function (widgetId) {
             var renderer = widgetRenderers[widgetId];
             if (!renderer) return null;

@@ -10,6 +10,7 @@ import { ConfirmProvider } from "./components/ui/ConfirmModal";
 // Auth
 import AuthGuard from "./components/auth/AuthGuard";
 import AuthCallback from "./components/auth/AuthCallback";
+import ExtensionCallback from "./components/auth/ExtensionCallback";
 import LoginPage from "./pages/auth/LoginPage";
 import SignupPage from "./pages/auth/SignupPage";
 
@@ -24,7 +25,7 @@ import DemoSection from "./components/landing/DemoSection";
 import PricingSection from "./components/landing/PricingSection";
 import FaqSection from "./components/landing/FaqSection";
 import Footer from "./components/landing/Footer";
-
+import ExtensionSection from "./components/landing/ExtensionSection";
 // Pages
 import DocsPage from "./pages/DocsPage";
 import BlogPage from "./pages/blog/BlogPage";
@@ -91,6 +92,7 @@ function LandingPage() {
         <HowSection />
         <FeatureGrid />
         <DemoSection />
+        <ExtensionSection />
         {showPricing && <PricingSection />}
         <FaqSection />
       </main>
@@ -261,6 +263,10 @@ export default function App() {
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/signup" element={<SignupPage />} />
                 <Route path="/auth/callback" element={<AuthCallback />} />
+                <Route
+                  path="/auth/extension-callback"
+                  element={<ExtensionCallback />}
+                />
                 <Route
                   path="/docs"
                   element={
