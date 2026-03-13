@@ -278,6 +278,129 @@ export default function SchedulePicker({ site, plan, onUpdate }) {
           )}
         </button>
       )}
+
+      {/* Monitoring mode indicator */}
+      {isPaid && schedule !== "manual" && (
+        <MonitoringModePanel site={site} onUpdate={onUpdate} />
+      )}
+    </div>
+  );
+}
+
+function MonitoringModePanel({ site, onUpdate }) {
+  var { t } = useTheme();
+  var isMonitoring = !!site.monitoring_mode;
+  var consecutiveHigh = site.consecutive_high_scores || 0;
+  var score = site.score || 0;
+  var [toggling, setToggling] = useState(false);
+
+  var handleToggle = async function () {
+    setToggling(true);
+    var newVal = !isMonitoring;
+    var { error } = await supabase
+      .from("sites")
+      .update({
+        monitoring_mode: newVal,
+        consecutive_high_scores: newVal ? 4 : 0,
+      })
+      .eq("id", site.id);
+    if (!error) {
+      onUpdate?.({
+        ...site,
+        monitoring_mode: newVal,
+        consecutive_high_scores: newVal ? 4 : 0,
+      });
+      logAudit({
+        action: "settings.monitoring_mode",
+        resourceType: "site",
+        resourceId: site.id,
+        description:
+          "Monitoring mode " +
+          (newVal ? "enabled" : "disabled") +
+          " for " +
+          site.domain,
+        metadata: { monitoring_mode: newVal, domain: site.domain },
+      });
+    }
+    setToggling(false);
+  };
+
+  return (
+    <div
+      style={{
+        marginTop: "1rem",
+        padding: "0.9rem",
+        borderRadius: 8,
+        border: "1px solid " + (isMonitoring ? t.green + "30" : t.ink08),
+        background: isMonitoring ? t.greenBg || t.green + "06" : t.ink04 + "60",
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: "0.5rem",
+          marginBottom: "0.3rem",
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
+          <span style={{ fontSize: "0.9rem" }}>
+            {isMonitoring ? "🛡" : "⚡"}
+          </span>
+          <span
+            style={{
+              fontSize: "0.8rem",
+              fontWeight: 600,
+              color: isMonitoring ? t.green : t.ink,
+            }}
+          >
+            {isMonitoring ? "Monitoring mode" : "Full scan mode"}
+          </span>
+        </div>
+        <button
+          onClick={handleToggle}
+          disabled={toggling}
+          style={{
+            padding: "0.25rem 0.55rem",
+            borderRadius: 5,
+            border: "1.5px solid " + (isMonitoring ? t.ink20 : t.green + "40"),
+            background: "none",
+            color: isMonitoring ? t.ink50 : t.green,
+            fontFamily: "var(--mono)",
+            fontSize: "0.6rem",
+            fontWeight: 600,
+            cursor: toggling ? "not-allowed" : "pointer",
+            opacity: toggling ? 0.5 : 1,
+          }}
+        >
+          {toggling
+            ? "..."
+            : isMonitoring
+            ? "Switch to full"
+            : "Enable monitoring"}
+        </button>
+      </div>
+      <p
+        style={{
+          fontSize: "0.68rem",
+          color: t.ink50,
+          margin: 0,
+          lineHeight: 1.5,
+        }}
+      >
+        {isMonitoring
+          ? "Lightweight regression checks only — unchanged pages are skipped, using ~90% fewer Browserless minutes. Automatically switches back to full scans if score drops or new issues appear."
+          : score >= 95
+          ? "Score is " +
+            Math.round(score) +
+            " — monitoring mode activates automatically after 4 consecutive high-score scans (" +
+            consecutiveHigh +
+            "/4 so far)."
+          : "Monitoring mode activates when your score stays above 95 for 4 consecutive scans. Current score: " +
+            Math.round(score) +
+            "."}
+      </p>
     </div>
   );
 }

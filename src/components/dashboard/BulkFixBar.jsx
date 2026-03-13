@@ -286,6 +286,7 @@ export default function BulkFixBar({
       ) : (
         <div style={{ display: "flex", gap: "0.4rem", alignItems: "center" }}>
           <button
+            data-bulk-pr-btn="true"
             onClick={handleBulkFix}
             disabled={loading || creatingIssues || !hasGitHub}
             style={{

@@ -22,8 +22,24 @@ import {
  *   - Fixed:      active in A but not B (resolved between the two scans)
  *   - Persistent: active in both A and B (still open)
  *
- * Issue fingerprint = rule_id + page_url + element_selector (matches the scan engine's dedup key)
+ * Issue fingerprint = rule_id + page_url + normalizeSelector(element_selector) (fuzzy match across scans)
  */
+
+function normalizeSelector(selector) {
+  if (!selector) return "";
+  return selector
+    .replace(/__[a-zA-Z0-9]{5,}/g, "__*")
+    .replace(/\.sc-[a-zA-Z0-9]{6,}/g, ".sc-*")
+    .replace(/\.css-[a-zA-Z0-9-]+/g, ".css-*")
+    .replace(/\.emotion-[a-zA-Z0-9]+/g, ".emotion-*")
+    .replace(/\.\[[^\]]+\]/g, ".[*]")
+    .replace(/#([a-zA-Z_-]+?)[-_](\d+)([-_][a-zA-Z_-]+)?/g, "#$1-*$3")
+    .replace(/#([a-zA-Z_-]+?)[-:][:a-zA-Z0-9]+:/g, "#$1-*")
+    .replace(/#[a-f0-9]{6,}(?=[\s>+~.#\[:,]|$)/gi, "#*")
+    .replace(/\[data-v-[a-zA-Z0-9]+\]/g, "[data-v-*]")
+    .replace(/\[data-reactid="[^"]*"\]/g, '[data-reactid="*"]')
+    .trim();
+}
 
 function fingerprint(issue) {
   return (
@@ -31,7 +47,7 @@ function fingerprint(issue) {
     "||" +
     (issue.page_url || "") +
     "||" +
-    (issue.element_selector || "")
+    normalizeSelector(issue.element_selector)
   );
 }
 

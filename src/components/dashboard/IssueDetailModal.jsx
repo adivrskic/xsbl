@@ -239,6 +239,13 @@ export default function IssueDetailModal({
   const [commentSending, setCommentSending] = useState(false);
   const [deletingComment, setDeletingComment] = useState(null);
 
+  // Assignment
+  const [assignee, setAssignee] = useState(issue.assigned_to || null);
+  const [assigneeSaving, setAssigneeSaving] = useState(false);
+  const [orgMembers, setOrgMembers] = useState([]);
+  const [membersLoaded, setMembersLoaded] = useState(false);
+  const [showAssignDropdown, setShowAssignDropdown] = useState(false);
+
   useEffect(() => {
     previousFocus.current = document.activeElement;
     const dialog = dialogRef.current;
@@ -292,6 +299,88 @@ export default function IssueDetailModal({
     [issue.id]
   );
 
+  // Load org members for assignment dropdown
+  useEffect(
+    function () {
+      if (readOnly || !org?.id || membersLoaded) return;
+      supabase
+        .from("org_members")
+        .select("user_id, role")
+        .eq("org_id", org.id)
+        .then(function (res) {
+          var members = res.data || [];
+          var userIds = members.map(function (m) {
+            return m.user_id;
+          });
+          if (userIds.length === 0) {
+            setMembersLoaded(true);
+            return;
+          }
+          supabase
+            .from("profiles")
+            .select("id, email, full_name, github_username")
+            .in("id", userIds)
+            .then(function (pRes) {
+              var profileMap = {};
+              (pRes.data || []).forEach(function (p) {
+                profileMap[p.id] = p;
+              });
+              setOrgMembers(
+                members.map(function (m) {
+                  var p = profileMap[m.user_id] || {};
+                  return {
+                    user_id: m.user_id,
+                    role: m.role,
+                    email: p.email || "",
+                    full_name: p.full_name || "",
+                    github_username: p.github_username || "",
+                    initials: (p.full_name || p.email || "?")
+                      .substring(0, 2)
+                      .toUpperCase(),
+                  };
+                })
+              );
+              setMembersLoaded(true);
+            });
+        });
+    },
+    [org?.id, readOnly]
+  );
+
+  var handleAssign = async function (userId) {
+    setAssigneeSaving(true);
+    setShowAssignDropdown(false);
+    var { error } = await supabase
+      .from("issues")
+      .update({ assigned_to: userId || null })
+      .eq("id", issue.id);
+    if (!error) {
+      setAssignee(userId || null);
+      onUpdate?.({ ...issue, assigned_to: userId || null });
+      var assigneeName = userId
+        ? (
+            orgMembers.find(function (m) {
+              return m.user_id === userId;
+            }) || {}
+          ).full_name || "someone"
+        : "nobody";
+      logAudit({
+        action: "issue.assigned",
+        resourceType: "issue",
+        resourceId: issue.id,
+        description: issue.rule_id + " assigned to " + assigneeName,
+        metadata: { rule_id: issue.rule_id, assigned_to: userId },
+      });
+    }
+    setAssigneeSaving(false);
+  };
+
+  var assignedMember = assignee
+    ? orgMembers.find(function (m) {
+        return m.user_id === assignee;
+      })
+    : null;
+
   var handlePostComment = async function () {
     var text = newComment.trim();
     if (!text || commentSending) return;
@@ -310,6 +399,22 @@ export default function IssueDetailModal({
         return prev.concat([data]);
       });
       setNewComment("");
+
+      // Mirror to Slack thread (fire-and-forget — don't block UI on Slack failures)
+      try {
+        supabase.functions
+          .invoke("mirror-slack-comment", {
+            body: {
+              issue_id: issue.id,
+              comment_body: text,
+              site_id: site.id,
+            },
+            headers: {
+              Authorization: "Bearer " + (session?.access_token || ""),
+            },
+          })
+          .catch(function () {});
+      } catch (e) {}
     }
     setCommentSending(false);
   };
@@ -536,6 +641,60 @@ export default function IssueDetailModal({
                   {tag}
                 </span>
               ))}
+            </div>
+          )}
+
+          {/* Viewport */}
+          {issue.viewport && (
+            <div
+              style={{
+                display: "flex",
+                gap: "0.3rem",
+                flexWrap: "wrap",
+                marginBottom: "1rem",
+                alignItems: "center",
+              }}
+            >
+              <span
+                style={{
+                  fontFamily: "var(--mono)",
+                  fontSize: "0.58rem",
+                  color: t.ink50,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.06em",
+                  marginRight: "0.2rem",
+                }}
+              >
+                Viewport
+              </span>
+              {issue.viewport.split(",").map(function (vp, vi) {
+                var vpLabel = vp.trim();
+                var vpIcon =
+                  vpLabel === "mobile"
+                    ? "📱"
+                    : vpLabel === "tablet"
+                    ? "📋"
+                    : "🖥";
+                return (
+                  <span
+                    key={vi}
+                    style={{
+                      fontFamily: "var(--mono)",
+                      fontSize: "0.6rem",
+                      color: vpLabel === "mobile" ? t.amber : t.accent,
+                      padding: "0.15rem 0.45rem",
+                      borderRadius: 4,
+                      background:
+                        vpLabel === "mobile" ? t.amber + "10" : t.accentBg,
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "0.2rem",
+                    }}
+                  >
+                    {vpIcon} {vpLabel}
+                  </span>
+                );
+              })}
             </div>
           )}
 
@@ -982,6 +1141,250 @@ export default function IssueDetailModal({
               </div>
             )}
           </div>
+
+          {/* Assigned to */}
+          {!readOnly && (
+            <div style={{ marginTop: "1rem", position: "relative" }}>
+              <div
+                style={{
+                  fontFamily: "var(--mono)",
+                  fontSize: "0.62rem",
+                  color: t.ink50,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.06em",
+                  marginBottom: "0.4rem",
+                }}
+              >
+                Assigned to
+              </div>
+              <button
+                onClick={function () {
+                  setShowAssignDropdown(!showAssignDropdown);
+                }}
+                disabled={assigneeSaving}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.4rem",
+                  padding: "0.4rem 0.7rem",
+                  borderRadius: 6,
+                  border: "1.5px solid " + (assignee ? t.accent : t.ink08),
+                  background: assignee ? t.accentBg : "transparent",
+                  color: assignee ? t.ink : t.ink50,
+                  fontFamily: "var(--body)",
+                  fontSize: "0.78rem",
+                  fontWeight: 500,
+                  cursor: "pointer",
+                  opacity: assigneeSaving ? 0.5 : 1,
+                  transition: "all 0.15s",
+                  minWidth: 140,
+                }}
+              >
+                {assignedMember ? (
+                  <>
+                    <span
+                      style={{
+                        width: 20,
+                        height: 20,
+                        borderRadius: "50%",
+                        background: t.accent,
+                        color: "white",
+                        fontFamily: "var(--mono)",
+                        fontSize: "0.5rem",
+                        fontWeight: 700,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        flexShrink: 0,
+                      }}
+                    >
+                      {assignedMember.initials}
+                    </span>
+                    {assignedMember.full_name || assignedMember.email}
+                  </>
+                ) : (
+                  <>
+                    <span
+                      style={{
+                        width: 20,
+                        height: 20,
+                        borderRadius: "50%",
+                        border: "1.5px dashed " + t.ink20,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        flexShrink: 0,
+                        fontSize: "0.62rem",
+                        color: t.ink50,
+                      }}
+                    >
+                      +
+                    </span>
+                    Unassigned
+                  </>
+                )}
+              </button>
+
+              {/* Dropdown */}
+              {showAssignDropdown && (
+                <div
+                  style={{
+                    position: "absolute",
+                    top: "100%",
+                    left: 0,
+                    marginTop: 4,
+                    minWidth: 220,
+                    maxHeight: 200,
+                    overflowY: "auto",
+                    borderRadius: 8,
+                    border: "1px solid " + t.ink08,
+                    background: t.cardBg,
+                    boxShadow: "0 8px 24px rgba(0,0,0,0.12)",
+                    zIndex: 10,
+                    padding: "0.3rem",
+                  }}
+                >
+                  {/* Unassign option */}
+                  {assignee && (
+                    <button
+                      onClick={function () {
+                        handleAssign(null);
+                      }}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "0.4rem",
+                        width: "100%",
+                        padding: "0.4rem 0.5rem",
+                        borderRadius: 5,
+                        border: "none",
+                        background: "none",
+                        color: t.ink50,
+                        fontFamily: "var(--body)",
+                        fontSize: "0.76rem",
+                        cursor: "pointer",
+                        textAlign: "left",
+                      }}
+                      onMouseEnter={function (e) {
+                        e.currentTarget.style.background = t.ink04;
+                      }}
+                      onMouseLeave={function (e) {
+                        e.currentTarget.style.background = "none";
+                      }}
+                    >
+                      <X size={14} color={t.ink50} />
+                      Unassign
+                    </button>
+                  )}
+                  {orgMembers.map(function (m) {
+                    var isActive = m.user_id === assignee;
+                    var isMe = m.user_id === user?.id;
+                    return (
+                      <button
+                        key={m.user_id}
+                        onClick={function () {
+                          handleAssign(m.user_id);
+                        }}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "0.4rem",
+                          width: "100%",
+                          padding: "0.4rem 0.5rem",
+                          borderRadius: 5,
+                          border: "none",
+                          background: isActive ? t.accentBg : "none",
+                          color: isActive ? t.accent : t.ink,
+                          fontFamily: "var(--body)",
+                          fontSize: "0.76rem",
+                          fontWeight: isActive ? 600 : 400,
+                          cursor: "pointer",
+                          textAlign: "left",
+                        }}
+                        onMouseEnter={function (e) {
+                          if (!isActive)
+                            e.currentTarget.style.background = t.ink04;
+                        }}
+                        onMouseLeave={function (e) {
+                          if (!isActive)
+                            e.currentTarget.style.background = isActive
+                              ? t.accentBg
+                              : "none";
+                        }}
+                      >
+                        <span
+                          style={{
+                            width: 22,
+                            height: 22,
+                            borderRadius: "50%",
+                            background: isActive ? t.accent : t.ink08,
+                            color: isActive ? "white" : t.ink50,
+                            fontFamily: "var(--mono)",
+                            fontSize: "0.52rem",
+                            fontWeight: 700,
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            flexShrink: 0,
+                          }}
+                        >
+                          {m.initials}
+                        </span>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div
+                            style={{
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                              whiteSpace: "nowrap",
+                            }}
+                          >
+                            {m.full_name || m.email}
+                            {isMe && (
+                              <span
+                                style={{
+                                  fontSize: "0.62rem",
+                                  color: t.ink50,
+                                  marginLeft: "0.3rem",
+                                }}
+                              >
+                                (you)
+                              </span>
+                            )}
+                          </div>
+                          {m.full_name && (
+                            <div
+                              style={{
+                                fontFamily: "var(--mono)",
+                                fontSize: "0.58rem",
+                                color: t.ink50,
+                              }}
+                            >
+                              {m.email}
+                            </div>
+                          )}
+                        </div>
+                        {isActive && (
+                          <Check size={14} color={t.accent} strokeWidth={2.5} />
+                        )}
+                      </button>
+                    );
+                  })}
+                  {!membersLoaded && (
+                    <div
+                      style={{
+                        padding: "0.5rem",
+                        textAlign: "center",
+                        color: t.ink50,
+                        fontSize: "0.72rem",
+                      }}
+                    >
+                      Loading…
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Ignore rule — creates a site-wide ignore pattern for this rule */}
           {!readOnly && onIgnoreRule && issue.rule_id && (

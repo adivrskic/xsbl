@@ -9,6 +9,7 @@ import {
   Play,
   X,
   Rocket,
+  Wrench,
 } from "lucide-react";
 
 /**
@@ -33,7 +34,7 @@ function setDismissed() {
   } catch (e) {}
 }
 
-function getSteps(sites) {
+function getSteps(sites, hasFixedIssue) {
   var siteList = sites || [];
   var hasSite = siteList.length > 0;
   var hasVerified = siteList.some(function (s) {
@@ -42,6 +43,7 @@ function getSteps(sites) {
   var hasScanned = siteList.some(function (s) {
     return s.score != null;
   });
+  var firstSiteId = hasSite ? siteList[0].id : null;
 
   return [
     {
@@ -61,6 +63,16 @@ function getSteps(sites) {
       icon: Play,
     },
     {
+      id: "fix-issue",
+      label: "Fix your first issue",
+      description: "Use the AI fix suggestion to resolve a quick win",
+      done: !!hasFixedIssue,
+      href: firstSiteId
+        ? "/dashboard/sites/" + firstSiteId + "?tab=issues"
+        : "/dashboard/sites",
+      icon: Wrench,
+    },
+    {
       id: "verify-domain",
       label: "Verify your domain",
       description: "Unlock scheduled scans and compliance reports",
@@ -71,11 +83,11 @@ function getSteps(sites) {
   ];
 }
 
-export default function SetupChecklist({ sites }) {
+export default function SetupChecklist({ sites, hasFixedIssue }) {
   var { t } = useTheme();
   var [hidden, setHidden] = useState(isDismissed);
 
-  var steps = getSteps(sites);
+  var steps = getSteps(sites, hasFixedIssue);
   var completedCount = steps.filter(function (s) {
     return s.done;
   }).length;

@@ -1592,6 +1592,12 @@ function ScheduledReports({ org }) {
 function AlertIntegrations({ org }) {
   const { t } = useTheme();
   const [slackUrl, setSlackUrl] = useState(org?.slack_webhook_url || "");
+  const [slackBotToken, setSlackBotToken] = useState(
+    org?.slack_bot_token || ""
+  );
+  const [slackChannelId, setSlackChannelId] = useState(
+    org?.slack_channel_id || ""
+  );
   const [emails, setEmails] = useState((org?.alert_emails || []).join(", "));
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -1614,6 +1620,8 @@ function AlertIntegrations({ org }) {
       .from("organizations")
       .update({
         slack_webhook_url: slackUrl.trim() || null,
+        slack_bot_token: slackBotToken.trim() || null,
+        slack_channel_id: slackChannelId.trim() || null,
         alert_emails: emailList,
       })
       .eq("id", org.id);
@@ -1625,6 +1633,7 @@ function AlertIntegrations({ org }) {
       description: "Alert integrations updated",
       metadata: {
         has_slack: !!slackUrl.trim(),
+        has_slack_threads: !!(slackBotToken.trim() && slackChannelId.trim()),
         alert_emails: emailList.length,
       },
     });
@@ -1760,6 +1769,135 @@ function AlertIntegrations({ org }) {
             Create a Slack webhook →
           </a>
         </p>
+      </div>
+
+      {/* Slack comment threading */}
+      <div
+        style={{
+          marginBottom: "1rem",
+          padding: "0.9rem",
+          borderRadius: 8,
+          border: "1px solid " + t.ink08,
+          background: t.ink04 + "60",
+        }}
+      >
+        <div
+          style={{
+            fontSize: "0.78rem",
+            fontWeight: 600,
+            color: t.ink,
+            marginBottom: "0.3rem",
+            display: "flex",
+            alignItems: "center",
+            gap: "0.3rem",
+          }}
+        >
+          💬 Comment → Slack threads
+        </div>
+        <p
+          style={{
+            fontSize: "0.68rem",
+            color: t.ink50,
+            marginBottom: "0.6rem",
+            lineHeight: 1.5,
+          }}
+        >
+          Mirror issue comments to Slack threads. First comment creates a
+          thread, subsequent comments reply in it. Requires a Slack Bot Token
+          (from a Slack app with{" "}
+          <code style={{ fontSize: "0.62rem" }}>chat:write</code> scope) and a
+          channel ID.
+        </p>
+        <div style={{ marginBottom: "0.5rem" }}>
+          <label
+            style={{
+              display: "block",
+              fontFamily: "var(--mono)",
+              fontSize: "0.58rem",
+              textTransform: "uppercase",
+              letterSpacing: "0.06em",
+              color: t.ink50,
+              marginBottom: "0.2rem",
+            }}
+          >
+            Bot Token
+          </label>
+          <input
+            aria-label="Slack bot token"
+            value={slackBotToken}
+            onChange={function (e) {
+              setSlackBotToken(e.target.value);
+            }}
+            placeholder="xoxb-..."
+            type="password"
+            style={{
+              width: "100%",
+              padding: "0.4rem 0.65rem",
+              borderRadius: 6,
+              border: "1.5px solid " + t.ink20,
+              background: t.paper,
+              color: t.ink,
+              fontFamily: "var(--mono)",
+              fontSize: "0.7rem",
+              outline: "none",
+              boxSizing: "border-box",
+            }}
+          />
+        </div>
+        <div style={{ marginBottom: "0.3rem" }}>
+          <label
+            style={{
+              display: "block",
+              fontFamily: "var(--mono)",
+              fontSize: "0.58rem",
+              textTransform: "uppercase",
+              letterSpacing: "0.06em",
+              color: t.ink50,
+              marginBottom: "0.2rem",
+            }}
+          >
+            Channel ID
+          </label>
+          <input
+            aria-label="Slack channel ID"
+            value={slackChannelId}
+            onChange={function (e) {
+              setSlackChannelId(e.target.value);
+            }}
+            placeholder="C0123456789"
+            style={{
+              width: "100%",
+              padding: "0.4rem 0.65rem",
+              borderRadius: 6,
+              border: "1.5px solid " + t.ink20,
+              background: t.paper,
+              color: t.ink,
+              fontFamily: "var(--mono)",
+              fontSize: "0.7rem",
+              outline: "none",
+              boxSizing: "border-box",
+            }}
+          />
+          <p
+            style={{ fontSize: "0.6rem", color: t.ink50, marginTop: "0.15rem" }}
+          >
+            Right-click a channel → "View channel details" → copy the Channel ID
+            at the bottom.
+          </p>
+        </div>
+        {slackBotToken && slackChannelId && (
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "0.3rem",
+              fontSize: "0.68rem",
+              color: t.green,
+            }}
+          >
+            ✓ Comment threading will mirror to Slack
+          </div>
+        )}
       </div>
 
       {/* Email alerts */}

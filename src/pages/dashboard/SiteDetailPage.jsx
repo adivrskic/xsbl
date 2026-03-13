@@ -46,1813 +46,30 @@ import PlanGate from "../../components/ui/PlanGate";
 import CIWorkflowPanel from "../../components/dashboard/CIWorkflowPanel";
 import ScanCompare from "../../components/dashboard/ScanCompare";
 import AccessibilityStatementGenerator from "../../components/dashboard/AccessibilityStatementGenerator";
+import ReportSchedulePicker from "../../components/dashboard/ReportSchedulePicker";
+import QuickWinsCard from "../../components/dashboard/QuickWinsCard";
 import { timeAgo, fullDate } from "../../lib/timeAgo";
 
-/* ── GitHub icon (no lucide brand icons) ── */
-/* ── CSV Export ── */
-function exportIssuesToCSV(issues, siteName) {
-  var headers = [
-    "Rule ID",
-    "Impact",
-    "Status",
-    "Description",
-    "Page URL",
-    "Element Selector",
-    "Element HTML",
-    "WCAG Tags",
-    "Fix Suggestion",
-  ];
-  var rows = issues.map(function (iss) {
-    return [
-      iss.rule_id || "",
-      iss.impact || "",
-      iss.status || "",
-      (iss.description || "").replace(/"/g, '""'),
-      iss.page_url || "",
-      (iss.element_selector || "").replace(/"/g, '""'),
-      (iss.element_html || "").replace(/"/g, '""').substring(0, 500),
-      (iss.wcag_tags || []).join("; "),
-      (iss.fix_suggestion || "").replace(/"/g, '""').substring(0, 300),
-    ]
-      .map(function (cell) {
-        return '"' + cell + '"';
-      })
-      .join(",");
-  });
-  var csv = headers.join(",") + "\n" + rows.join("\n");
-  var blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-  var url = URL.createObjectURL(blob);
-  var a = document.createElement("a");
-  a.href = url;
-  a.download = (siteName || "issues") + "-accessibility-issues.csv";
-  a.click();
-  URL.revokeObjectURL(url);
-}
-
-function GitHubIcon({ size = 16 }) {
-  return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      fill="currentColor"
-      aria-hidden="true"
-    >
-      <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z" />
-    </svg>
-  );
-}
-
-/* ── Verification Token with show/hide ── */
-function VerificationTokenPanel({ site }) {
-  const { t } = useTheme();
-  const [show, setShow] = useState(false);
-  const [copied, setCopied] = useState(false);
-
-  var token = site.verification_token || "";
-  var masked = token.substring(0, 8) + "••••••••••";
-
-  var handleCopy = function () {
-    navigator.clipboard.writeText(token);
-    setCopied(true);
-    setTimeout(function () {
-      setCopied(false);
-    }, 2000);
-  };
-
-  return (
-    <div
-      style={{
-        padding: "1.2rem",
-        borderRadius: 10,
-        border: "1px solid " + t.ink08,
-        background: t.cardBg,
-        marginBottom: "1rem",
-      }}
-    >
-      <div
-        style={{
-          fontSize: "0.82rem",
-          fontWeight: 600,
-          color: t.ink,
-          marginBottom: "0.4rem",
-        }}
-      >
-        Verification token
-      </div>
-      <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-        <code
-          style={{
-            fontFamily: "var(--mono)",
-            fontSize: "0.72rem",
-            color: t.accent,
-            flex: 1,
-          }}
-        >
-          {show ? token : masked}
-        </code>
-        <button
-          onClick={function () {
-            setShow(!show);
-          }}
-          style={{
-            background: "none",
-            border: "1px solid " + t.ink20,
-            borderRadius: 5,
-            padding: "0.2rem 0.5rem",
-            cursor: "pointer",
-            fontFamily: "var(--mono)",
-            fontSize: "0.6rem",
-            color: t.ink50,
-          }}
-        >
-          {show ? "Hide" : "Show"}
-        </button>
-        <button
-          onClick={handleCopy}
-          style={{
-            background: "none",
-            border: "1px solid " + t.ink20,
-            borderRadius: 5,
-            padding: "0.2rem 0.5rem",
-            cursor: "pointer",
-            fontFamily: "var(--mono)",
-            fontSize: "0.6rem",
-            color: copied ? t.green : t.ink50,
-          }}
-        >
-          {copied ? "Copied!" : "Copy"}
-        </button>
-      </div>
-    </div>
-  );
-}
-
-/* ── Impact badge ── */
-function ImpactBadge({ impact }) {
-  const { t } = useTheme();
-  const colors = {
-    critical: { bg: `${t.red}15`, text: t.red },
-    serious: { bg: `${t.red}10`, text: t.red },
-    moderate: { bg: `${t.amber}12`, text: t.amber },
-    minor: { bg: t.accentBg, text: t.accent },
-  };
-  const c = colors[impact] || colors.minor;
-  return (
-    <span
-      style={{
-        fontFamily: "var(--mono)",
-        fontSize: "0.6rem",
-        fontWeight: 600,
-        padding: "0.15rem 0.4rem",
-        borderRadius: 3,
-        background: c.bg,
-        color: c.text,
-        textTransform: "uppercase",
-        letterSpacing: "0.04em",
-        width: 62,
-        textAlign: "center",
-        flexShrink: 0,
-        display: "inline-block",
-        boxSizing: "border-box",
-      }}
-    >
-      {impact}
-    </span>
-  );
-}
-
-function FixBadge({ count, total }) {
-  const { t } = useTheme();
-  if (!count) return null;
-  var label = count === total ? "fix" : count + "/" + total + " fix";
-  return (
-    <span
-      style={{
-        fontFamily: "var(--mono)",
-        fontSize: "0.55rem",
-        fontWeight: 600,
-        padding: "0.12rem 0.35rem",
-        borderRadius: 3,
-        background: t.greenBg,
-        color: t.green,
-        textTransform: "uppercase",
-        letterSpacing: "0.04em",
-        flexShrink: 0,
-        display: "inline-flex",
-        alignItems: "center",
-        gap: "0.2rem",
-        whiteSpace: "nowrap",
-      }}
-    >
-      <Lightbulb size={9} strokeWidth={2.5} />
-      {label}
-    </span>
-  );
-}
-
-/* ── Verify panel ── */
-function VerifyPanel({ site, onVerified }) {
-  const { t } = useTheme();
-  const { session } = useAuth();
-  const [method, setMethod] = useState("meta_tag");
-  const [copied, setCopied] = useState(false);
-  const [verifying, setVerifying] = useState(false);
-  const [result, setResult] = useState(null);
-
-  const tk = site.verification_token;
-  const snippets = {
-    meta_tag: `<meta name="xsbl-verification" content="${tk}" />`,
-    dns_txt: `xsbl-verification=${tk}`,
-    well_known: tk,
-  };
-  const hints = {
-    meta_tag: "Add this meta tag to your site\u2019s <head>:",
-    dns_txt: "Add a TXT record to your domain\u2019s DNS:",
-    well_known: `Create https://${site.domain}/.well-known/xsbl-verify.txt with:`,
-  };
-  const tabs = [
-    { id: "meta_tag", label: "Meta tag" },
-    { id: "dns_txt", label: "DNS" },
-    { id: "well_known", label: "File" },
-  ];
-
-  const handleCopy = (txt) => {
-    navigator.clipboard.writeText(txt);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-
-  const handleVerify = async () => {
-    setVerifying(true);
-    setResult(null);
-    try {
-      const { data, error } = await supabase.functions.invoke("verify-site", {
-        body: { site_id: site.id },
-        headers: { Authorization: `Bearer ${session?.access_token}` },
-      });
-      if (error) throw new Error(error.message);
-      setResult(data);
-      if (data?.verified) {
-        onVerified?.(data);
-      }
-    } catch (err) {
-      setResult({ verified: false, error: err.message });
-    }
-    setVerifying(false);
-  };
-
-  return (
-    <div
-      style={{
-        padding: "1.5rem",
-        borderRadius: 12,
-        border: `1px solid ${t.amber}30`,
-        background: `${t.amber}06`,
-        marginBottom: "2rem",
-      }}
-    >
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: "0.5rem",
-          marginBottom: "0.5rem",
-        }}
-      >
-        <AlertTriangle size={16} color={t.amber} strokeWidth={2} />
-        <h2
-          style={{
-            fontFamily: "var(--serif)",
-            fontSize: "1rem",
-            fontWeight: 700,
-            color: t.ink,
-            margin: 0,
-          }}
-        >
-          Verify ownership
-        </h2>
-      </div>
-      <p
-        style={{
-          color: t.ink50,
-          fontSize: "0.84rem",
-          marginBottom: "1rem",
-          lineHeight: 1.6,
-        }}
-      >
-        Verify to unlock scheduled scans and compliance reports. You can still
-        run manual scans without verification.
-      </p>
-      <div
-        style={{
-          display: "flex",
-          gap: "0.25rem",
-          marginBottom: "1rem",
-          background: t.ink04,
-          padding: "0.25rem",
-          borderRadius: 8,
-          width: "fit-content",
-        }}
-      >
-        {tabs.map(({ id, label }) => (
-          <button
-            key={id}
-            onClick={() => setMethod(id)}
-            style={{
-              padding: "0.4rem 0.75rem",
-              borderRadius: 6,
-              border: "none",
-              background: method === id ? t.cardBg : "transparent",
-              color: method === id ? t.ink : t.ink50,
-              fontFamily: "var(--mono)",
-              fontSize: "0.68rem",
-              fontWeight: 600,
-              cursor: "pointer",
-              boxShadow: method === id ? "0 1px 3px rgba(0,0,0,0.08)" : "none",
-            }}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
-      <p style={{ color: t.ink50, fontSize: "0.8rem", marginBottom: "0.5rem" }}>
-        {hints[method]}
-      </p>
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: "0.5rem",
-          background: t.codeBg,
-          padding: "0.7rem 1rem",
-          borderRadius: 8,
-          marginBottom: "1rem",
-        }}
-      >
-        <code
-          style={{
-            fontFamily: "var(--mono)",
-            fontSize: "0.7rem",
-            color: t.green,
-            flex: 1,
-            overflowX: "auto",
-            whiteSpace: "pre",
-          }}
-        >
-          {snippets[method]}
-        </code>
-        <button
-          onClick={() => handleCopy(snippets[method])}
-          style={{
-            background: "none",
-            border: `1px solid ${t.ink20}`,
-            borderRadius: 6,
-            padding: "0.25rem 0.55rem",
-            cursor: "pointer",
-            whiteSpace: "nowrap",
-            flexShrink: 0,
-            display: "flex",
-            alignItems: "center",
-            gap: "0.3rem",
-            fontFamily: "var(--mono)",
-            fontSize: "0.62rem",
-            color: copied ? t.green : t.ink50,
-          }}
-        >
-          {copied ? <Check size={12} /> : <Copy size={12} />}
-          {copied ? "Copied!" : "Copy"}
-        </button>
-      </div>
-
-      {/* Verify button */}
-      <button
-        onClick={handleVerify}
-        disabled={verifying}
-        style={{
-          padding: "0.55rem 1.2rem",
-          borderRadius: 8,
-          border: "none",
-          background: t.accent,
-          color: "white",
-          fontFamily: "var(--body)",
-          fontSize: "0.85rem",
-          fontWeight: 600,
-          cursor: verifying ? "not-allowed" : "pointer",
-          opacity: verifying ? 0.6 : 1,
-          display: "flex",
-          alignItems: "center",
-          gap: "0.4rem",
-        }}
-      >
-        {verifying ? (
-          <Loader2 size={15} className="xsbl-spin" />
-        ) : (
-          <Check size={15} />
-        )}
-        {verifying ? "Checking\u2026" : "Verify now"}
-      </button>
-
-      {/* Result */}
-      {result && (
-        <div
-          style={{
-            marginTop: "0.8rem",
-            padding: "0.7rem 0.9rem",
-            borderRadius: 8,
-            background: result.verified ? t.greenBg : `${t.red}08`,
-            border: `1px solid ${
-              result.verified ? `${t.green}20` : `${t.red}20`
-            }`,
-            fontSize: "0.82rem",
-            color: result.verified ? t.green : t.red,
-          }}
-        >
-          {result.verified ? (
-            <span
-              style={{ display: "flex", alignItems: "center", gap: "0.3rem" }}
-            >
-              <Check size={14} strokeWidth={2.5} /> Verified via{" "}
-              {result.method === "meta_tag"
-                ? "meta tag"
-                : result.method === "dns_txt"
-                ? "DNS TXT record"
-                : "well-known file"}
-              !
-            </span>
-          ) : (
-            <div>
-              <div style={{ marginBottom: "0.3rem", fontWeight: 600 }}>
-                Verification failed
-              </div>
-              <div style={{ fontSize: "0.76rem", color: t.ink50 }}>
-                We checked all three methods and couldn't find your token. Make
-                sure the meta tag, DNS record, or file is live, then try again.
-                {result.checks && (
-                  <div style={{ marginTop: "0.3rem" }}>
-                    {result.checks.map((c, i) => (
-                      <div
-                        key={i}
-                        style={{
-                          fontFamily: "var(--mono)",
-                          fontSize: "0.65rem",
-                        }}
-                      >
-                        {c.found ? "\u2713" : "\u2717"}{" "}
-                        {c.method.replace("_", " ")}
-                        {c.error ? ` (${c.error})` : ""}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
-
-/* ── Filter bar ── */
-function IssueFilters({ filters, setFilters, issues }) {
-  const { t } = useTheme();
-  const [open, setOpen] = useState(false);
-
-  const impacts = ["critical", "serious", "moderate", "minor"];
-  const statuses = ["open", "fixed", "ignored", "removed", "false_positive"];
-
-  // Collect unique WCAG tags
-  const allTags = [...new Set(issues.flatMap((i) => i.wcag_tags || []))].sort();
-
-  const impactCounts = {};
-  impacts.forEach((imp) => {
-    impactCounts[imp] = issues.filter((i) => i.impact === imp).length;
-  });
-
-  const statusCounts = {};
-  statuses.forEach((s) => {
-    statusCounts[s] = issues.filter((i) => i.status === s).length;
-  });
-
-  const toggleFilter = (key, value) => {
-    setFilters((prev) => {
-      const arr = prev[key] || [];
-      return {
-        ...prev,
-        [key]: arr.includes(value)
-          ? arr.filter((v) => v !== value)
-          : [...arr, value],
-      };
-    });
-  };
-
-  const activeCount =
-    (filters.impact?.length || 0) +
-    (filters.status?.length || 0) +
-    (filters.wcag?.length || 0) +
-    (filters.page?.length || 0);
-
-  return (
-    <div style={{ marginBottom: "1rem" }}>
-      <button
-        onClick={() => setOpen(!open)}
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: "0.4rem",
-          background: activeCount > 0 ? t.accentBg : t.ink04,
-          border: `1px solid ${activeCount > 0 ? t.accent : t.ink08}`,
-          borderRadius: 7,
-          padding: "0.4rem 0.8rem",
-          cursor: "pointer",
-          fontFamily: "var(--body)",
-          fontSize: "0.78rem",
-          fontWeight: 500,
-          color: activeCount > 0 ? t.accent : t.ink50,
-        }}
-      >
-        <Filter size={13} strokeWidth={2} />
-        Filters {activeCount > 0 && `(${activeCount})`}
-        <ChevronDown
-          size={13}
-          style={{
-            transform: open ? "rotate(180deg)" : "rotate(0)",
-            transition: "transform 0.2s",
-          }}
-        />
-      </button>
-
-      {open && (
-        <div
-          style={{
-            marginTop: "0.6rem",
-            padding: "1rem",
-            borderRadius: 10,
-            border: `1px solid ${t.ink08}`,
-            background: t.cardBg,
-          }}
-        >
-          {/* Impact */}
-          <div style={{ marginBottom: "0.8rem" }}>
-            <div
-              style={{
-                fontFamily: "var(--mono)",
-                fontSize: "0.6rem",
-                color: t.ink50,
-                textTransform: "uppercase",
-                letterSpacing: "0.06em",
-                marginBottom: "0.35rem",
-              }}
-            >
-              Impact
-            </div>
-            <div style={{ display: "flex", gap: "0.25rem", flexWrap: "wrap" }}>
-              {impacts.map((imp) => {
-                const active = filters.impact?.includes(imp);
-                return (
-                  <button
-                    key={imp}
-                    onClick={() => toggleFilter("impact", imp)}
-                    style={{
-                      padding: "0.25rem 0.55rem",
-                      borderRadius: 5,
-                      fontSize: "0.7rem",
-                      fontFamily: "var(--mono)",
-                      fontWeight: 600,
-                      cursor: "pointer",
-                      border: `1px solid ${active ? t.accent : t.ink08}`,
-                      background: active ? t.accentBg : "transparent",
-                      color: active ? t.accent : t.ink50,
-                      textTransform: "uppercase",
-                    }}
-                  >
-                    {imp} ({impactCounts[imp]})
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Status */}
-          <div style={{ marginBottom: "0.8rem" }}>
-            <div
-              style={{
-                fontFamily: "var(--mono)",
-                fontSize: "0.6rem",
-                color: t.ink50,
-                textTransform: "uppercase",
-                letterSpacing: "0.06em",
-                marginBottom: "0.35rem",
-              }}
-            >
-              Status
-            </div>
-            <div style={{ display: "flex", gap: "0.25rem", flexWrap: "wrap" }}>
-              {statuses.map((s) => {
-                const active = filters.status?.includes(s);
-                return (
-                  <button
-                    key={s}
-                    onClick={() => toggleFilter("status", s)}
-                    style={{
-                      padding: "0.25rem 0.55rem",
-                      borderRadius: 5,
-                      fontSize: "0.7rem",
-                      fontFamily: "var(--mono)",
-                      fontWeight: 600,
-                      cursor: "pointer",
-                      border: `1px solid ${active ? t.accent : t.ink08}`,
-                      background: active ? t.accentBg : "transparent",
-                      color: active ? t.accent : t.ink50,
-                    }}
-                  >
-                    {s.replace("_", " ")} ({statusCounts[s]})
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* WCAG tags */}
-          {allTags.length > 0 && (
-            <div>
-              <div
-                style={{
-                  fontFamily: "var(--mono)",
-                  fontSize: "0.6rem",
-                  color: t.ink50,
-                  textTransform: "uppercase",
-                  letterSpacing: "0.06em",
-                  marginBottom: "0.35rem",
-                }}
-              >
-                WCAG criterion
-              </div>
-              <div
-                style={{
-                  display: "flex",
-                  gap: "0.25rem",
-                  flexWrap: "wrap",
-                  maxHeight: 80,
-                  overflowY: "auto",
-                }}
-              >
-                {allTags.map((tag) => {
-                  const active = filters.wcag?.includes(tag);
-                  return (
-                    <button
-                      key={tag}
-                      onClick={() => toggleFilter("wcag", tag)}
-                      style={{
-                        padding: "0.2rem 0.45rem",
-                        borderRadius: 4,
-                        fontSize: "0.62rem",
-                        fontFamily: "var(--mono)",
-                        cursor: "pointer",
-                        border: `1px solid ${active ? t.accent : t.ink08}`,
-                        background: active ? t.accentBg : "transparent",
-                        color: active ? t.accent : t.ink50,
-                      }}
-                    >
-                      {tag}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          {activeCount > 0 && (
-            <button
-              onClick={() => setFilters({})}
-              style={{
-                marginTop: "0.6rem",
-                background: "none",
-                border: "none",
-                padding: 0,
-                color: t.red,
-                fontSize: "0.72rem",
-                fontWeight: 500,
-                cursor: "pointer",
-                fontFamily: "var(--body)",
-              }}
-            >
-              Clear all filters
-            </button>
-          )}
-
-          {/* Page URL filter */}
-          {(() => {
-            const allPages = [
-              ...new Set(issues.map((i) => i.page_url).filter(Boolean)),
-            ];
-            if (allPages.length <= 1) return null;
-            return (
-              <div style={{ marginTop: "0.8rem" }}>
-                <div
-                  style={{
-                    fontFamily: "var(--mono)",
-                    fontSize: "0.6rem",
-                    color: t.ink50,
-                    textTransform: "uppercase",
-                    letterSpacing: "0.06em",
-                    marginBottom: "0.35rem",
-                  }}
-                >
-                  Page
-                </div>
-                <div
-                  style={{
-                    display: "flex",
-                    gap: "0.25rem",
-                    flexWrap: "wrap",
-                    maxHeight: 80,
-                    overflowY: "auto",
-                  }}
-                >
-                  {allPages.map((pageUrl) => {
-                    const active = filters.page?.includes(pageUrl);
-                    let label;
-                    try {
-                      label = new URL(pageUrl).pathname;
-                    } catch {
-                      label = pageUrl;
-                    }
-                    const count = issues.filter(
-                      (i) => i.page_url === pageUrl
-                    ).length;
-                    return (
-                      <button
-                        key={pageUrl}
-                        onClick={() => toggleFilter("page", pageUrl)}
-                        style={{
-                          padding: "0.2rem 0.45rem",
-                          borderRadius: 4,
-                          fontSize: "0.62rem",
-                          fontFamily: "var(--mono)",
-                          cursor: "pointer",
-                          border: `1px solid ${active ? t.accent : t.ink08}`,
-                          background: active ? t.accentBg : "transparent",
-                          color: active ? t.accent : t.ink50,
-                          maxWidth: 180,
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
-                          whiteSpace: "nowrap",
-                        }}
-                      >
-                        {label} ({count})
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            );
-          })()}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function BadgeEmbedPanel({ site }) {
-  const { t } = useTheme();
-  const [style, setStyle] = useState("flat");
-  const [copied, setCopied] = useState(false);
-
-  var supabaseUrl = supabase.supabaseUrl || "";
-  var badgeUrl =
-    supabaseUrl +
-    "/functions/v1/badge?domain=" +
-    encodeURIComponent(site.domain) +
-    "&style=" +
-    style;
-
-  var formats = {
-    markdown: "![accessibility](" + badgeUrl + ")",
-    html: '<img src="' + badgeUrl + '" alt="Accessibility score" />',
-    url: badgeUrl,
-  };
-  const [fmt, setFmt] = useState("markdown");
-
-  var handleCopy = function () {
-    navigator.clipboard.writeText(formats[fmt]);
-    setCopied(true);
-    setTimeout(function () {
-      setCopied(false);
-    }, 2000);
-  };
-
-  return (
-    <div
-      style={{
-        padding: "1.2rem",
-        borderRadius: 10,
-        border: "1px solid " + t.ink08,
-        background: t.cardBg,
-        marginBottom: "1rem",
-      }}
-    >
-      <div
-        style={{
-          fontSize: "0.88rem",
-          fontWeight: 600,
-          color: t.ink,
-          marginBottom: "0.5rem",
-        }}
-      >
-        Score Badge
-      </div>
-      <p
-        style={{
-          fontSize: "0.74rem",
-          color: t.ink50,
-          marginBottom: "0.6rem",
-          lineHeight: 1.5,
-        }}
-      >
-        Embed your accessibility score in README, docs, or your website.
-      </p>
-      {site.score != null && (
-        <div style={{ marginBottom: "0.6rem" }}>
-          <img
-            src={badgeUrl}
-            alt="accessibility badge"
-            style={{ height: 20 }}
-          />
-        </div>
-      )}
-      <div style={{ display: "flex", gap: "0.25rem", marginBottom: "0.5rem" }}>
-        {["flat", "plastic", "minimal"].map(function (s) {
-          return (
-            <button
-              key={s}
-              onClick={function () {
-                setStyle(s);
-              }}
-              style={{
-                padding: "0.25rem 0.5rem",
-                borderRadius: 4,
-                border: "none",
-                background: style === s ? t.accent : t.ink04,
-                color: style === s ? "white" : t.ink50,
-                fontFamily: "var(--mono)",
-                fontSize: "0.6rem",
-                fontWeight: 600,
-                cursor: "pointer",
-              }}
-            >
-              {s}
-            </button>
-          );
-        })}
-      </div>
-      <div style={{ display: "flex", gap: "0.25rem", marginBottom: "0.5rem" }}>
-        {["markdown", "html", "url"].map(function (f) {
-          return (
-            <button
-              key={f}
-              onClick={function () {
-                setFmt(f);
-              }}
-              style={{
-                padding: "0.25rem 0.5rem",
-                borderRadius: 4,
-                border: "none",
-                background: fmt === f ? t.ink08 : "transparent",
-                color: fmt === f ? t.ink : t.ink50,
-                fontFamily: "var(--mono)",
-                fontSize: "0.6rem",
-                fontWeight: 600,
-                cursor: "pointer",
-              }}
-            >
-              {f}
-            </button>
-          );
-        })}
-      </div>
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: "0.4rem",
-          background: t.codeBg,
-          padding: "0.5rem 0.7rem",
-          borderRadius: 6,
-        }}
-      >
-        <code
-          style={{
-            fontFamily: "var(--mono)",
-            fontSize: "0.62rem",
-            color: "#a3a3a3",
-            flex: 1,
-            overflowX: "auto",
-            whiteSpace: "nowrap",
-          }}
-        >
-          {formats[fmt]}
-        </code>
-        <button
-          onClick={handleCopy}
-          style={{
-            background: "none",
-            border: "1px solid " + t.ink20,
-            borderRadius: 4,
-            padding: "0.15rem 0.4rem",
-            cursor: "pointer",
-            fontFamily: "var(--mono)",
-            fontSize: "0.55rem",
-            color: copied ? t.green : t.ink50,
-            flexShrink: 0,
-          }}
-        >
-          {copied ? "Copied!" : "Copy"}
-        </button>
-      </div>
-    </div>
-  );
-}
-
-/* ── Ignore Rules Panel ── */
-function IgnoreRulesPanel({ site, onUpdate }) {
-  var { t } = useTheme();
-  var rules = site.ignore_rules || [];
-  var [removing, setRemoving] = useState(null);
-
-  var handleRemove = async function (index) {
-    setRemoving(index);
-    var updated = rules.filter(function (_, i) {
-      return i !== index;
-    });
-    var { data } = await supabase
-      .from("sites")
-      .update({ ignore_rules: updated })
-      .eq("id", site.id)
-      .select()
-      .single();
-    if (data) onUpdate(data);
-    setRemoving(null);
-  };
-
-  if (rules.length === 0) return null;
-
-  return (
-    <div
-      style={{
-        padding: "1.2rem",
-        borderRadius: 12,
-        border: "1px solid " + t.ink08,
-        background: t.cardBg,
-        marginBottom: "1rem",
-      }}
-    >
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: "0.4rem",
-          marginBottom: "0.5rem",
-        }}
-      >
-        <EyeOff size={15} color={t.amber} strokeWidth={2} />
-        <h3
-          style={{
-            fontSize: "0.92rem",
-            fontWeight: 600,
-            color: t.ink,
-            margin: 0,
-          }}
-        >
-          Ignore rules
-        </h3>
-        <span
-          style={{
-            fontFamily: "var(--mono)",
-            fontSize: "0.58rem",
-            fontWeight: 700,
-            padding: "0.1rem 0.35rem",
-            borderRadius: 4,
-            background: t.amber + "15",
-            color: t.amber,
-          }}
-        >
-          {rules.length}
-        </span>
-      </div>
-      <p
-        style={{
-          fontSize: "0.74rem",
-          color: t.ink50,
-          margin: "0 0 0.6rem",
-          lineHeight: 1.5,
-        }}
-      >
-        These rules are auto-ignored on new scans. Issues matching these
-        patterns won't appear as open.
-      </p>
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          gap: "0.3rem",
-        }}
-      >
-        {rules.map(function (rule, i) {
-          return (
-            <div
-              key={i}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "0.5rem",
-                padding: "0.5rem 0.7rem",
-                borderRadius: 7,
-                border: "1px solid " + t.ink08,
-                background: t.paper,
-              }}
-            >
-              <span
-                style={{
-                  fontFamily: "var(--mono)",
-                  fontSize: "0.72rem",
-                  fontWeight: 600,
-                  color: t.accent,
-                }}
-              >
-                {rule.rule_id}
-              </span>
-              <span
-                style={{
-                  flex: 1,
-                  fontSize: "0.74rem",
-                  color: t.ink50,
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                  whiteSpace: "nowrap",
-                }}
-              >
-                {rule.description || ""}
-              </span>
-              <button
-                onClick={function () {
-                  handleRemove(i);
-                }}
-                disabled={removing === i}
-                aria-label={"Remove ignore rule for " + rule.rule_id}
-                style={{
-                  padding: "0.2rem",
-                  borderRadius: 4,
-                  border: "none",
-                  background: "none",
-                  color: t.ink50,
-                  cursor: "pointer",
-                  display: "flex",
-                  opacity: removing === i ? 0.3 : 1,
-                }}
-              >
-                <X size={13} />
-              </button>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-/* ── Danger Zone — working delete ── */
-function DangerZonePanel({ site }) {
-  const { t } = useTheme();
-  const navigate = useNavigate();
-  const [confirming, setConfirming] = useState(false);
-  const [deleting, setDeleting] = useState(false);
-
-  var handleDelete = async function () {
-    if (!confirming) {
-      setConfirming(true);
-      return;
-    }
-    setDeleting(true);
-    // Delete issues first (cascade might not handle it if FK is loose)
-    await supabase.from("issues").delete().eq("site_id", site.id);
-    await supabase.from("scans").delete().eq("site_id", site.id);
-    await supabase.from("sites").delete().eq("id", site.id);
-    logAudit({
-      action: "site.deleted",
-      resourceType: "site",
-      resourceId: site.id,
-      description: "Deleted site " + site.domain,
-      metadata: { domain: site.domain },
-    });
-    navigate("/dashboard/sites");
-  };
-
-  return (
-    <div
-      style={{
-        padding: "1.2rem",
-        borderRadius: 10,
-        border: "1px solid " + t.red + "20",
-        background: t.red + "04",
-      }}
-    >
-      <div
-        style={{
-          fontSize: "0.82rem",
-          fontWeight: 600,
-          color: t.red,
-          marginBottom: "0.25rem",
-          display: "flex",
-          alignItems: "center",
-          gap: "0.4rem",
-        }}
-      >
-        <Trash2 size={14} strokeWidth={2} /> Danger zone
-      </div>
-      <p
-        style={{ fontSize: "0.76rem", color: t.ink50, marginBottom: "0.7rem" }}
-      >
-        {confirming
-          ? "Are you sure? This permanently deletes all scan history and issues for " +
-            site.domain +
-            "."
-          : "Removing deletes all scan history and issues."}
-      </p>
-      <div style={{ display: "flex", gap: "0.4rem" }}>
-        <button
-          onClick={handleDelete}
-          disabled={deleting}
-          style={{
-            padding: "0.4rem 0.9rem",
-            borderRadius: 6,
-            border: confirming ? "none" : "1.5px solid " + t.red,
-            background: confirming ? t.red : "none",
-            color: confirming ? "white" : t.red,
-            fontFamily: "var(--body)",
-            fontSize: "0.78rem",
-            fontWeight: 600,
-            cursor: deleting ? "not-allowed" : "pointer",
-            opacity: deleting ? 0.5 : 1,
-          }}
-        >
-          {deleting
-            ? "Deleting..."
-            : confirming
-            ? "Yes, delete permanently"
-            : "Remove site"}
-        </button>
-        {confirming && !deleting && (
-          <button
-            onClick={function () {
-              setConfirming(false);
-            }}
-            style={{
-              padding: "0.4rem 0.9rem",
-              borderRadius: 6,
-              border: "1.5px solid " + t.ink20,
-              background: "none",
-              color: t.ink,
-              fontFamily: "var(--body)",
-              fontSize: "0.78rem",
-              fontWeight: 500,
-              cursor: "pointer",
-            }}
-          >
-            Cancel
-          </button>
-        )}
-      </div>
-    </div>
-  );
-}
-
-/* ── Score Explainer Modal ── */
-function ScoreExplainerModal({ t, score, issues, scans, onClose }) {
-  var latestScan = scans.length > 0 ? scans[0] : null;
-  var pages = latestScan?.summary_json?.pages || [];
-
-  // Only count issues from the latest scan, not all historical open issues
-  var latestScanId = latestScan ? latestScan.id : null;
-  var scanIssues = latestScanId
-    ? issues.filter(function (i) {
-        return i.scan_id === latestScanId;
-      })
-    : [];
-
-  // Per-impact breakdown from latest scan only
-  var critNodes = 0,
-    seriousNodes = 0,
-    moderateNodes = 0,
-    minorNodes = 0;
-  scanIssues.forEach(function (i) {
-    if (i.impact === "critical") critNodes++;
-    else if (i.impact === "serious") seriousNodes++;
-    else if (i.impact === "moderate") moderateNodes++;
-    else minorNodes++;
-  });
-  var totalDeductions =
-    critNodes * 4 + seriousNodes * 3 + moderateNodes * 2 + minorNodes * 1;
-
-  var impactRows = [
-    {
-      label: "Critical",
-      count: critNodes,
-      weight: 4,
-      points: critNodes * 4,
-      color: "#c0392b",
-    },
-    {
-      label: "Serious",
-      count: seriousNodes,
-      weight: 3,
-      points: seriousNodes * 3,
-      color: "#e67e22",
-    },
-    {
-      label: "Moderate",
-      count: moderateNodes,
-      weight: 2,
-      points: moderateNodes * 2,
-      color: "#b45309",
-    },
-    {
-      label: "Minor",
-      count: minorNodes,
-      weight: 1,
-      points: minorNodes * 1,
-      color: "#888",
-    },
-  ];
-
-  // Top rules from latest scan
-  var ruleCounts = {};
-  scanIssues.forEach(function (i) {
-    var key = i.rule_id || "unknown";
-    if (!ruleCounts[key])
-      ruleCounts[key] = {
-        rule: key,
-        impact: i.impact,
-        count: 0,
-        desc: i.description,
-      };
-    ruleCounts[key].count++;
-  });
-  var topRules = Object.values(ruleCounts)
-    .sort(function (a, b) {
-      var order = { critical: 0, serious: 1, moderate: 2, minor: 3 };
-      var diff = (order[a.impact] || 3) - (order[b.impact] || 3);
-      return diff !== 0 ? diff : b.count - a.count;
-    })
-    .slice(0, 5);
-
-  var pagesScanned = pages.length;
-  var isMultiPage = pagesScanned > 1;
-
-  return (
-    <div
-      style={{
-        position: "fixed",
-        inset: 0,
-        zIndex: 200,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        background: "rgba(0,0,0,0.4)",
-        padding: "1rem",
-      }}
-      onClick={function (e) {
-        if (e.target === e.currentTarget) onClose();
-      }}
-    >
-      <div
-        style={{
-          width: "100%",
-          maxWidth: 540,
-          maxHeight: "85vh",
-          borderRadius: 14,
-          background: t.cardBg,
-          border: "1px solid " + t.ink08,
-          boxShadow: "0 16px 48px rgba(0,0,0,0.15)",
-          overflow: "hidden",
-          display: "flex",
-          flexDirection: "column",
-        }}
-      >
-        {/* Header */}
-        <div
-          style={{
-            padding: "1.2rem 1.4rem",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            borderBottom: "1px solid " + t.ink08,
-            flexShrink: 0,
-          }}
-        >
-          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-            <HelpCircle size={18} color={t.accent} strokeWidth={2} />
-            <h2
-              style={{
-                fontFamily: "var(--serif)",
-                fontSize: "1.05rem",
-                fontWeight: 700,
-                color: t.ink,
-                margin: 0,
-              }}
-            >
-              How your score is calculated
-            </h2>
-          </div>
-          <button
-            onClick={onClose}
-            style={{
-              background: "none",
-              border: "none",
-              cursor: "pointer",
-              color: t.ink50,
-              padding: "0.2rem",
-              display: "flex",
-            }}
-          >
-            <X size={18} />
-          </button>
-        </div>
-
-        {/* Body */}
-        <div style={{ padding: "1.4rem", overflowY: "auto", flex: 1 }}>
-          {/* Score display */}
-          <div
-            style={{
-              textAlign: "center",
-              padding: "1.2rem",
-              borderRadius: 10,
-              background: t.ink04,
-              marginBottom: "1.2rem",
-            }}
-          >
-            <div
-              style={{
-                fontFamily: "var(--serif)",
-                fontSize: "2.5rem",
-                fontWeight: 700,
-                color: score >= 80 ? t.green : score >= 50 ? t.amber : t.red,
-              }}
-            >
-              {Math.round(score)}
-            </div>
-            <div
-              style={{
-                fontFamily: "var(--mono)",
-                fontSize: "0.62rem",
-                color: t.ink50,
-                textTransform: "uppercase",
-                letterSpacing: "0.08em",
-              }}
-            >
-              out of 100
-            </div>
-          </div>
-
-          {/* Explanation */}
-          <p
-            style={{
-              fontSize: "0.86rem",
-              color: t.ink50,
-              lineHeight: 1.7,
-              marginBottom: "1rem",
-            }}
-          >
-            Each page starts at <strong style={{ color: t.ink }}>100</strong>{" "}
-            and loses points for every accessibility violation, weighted by
-            severity. Each affected element on the page counts separately.
-            {isMultiPage
-              ? " Your site score is the average across all " +
-                pagesScanned +
-                " pages scanned."
-              : ""}
-          </p>
-
-          {/* Per-page breakdown (if multi-page) */}
-          {isMultiPage && (
-            <div style={{ marginBottom: "1.2rem" }}>
-              <h3
-                style={{
-                  fontSize: "0.82rem",
-                  fontWeight: 700,
-                  color: t.ink,
-                  marginBottom: "0.6rem",
-                }}
-              >
-                Per-page scores (averaged)
-              </h3>
-              <div
-                style={{
-                  borderRadius: 8,
-                  border: "1px solid " + t.ink08,
-                  overflow: "hidden",
-                  marginBottom: "0.5rem",
-                }}
-              >
-                {pages.map(function (pg, idx) {
-                  var pgScore = pg.score != null ? Math.round(pg.score) : "—";
-                  var pgColor =
-                    pg.score != null
-                      ? pg.score >= 80
-                        ? t.green
-                        : pg.score >= 50
-                        ? t.amber
-                        : t.red
-                      : t.ink50;
-                  var path = "/";
-                  try {
-                    path = new URL(pg.url).pathname || "/";
-                  } catch (e) {
-                    path = pg.url;
-                  }
-                  return (
-                    <div
-                      key={idx}
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "space-between",
-                        padding: "0.5rem 0.8rem",
-                        borderTop: idx > 0 ? "1px solid " + t.ink08 : "none",
-                      }}
-                    >
-                      <span
-                        style={{
-                          fontFamily: "var(--mono)",
-                          fontSize: "0.74rem",
-                          color: t.ink50,
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
-                          whiteSpace: "nowrap",
-                          flex: 1,
-                          marginRight: "0.5rem",
-                          display: "flex",
-                          alignItems: "center",
-                          gap: "0.3rem",
-                        }}
-                      >
-                        {path}
-                        {pg.carried_forward && (
-                          <span
-                            style={{
-                              fontFamily: "var(--mono)",
-                              fontSize: "0.42rem",
-                              fontWeight: 700,
-                              padding: "0.04rem 0.25rem",
-                              borderRadius: 3,
-                              background: t.accent + "12",
-                              color: t.accent,
-                              textTransform: "uppercase",
-                              letterSpacing: "0.04em",
-                              flexShrink: 0,
-                            }}
-                          >
-                            cached
-                          </span>
-                        )}
-                      </span>
-                      <span
-                        style={{
-                          fontFamily: "var(--mono)",
-                          fontSize: "0.82rem",
-                          fontWeight: 700,
-                          color: pgColor,
-                          flexShrink: 0,
-                        }}
-                      >
-                        {pgScore}
-                      </span>
-                    </div>
-                  );
-                })}
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    padding: "0.6rem 0.8rem",
-                    borderTop: "1px solid " + t.ink08,
-                    background: t.ink04,
-                    fontWeight: 700,
-                    fontSize: "0.82rem",
-                  }}
-                >
-                  <span>Average</span>
-                  <span
-                    style={{
-                      fontFamily: "var(--mono)",
-                      color:
-                        score >= 80 ? t.green : score >= 50 ? t.amber : t.red,
-                    }}
-                  >
-                    {Math.round(score)}
-                  </span>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Single-page formula */}
-          {!isMultiPage && (
-            <div
-              style={{
-                padding: "0.8rem 1rem",
-                borderRadius: 8,
-                background: t.accentBg,
-                border: "1px solid " + t.accent + "20",
-                fontFamily: "var(--mono)",
-                fontSize: "0.78rem",
-                color: t.ink,
-                textAlign: "center",
-                marginBottom: "1.2rem",
-                lineHeight: 1.8,
-              }}
-            >
-              100 &minus; {totalDeductions} deductions ={" "}
-              <strong
-                style={{
-                  color: score >= 80 ? t.green : score >= 50 ? t.amber : t.red,
-                }}
-              >
-                {Math.max(0, 100 - totalDeductions)}
-              </strong>
-              {totalDeductions > 100 && (
-                <span style={{ color: t.ink50 }}> (capped at 0)</span>
-              )}
-            </div>
-          )}
-
-          {/* Deduction weights */}
-          <h3
-            style={{
-              fontSize: "0.82rem",
-              fontWeight: 700,
-              color: t.ink,
-              marginBottom: "0.6rem",
-            }}
-          >
-            Deduction weights (latest scan)
-          </h3>
-          <div
-            style={{
-              borderRadius: 8,
-              border: "1px solid " + t.ink08,
-              overflow: "hidden",
-              marginBottom: "1.2rem",
-            }}
-          >
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "1fr auto auto auto",
-                gap: 0,
-                fontSize: "0.62rem",
-                fontFamily: "var(--mono)",
-                textTransform: "uppercase",
-                letterSpacing: "0.06em",
-                color: t.ink50,
-                padding: "0.5rem 0.8rem",
-                background: t.ink04,
-              }}
-            >
-              <span>Impact</span>
-              <span style={{ textAlign: "right" }}>Elements</span>
-              <span style={{ textAlign: "right" }}>&times; Weight</span>
-              <span style={{ textAlign: "right" }}>Points</span>
-            </div>
-            {impactRows.map(function (row) {
-              return (
-                <div
-                  key={row.label}
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "1fr auto auto auto",
-                    gap: 0,
-                    padding: "0.55rem 0.8rem",
-                    borderTop: "1px solid " + t.ink08,
-                    fontSize: "0.82rem",
-                    opacity: row.count === 0 ? 0.4 : 1,
-                  }}
-                >
-                  <span style={{ fontWeight: 600, color: row.color }}>
-                    {row.label}
-                  </span>
-                  <span
-                    style={{
-                      textAlign: "right",
-                      fontFamily: "var(--mono)",
-                      fontSize: "0.78rem",
-                    }}
-                  >
-                    {row.count}
-                  </span>
-                  <span
-                    style={{
-                      textAlign: "right",
-                      fontFamily: "var(--mono)",
-                      fontSize: "0.78rem",
-                      color: t.ink50,
-                    }}
-                  >
-                    &times;{row.weight}
-                  </span>
-                  <span
-                    style={{
-                      textAlign: "right",
-                      fontFamily: "var(--mono)",
-                      fontSize: "0.78rem",
-                      fontWeight: 600,
-                      color: row.points > 0 ? t.red : t.ink50,
-                    }}
-                  >
-                    &minus;{row.points}
-                  </span>
-                </div>
-              );
-            })}
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "1fr auto",
-                padding: "0.6rem 0.8rem",
-                borderTop: "1px solid " + t.ink08,
-                background: t.ink04,
-                fontWeight: 700,
-                fontSize: "0.82rem",
-              }}
-            >
-              <span>Total deductions</span>
-              <span
-                style={{
-                  textAlign: "right",
-                  fontFamily: "var(--mono)",
-                  color: t.red,
-                }}
-              >
-                &minus;{totalDeductions}
-              </span>
-            </div>
-          </div>
-
-          {isMultiPage && totalDeductions > 100 && (
-            <p
-              style={{
-                fontSize: "0.78rem",
-                color: t.ink50,
-                lineHeight: 1.6,
-                marginTop: "-0.8rem",
-                marginBottom: "1.2rem",
-              }}
-            >
-              Each page's score is capped at 0 (never negative), so the site
-              average can be higher than{" "}
-              <span style={{ fontFamily: "var(--mono)" }}>
-                100 &minus; {totalDeductions}
-              </span>{" "}
-              would suggest. Pages with fewer issues pull the average up.
-            </p>
-          )}
-
-          {/* Top offending rules */}
-          {topRules.length > 0 && (
-            <div>
-              <h3
-                style={{
-                  fontSize: "0.82rem",
-                  fontWeight: 700,
-                  color: t.ink,
-                  marginBottom: "0.6rem",
-                }}
-              >
-                Top issues affecting your score
-              </h3>
-              <div
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "0.35rem",
-                }}
-              >
-                {topRules.map(function (rule, idx) {
-                  var impactColor =
-                    rule.impact === "critical"
-                      ? "#c0392b"
-                      : rule.impact === "serious"
-                      ? "#e67e22"
-                      : rule.impact === "moderate"
-                      ? "#b45309"
-                      : "#888";
-                  return (
-                    <div
-                      key={idx}
-                      style={{
-                        padding: "0.5rem 0.7rem",
-                        borderRadius: 6,
-                        border: "1px solid " + t.ink08,
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "0.5rem",
-                      }}
-                    >
-                      <span
-                        style={{
-                          fontFamily: "var(--mono)",
-                          fontSize: "0.52rem",
-                          fontWeight: 600,
-                          padding: "0.08rem 0.25rem",
-                          borderRadius: 3,
-                          background: impactColor + "15",
-                          color: impactColor,
-                          textTransform: "uppercase",
-                          flexShrink: 0,
-                        }}
-                      >
-                        {rule.impact}
-                      </span>
-                      <span
-                        style={{
-                          fontFamily: "var(--mono)",
-                          fontSize: "0.75rem",
-                          color: t.accent,
-                          fontWeight: 600,
-                          flexShrink: 0,
-                        }}
-                      >
-                        {rule.rule}
-                      </span>
-                      <span
-                        style={{
-                          fontSize: "0.75rem",
-                          color: t.ink50,
-                          flex: 1,
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
-                          whiteSpace: "nowrap",
-                        }}
-                      >
-                        {rule.desc}
-                      </span>
-                      <span
-                        style={{
-                          fontFamily: "var(--mono)",
-                          fontSize: "0.7rem",
-                          color: t.ink50,
-                          flexShrink: 0,
-                        }}
-                      >
-                        &times;{rule.count}
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          {/* Tip */}
-          <div
-            style={{
-              marginTop: "1.2rem",
-              padding: "0.8rem 1rem",
-              borderRadius: 8,
-              background: t.greenBg || t.ink04,
-              border: "1px solid " + (t.green + "20"),
-              fontSize: "0.82rem",
-              color: t.ink,
-              lineHeight: 1.7,
-            }}
-          >
-            <strong style={{ color: t.green }}>Fastest way to improve:</strong>{" "}
-            {critNodes > 0
-              ? "Fix the " +
-                critNodes +
-                " critical element" +
-                (critNodes !== 1 ? "s" : "") +
-                " first — each one recovers 4 points."
-              : seriousNodes > 0
-              ? "Fix the " +
-                seriousNodes +
-                " serious element" +
-                (seriousNodes !== 1 ? "s" : "") +
-                " first — each one recovers 3 points."
-              : "Fix open issues starting with the highest severity."}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
+// ── Extracted subcomponents ──
+import {
+  generateFingerprint,
+  exportIssuesToCSV,
+} from "../../lib/siteDetailUtils";
+import { ImpactBadge, FixBadge } from "../../components/dashboard/ImpactBadge";
+import VerifyPanel from "../../components/dashboard/VerifyPanel";
+import IssueFilters from "../../components/dashboard/IssueFilters";
+import ScoreExplainerModal from "../../components/dashboard/ScoreExplainerModal";
+import {
+  VerificationTokenPanel,
+  BadgeEmbedPanel,
+  IgnoreRulesPanel,
+  DangerZonePanel,
+} from "../../components/dashboard/SiteSettingsPanels";
 
 /* ── Main page ── */
 export default function SiteDetailPage() {
   const { t } = useTheme();
-  const { session, org, refreshSites } = useAuth();
+  const { session, org, refreshSites, user } = useAuth();
   const { id } = useParams();
   const navigate = useNavigate();
   const [site, setSite] = useState(null);
@@ -1905,6 +122,10 @@ export default function SiteDetailPage() {
   const [scoreCopied, setScoreCopied] = useState(false);
   const [showStatement, setShowStatement] = useState(false);
   const [scanJustCompleted, setScanJustCompleted] = useState(null);
+  const [focusedIssueIdx, setFocusedIssueIdx] = useState(-1);
+  const [issueSearch, setIssueSearch] = useState("");
+  const issueSearchRef = useRef(null);
+  const issueListRef = useRef(null);
 
   // Module-level cache for site detail data
   const cacheRef = useRef({ id: null, site: null, scans: null, issues: null });
@@ -1952,6 +173,41 @@ export default function SiteDetailPage() {
   useEffect(() => {
     loadData();
   }, [loadData]);
+
+  // Load org members for assignee display on issue rows
+  const [memberMap, setMemberMap] = useState({});
+  useEffect(
+    function () {
+      if (!org?.id) return;
+      supabase
+        .from("org_members")
+        .select("user_id")
+        .eq("org_id", org.id)
+        .then(function (res) {
+          var userIds = (res.data || []).map(function (m) {
+            return m.user_id;
+          });
+          if (userIds.length === 0) return;
+          supabase
+            .from("profiles")
+            .select("id, email, full_name")
+            .in("id", userIds)
+            .then(function (pRes) {
+              var map = {};
+              (pRes.data || []).forEach(function (p) {
+                var name = p.full_name || p.email || "?";
+                map[p.id] = {
+                  name: name,
+                  email: p.email || "",
+                  initials: name.substring(0, 2).toUpperCase(),
+                };
+              });
+              setMemberMap(map);
+            });
+        });
+    },
+    [org?.id]
+  );
 
   // Realtime: listen for scan status changes
   useEffect(() => {
@@ -2133,16 +389,16 @@ export default function SiteDetailPage() {
     var latestScanId = completedScans[0].id;
     var prevScanId = completedScans[1].id;
 
-    // Build fingerprint set from previous scan's issues
+    // Build fingerprint set from previous scan's issues (normalized for fuzzy matching)
     var prevFingerprints = new Set();
     for (var pi = 0; pi < issues.length; pi++) {
       if (issues[pi].scan_id === prevScanId) {
         prevFingerprints.add(
-          (issues[pi].rule_id || "") +
-            "||" +
-            (issues[pi].page_url || "") +
-            "||" +
-            (issues[pi].element_selector || "")
+          generateFingerprint(
+            issues[pi].rule_id,
+            issues[pi].page_url,
+            issues[pi].element_selector
+          )
         );
       }
     }
@@ -2150,12 +406,11 @@ export default function SiteDetailPage() {
     // Issues in the latest scan that have no match in previous scan = new
     for (var ni = 0; ni < issues.length; ni++) {
       if (issues[ni].scan_id === latestScanId) {
-        var fp =
-          (issues[ni].rule_id || "") +
-          "||" +
-          (issues[ni].page_url || "") +
-          "||" +
-          (issues[ni].element_selector || "");
+        var fp = generateFingerprint(
+          issues[ni].rule_id,
+          issues[ni].page_url,
+          issues[ni].element_selector
+        );
         if (!prevFingerprints.has(fp)) {
           newIssueIds.add(issues[ni].id);
         }
@@ -2173,6 +428,8 @@ export default function SiteDetailPage() {
 
   var newIssueCount = newIssueIds.size;
 
+  var searchLower = issueSearch.trim().toLowerCase();
+
   const filteredIssues = issues.filter((issue) => {
     if (filters.impact?.length && !filters.impact.includes(issue.impact))
       return false;
@@ -2185,6 +442,21 @@ export default function SiteDetailPage() {
       return false;
     if (filters.page?.length && !filters.page.includes(issue.page_url))
       return false;
+    // Assigned to me filter
+    if (filters.assigned_to_me && issue.assigned_to !== user?.id) return false;
+    // Full-text search across descriptions, selectors, page URLs, rule IDs
+    if (searchLower) {
+      var haystack = (
+        (issue.rule_id || "") +
+        " " +
+        (issue.description || "") +
+        " " +
+        (issue.element_selector || "") +
+        " " +
+        (issue.page_url || "")
+      ).toLowerCase();
+      if (haystack.indexOf(searchLower) === -1) return false;
+    }
     return true;
   });
 
@@ -2286,6 +558,59 @@ export default function SiteDetailPage() {
     });
   }
 
+  // ── Focus management for keyboard navigation ──
+  // Reset focus when tab, filters, or search change
+  useEffect(
+    function () {
+      setFocusedIssueIdx(-1);
+    },
+    [tab, filters, issueSearch, sortMode, viewMode, groupBy]
+  );
+
+  // Auto-scroll focused issue into view
+  useEffect(
+    function () {
+      if (focusedIssueIdx < 0 || tab !== "issues") return;
+      var el = issueListRef.current?.querySelector(
+        '[data-focus-idx="' + focusedIssueIdx + '"]'
+      );
+      if (el) el.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    },
+    [focusedIssueIdx, tab]
+  );
+
+  // Auto-expand group containing focused issue (grouped view)
+  useEffect(
+    function () {
+      if (focusedIssueId == null || viewMode !== "grouped") return;
+      for (var gi = 0; gi < groupedIssues.length; gi++) {
+        var group = groupedIssues[gi];
+        var groupKey = group.rule_id + "-" + gi;
+        for (var ii = 0; ii < group.instances.length; ii++) {
+          if (group.instances[ii].id === focusedIssueId) {
+            if (!expandedGroups[groupKey]) {
+              setExpandedGroups(function (prev) {
+                var next = Object.assign({}, prev);
+                next[groupKey] = true;
+                return next;
+              });
+            }
+            return;
+          }
+        }
+      }
+    },
+    [focusedIssueId, viewMode]
+  );
+
+  // Flat list of issues for keyboard navigation (works in both grouped and flat view)
+  var navIssues = viewMode === "flat" ? sortedIssues : sortedIssues;
+  var navIssueCount = navIssues.length;
+  var focusedIssueId =
+    focusedIssueIdx >= 0 && focusedIssueIdx < navIssueCount
+      ? navIssues[focusedIssueIdx].id
+      : null;
+
   // ── Keyboard shortcuts ──
   var shortcutDefs = [
     {
@@ -2298,7 +623,7 @@ export default function SiteDetailPage() {
     },
     {
       key: "s",
-      description: "Scan",
+      description: "Run scan",
       category: "Actions",
       handler: function () {
         if (!scanning && !isClient && site) handleScan();
@@ -2341,14 +666,10 @@ export default function SiteDetailPage() {
       description: "Next issue",
       category: "Issues",
       handler: function () {
-        if (tab !== "issues" || sortedIssues.length === 0) return;
-        var currentIdx = selectedIssue
-          ? sortedIssues.findIndex(function (i) {
-              return i.id === selectedIssue.id;
-            })
-          : -1;
-        var nextIdx = Math.min(currentIdx + 1, sortedIssues.length - 1);
-        setSelectedIssue(sortedIssues[nextIdx]);
+        if (tab !== "issues" || navIssueCount === 0) return;
+        setFocusedIssueIdx(function (prev) {
+          return Math.min(prev + 1, navIssueCount - 1);
+        });
       },
     },
     {
@@ -2356,19 +677,124 @@ export default function SiteDetailPage() {
       description: "Previous issue",
       category: "Issues",
       handler: function () {
-        if (tab !== "issues" || sortedIssues.length === 0) return;
-        var currentIdx = selectedIssue
-          ? sortedIssues.findIndex(function (i) {
-              return i.id === selectedIssue.id;
-            })
-          : 0;
-        var prevIdx = Math.max(currentIdx - 1, 0);
-        setSelectedIssue(sortedIssues[prevIdx]);
+        if (tab !== "issues" || navIssueCount === 0) return;
+        setFocusedIssueIdx(function (prev) {
+          return Math.max(prev - 1, 0);
+        });
+      },
+    },
+    {
+      key: "enter",
+      description: "Open focused issue",
+      category: "Issues",
+      handler: function () {
+        if (
+          tab !== "issues" ||
+          focusedIssueIdx < 0 ||
+          focusedIssueIdx >= navIssueCount
+        )
+          return;
+        setSelectedIssue(navIssues[focusedIssueIdx]);
+      },
+    },
+    {
+      key: "f",
+      description: "Open issue (view fix)",
+      category: "Issues",
+      handler: function () {
+        if (tab !== "issues") return;
+        if (focusedIssueIdx >= 0 && focusedIssueIdx < navIssueCount) {
+          setSelectedIssue(navIssues[focusedIssueIdx]);
+        }
+      },
+    },
+    {
+      key: "g",
+      description: "Open issue (GitHub)",
+      category: "Issues",
+      handler: function () {
+        if (tab !== "issues") return;
+        if (focusedIssueIdx >= 0 && focusedIssueIdx < navIssueCount) {
+          setSelectedIssue(navIssues[focusedIssueIdx]);
+        }
+      },
+    },
+    {
+      key: "x",
+      description: "Toggle select for bulk fix",
+      category: "Issues",
+      handler: function () {
+        if (
+          tab !== "issues" ||
+          focusedIssueIdx < 0 ||
+          focusedIssueIdx >= navIssueCount
+        )
+          return;
+        var issue = navIssues[focusedIssueIdx];
+        setSelectedForFix(function (prev) {
+          if (prev.indexOf(issue.id) !== -1) {
+            return prev.filter(function (id) {
+              return id !== issue.id;
+            });
+          }
+          if (prev.length >= maxPerPr) return prev;
+          return prev.concat([issue.id]);
+        });
+      },
+    },
+    {
+      key: "p",
+      description: "Create PR (with selected)",
+      category: "Actions",
+      handler: function () {
+        // Focus the bulk fix bar — it auto-shows when selectedForFix.length > 0
+        if (selectedForFix.length === 0 || tab !== "issues") return;
+        var prBtn = document.querySelector("[data-bulk-pr-btn]");
+        if (prBtn) prBtn.click();
+      },
+    },
+    {
+      key: "/",
+      description: "Search issues",
+      category: "Issues",
+      handler: function () {
+        setTab("issues");
+        // Defer focus to next frame so the input is rendered
+        setTimeout(function () {
+          if (issueSearchRef.current) issueSearchRef.current.focus();
+        }, 50);
+      },
+    },
+    {
+      key: "c",
+      description: "Compare scans",
+      category: "Actions",
+      handler: function () {
+        if (
+          scans.filter(function (s) {
+            return s.status === "complete";
+          }).length >= 2
+        ) {
+          setShowCompare(true);
+        }
+      },
+    },
+    {
+      key: "d",
+      description: "Toggle scan diff",
+      category: "Issues",
+      handler: function () {
+        if (tab !== "issues") setTab("issues");
+        if (completedScans.length >= 2 && newIssueCount > 0) {
+          setShowDiff(function (v) {
+            return !v;
+          });
+        }
       },
     },
     {
       key: "escape",
-      description: "Close modal / deselect",
+      description: "Close / deselect",
       category: "General",
       handler: function () {
         if (showShortcutHelp) {
@@ -2381,6 +807,16 @@ export default function SiteDetailPage() {
         }
         if (showScanConfig) {
           setShowScanConfig(false);
+          return;
+        }
+        // Clear search if active
+        if (issueSearch) {
+          setIssueSearch("");
+          return;
+        }
+        // Clear focus
+        if (focusedIssueIdx >= 0) {
+          setFocusedIssueIdx(-1);
           return;
         }
       },
@@ -3682,6 +2118,19 @@ export default function SiteDetailPage() {
             </div>
           )}
 
+          {/* Quick wins — prioritized "fix these first" card */}
+          {issues.filter(function (i) {
+            return i.status === "open";
+          }).length > 0 && (
+            <QuickWinsCard
+              issues={issues}
+              siteId={site.id}
+              onSelect={function (issue) {
+                setSelectedIssue(issue);
+              }}
+            />
+          )}
+
           {/* Page breakdown from latest scan */}
           {scans.length > 0 && scans[0].summary_json?.pages?.length > 1 && (
             <PlanGate
@@ -3729,7 +2178,63 @@ export default function SiteDetailPage() {
               filters={filters}
               setFilters={setFilters}
               issues={issues}
+              userId={user?.id}
             />
+            {/* Issue search */}
+            <div style={{ position: "relative", minWidth: 160 }}>
+              <input
+                ref={issueSearchRef}
+                value={issueSearch}
+                onChange={function (e) {
+                  setIssueSearch(e.target.value);
+                }}
+                placeholder="Search issues…  /"
+                aria-label="Search issues"
+                style={{
+                  width: "100%",
+                  padding: "0.35rem 0.65rem",
+                  paddingRight: issueSearch ? "1.6rem" : "0.65rem",
+                  borderRadius: 6,
+                  border: "1.5px solid " + (issueSearch ? t.accent : t.ink08),
+                  background: t.paper,
+                  color: t.ink,
+                  fontFamily: "var(--mono)",
+                  fontSize: "0.72rem",
+                  outline: "none",
+                  boxSizing: "border-box",
+                  transition: "border-color 0.15s",
+                }}
+                onFocus={function (e) {
+                  e.currentTarget.style.borderColor = t.accent;
+                }}
+                onBlur={function (e) {
+                  if (!issueSearch) e.currentTarget.style.borderColor = t.ink08;
+                }}
+              />
+              {issueSearch && (
+                <button
+                  onClick={function () {
+                    setIssueSearch("");
+                    issueSearchRef.current?.focus();
+                  }}
+                  aria-label="Clear search"
+                  style={{
+                    position: "absolute",
+                    right: 4,
+                    top: "50%",
+                    transform: "translateY(-50%)",
+                    background: "none",
+                    border: "none",
+                    padding: "0.15rem",
+                    cursor: "pointer",
+                    color: t.ink50,
+                    display: "flex",
+                  }}
+                >
+                  <X size={12} />
+                </button>
+              )}
+            </div>
             <div
               style={{ display: "flex", gap: "0.4rem", alignItems: "center" }}
             >
@@ -4080,6 +2585,7 @@ export default function SiteDetailPage() {
             </div>
           ) : viewMode === "grouped" ? (
             <div
+              ref={issueListRef}
               style={{
                 display: "flex",
                 flexDirection: "column",
@@ -4096,6 +2602,11 @@ export default function SiteDetailPage() {
               >
                 {groupedIssues.length} unique issues ({sortedIssues.length}{" "}
                 total)
+                {issueSearch && (
+                  <span style={{ color: t.accent, marginLeft: "0.5rem" }}>
+                    matching "{issueSearch}"
+                  </span>
+                )}
                 {selectedForFix.length > 0 && (
                   <span style={{ color: t.accent, marginLeft: "0.5rem" }}>
                     {selectedForFix.length}/{maxPerPr} selected
@@ -4413,21 +2924,30 @@ export default function SiteDetailPage() {
                       >
                         {group.instances.map(function (inst) {
                           var isSel = selectedForFix.indexOf(inst.id) !== -1;
+                          var instFocused = inst.id === focusedIssueId;
                           return (
                             <div
                               key={inst.id}
+                              data-focus-idx={sortedIssues.indexOf(inst)}
                               onClick={function () {
                                 setSelectedIssue(inst);
                               }}
                               style={{
                                 padding: "0.55rem 1.1rem 0.55rem 2.6rem",
                                 borderTop: "1px solid " + t.ink04,
-                                background: isSel ? t.accentBg : t.paper,
+                                background: instFocused
+                                  ? t.accent + "08"
+                                  : isSel
+                                  ? t.accentBg
+                                  : t.paper,
                                 display: "flex",
                                 alignItems: "center",
                                 gap: "0.5rem",
                                 cursor: "pointer",
                                 opacity: inst.status !== "open" ? 0.5 : 1,
+                                boxShadow: instFocused
+                                  ? "inset 3px 0 0 " + t.accent
+                                  : "none",
                               }}
                             >
                               {site.github_repo && !isClient && (
@@ -4507,6 +3027,55 @@ export default function SiteDetailPage() {
                                   {inst.element_selector}
                                 </span>
                               )}
+                              {inst.assigned_to &&
+                                memberMap[inst.assigned_to] && (
+                                  <span
+                                    title={memberMap[inst.assigned_to].name}
+                                    style={{
+                                      width: 16,
+                                      height: 16,
+                                      borderRadius: "50%",
+                                      background: t.accent,
+                                      color: "white",
+                                      fontFamily: "var(--mono)",
+                                      fontSize: "0.42rem",
+                                      fontWeight: 700,
+                                      display: "inline-flex",
+                                      alignItems: "center",
+                                      justifyContent: "center",
+                                      flexShrink: 0,
+                                    }}
+                                  >
+                                    {memberMap[inst.assigned_to].initials}
+                                  </span>
+                                )}
+                              {inst.viewport && (
+                                <span
+                                  title={"Fails at: " + inst.viewport}
+                                  style={{
+                                    fontFamily: "var(--mono)",
+                                    fontSize: "0.45rem",
+                                    fontWeight: 600,
+                                    padding: "0.06rem 0.25rem",
+                                    borderRadius: 3,
+                                    background:
+                                      inst.viewport.indexOf("mobile") !== -1
+                                        ? t.amber + "12"
+                                        : t.accent + "10",
+                                    color:
+                                      inst.viewport.indexOf("mobile") !== -1
+                                        ? t.amber
+                                        : t.accent,
+                                    flexShrink: 0,
+                                    textTransform: "uppercase",
+                                    letterSpacing: "0.03em",
+                                  }}
+                                >
+                                  {inst.viewport.indexOf(",") !== -1
+                                    ? "all"
+                                    : inst.viewport}
+                                </span>
+                              )}
                               {inst.status !== "open" && (
                                 <span
                                   style={{
@@ -4560,6 +3129,7 @@ export default function SiteDetailPage() {
             </div>
           ) : (
             <div
+              ref={issueListRef}
               style={{
                 display: "flex",
                 flexDirection: "column",
@@ -4575,35 +3145,55 @@ export default function SiteDetailPage() {
                 }}
               >
                 {sortedIssues.length} issues
+                {issueSearch && (
+                  <span style={{ color: t.accent, marginLeft: "0.5rem" }}>
+                    matching "{issueSearch}"
+                  </span>
+                )}
                 {selectedForFix.length > 0 && (
                   <span style={{ color: t.accent, marginLeft: "0.5rem" }}>
                     {selectedForFix.length}/{maxPerPr} selected
                   </span>
                 )}
               </div>
-              {sortedIssues.map(function (issue) {
+              {sortedIssues.map(function (issue, issueIdx) {
                 var isSelected = selectedForFix.indexOf(issue.id) !== -1;
+                var isFocused = issue.id === focusedIssueId;
                 return (
                   <div
                     key={issue.id}
+                    data-focus-idx={issueIdx}
                     style={{
                       padding: "0.85rem 1.1rem",
                       borderRadius: 8,
-                      border: "1px solid " + (isSelected ? t.accent : t.ink08),
-                      background: isSelected ? t.accentBg : t.cardBg,
+                      border:
+                        "1px solid " +
+                        (isFocused
+                          ? t.accent
+                          : isSelected
+                          ? t.accent
+                          : t.ink08),
+                      background: isFocused
+                        ? t.accent + "08"
+                        : isSelected
+                        ? t.accentBg
+                        : t.cardBg,
                       cursor: "pointer",
                       display: "flex",
                       alignItems: "center",
                       gap: "0.6rem",
                       opacity: issue.status !== "open" ? 0.55 : 1,
                       transition: "all 0.15s",
+                      boxShadow: isFocused
+                        ? "0 0 0 2px " + t.accent + "40"
+                        : "none",
                     }}
                     onMouseEnter={function (e) {
-                      if (!isSelected)
+                      if (!isSelected && !isFocused)
                         e.currentTarget.style.borderColor = t.accent;
                     }}
                     onMouseLeave={function (e) {
-                      if (!isSelected)
+                      if (!isSelected && !isFocused)
                         e.currentTarget.style.borderColor = t.ink08;
                     }}
                   >
@@ -4745,6 +3335,55 @@ export default function SiteDetailPage() {
                                 return null;
                               }
                             })()}
+                          {issue.assigned_to &&
+                            memberMap[issue.assigned_to] && (
+                              <span
+                                title={memberMap[issue.assigned_to].name}
+                                style={{
+                                  width: 18,
+                                  height: 18,
+                                  borderRadius: "50%",
+                                  background: t.accent,
+                                  color: "white",
+                                  fontFamily: "var(--mono)",
+                                  fontSize: "0.45rem",
+                                  fontWeight: 700,
+                                  display: "inline-flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                  flexShrink: 0,
+                                }}
+                              >
+                                {memberMap[issue.assigned_to].initials}
+                              </span>
+                            )}
+                          {issue.viewport && (
+                            <span
+                              title={"Fails at: " + issue.viewport}
+                              style={{
+                                fontFamily: "var(--mono)",
+                                fontSize: "0.48rem",
+                                fontWeight: 600,
+                                padding: "0.08rem 0.3rem",
+                                borderRadius: 3,
+                                background:
+                                  issue.viewport.indexOf("mobile") !== -1
+                                    ? t.amber + "12"
+                                    : t.accent + "10",
+                                color:
+                                  issue.viewport.indexOf("mobile") !== -1
+                                    ? t.amber
+                                    : t.accent,
+                                flexShrink: 0,
+                                textTransform: "uppercase",
+                                letterSpacing: "0.03em",
+                              }}
+                            >
+                              {issue.viewport.indexOf(",") !== -1
+                                ? "all"
+                                : issue.viewport}
+                            </span>
+                          )}
                           {issue.status !== "open" && (
                             <span
                               style={{
@@ -4970,6 +3609,13 @@ export default function SiteDetailPage() {
           <SchedulePicker
             site={site}
             plan={org?.plan || "free"}
+            onUpdate={(s) => setSite(s)}
+          />
+
+          {/* Report Schedule — Pro + Agency */}
+          <ReportSchedulePicker
+            site={site}
+            plan={plan}
             onUpdate={(s) => setSite(s)}
           />
 
