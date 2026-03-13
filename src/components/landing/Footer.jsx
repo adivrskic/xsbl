@@ -17,22 +17,23 @@ var footerColumns = [
   {
     title: "Resources",
     links: [
-      { label: "Documentation", href: "/docs" },
+      { label: "Agency plan", href: "/agency" },
       { label: "Blog", href: "/blog" },
-      { label: "WCAG reference", href: "/wcag" },
       { label: "Changelog", href: "/changelog" },
+      { label: "Contact", href: "/contact" },
+      { label: "Documentation", href: "/docs" },
       { label: "Free tools", href: "/tools" },
       { label: "RSS feed", href: "/blog/feed.xml" },
-      { label: "Contact", href: "/contact" },
-      { label: "Agency plan", href: "/agency" },
+
+      { label: "WCAG reference", href: "/wcag" },
     ],
   },
   {
     title: "Legal",
     links: [
       { label: "Privacy policy", href: "/privacy" },
-      { label: "Terms of service", href: "/terms" },
       { label: "Security", href: "/security" },
+      { label: "Terms of service", href: "/terms" },
     ],
   },
 ];
