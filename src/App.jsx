@@ -25,13 +25,14 @@ import DemoSection from "./components/landing/DemoSection";
 import PricingSection from "./components/landing/PricingSection";
 import FaqSection from "./components/landing/FaqSection";
 import Footer from "./components/landing/Footer";
-import ExtensionSection from "./components/landing/ExtensionSection";
+
 // Pages
 import DocsPage from "./pages/DocsPage";
 import BlogPage from "./pages/blog/BlogPage";
 import BlogArticlePage from "./pages/blog/BlogArticlePage";
 import ContactPage from "./pages/ContactPage";
 import AgencyPage from "./pages/AgencyPage";
+import ExtensionPage from "./pages/ExtensionPage";
 import StatusPage from "./pages/StatusPage";
 import ClientDashboardPage from "./pages/ClientDashboardPage";
 
@@ -71,6 +72,7 @@ import ErrorBoundary, {
 import useDocumentMeta, { PAGE_META } from "./hooks/useDocumentMeta";
 import { blogArticles } from "./data/blogArticles";
 import { getCriterionBySlug } from "./data/wcagCriteria";
+import ExtensionSection from "./components/landing/ExtensionSection";
 
 function LandingPage() {
   const { org, user } = useAuth();
@@ -304,6 +306,14 @@ export default function App() {
                   element={
                     <PublicLayout>
                       <AgencyPage />
+                    </PublicLayout>
+                  }
+                />
+                <Route
+                  path="/extension"
+                  element={
+                    <PublicLayout>
+                      <ExtensionPage />
                     </PublicLayout>
                   }
                 />

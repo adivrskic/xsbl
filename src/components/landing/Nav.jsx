@@ -11,6 +11,7 @@ var landingLinks = [
   { label: "How it works", id: "how" },
   { label: "Features", id: "features" },
   { label: "Demos", id: "demos" },
+  { label: "Extension", id: "extension" },
   { label: "Pricing", id: "pricing" },
   { label: "FAQ", id: "faq" },
 ];

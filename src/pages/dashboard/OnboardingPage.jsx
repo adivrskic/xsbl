@@ -1055,9 +1055,12 @@ function StepExtension({ onNext, onSkip }) {
   var features = [
     { label: "Real-time contrast boost & text scaling", free: true },
     { label: "Keyboard navigation overlay & focus rings", free: true },
-    { label: "Dyslexia-friendly mode (font, spacing, ruler)", free: true },
+    { label: "Stop motion & media (videos, GIFs, animations)", free: true },
+    { label: "Dyslexia-friendly mode (font, spacing, ruler)", free: false },
+    { label: "Color blindness correction filters", free: false },
+    { label: "ARIA & heading hierarchy auto-fix", free: false },
+    { label: "Caption detection for uncaptioned media", free: false },
     { label: "AI-generated alt text for images", free: false },
-    { label: "Per-site preference saving (cloud sync)", free: false },
   ];
 
   return (

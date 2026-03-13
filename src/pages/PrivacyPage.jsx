@@ -20,7 +20,7 @@ export default function PrivacyPage() {
       </FadeIn>
 
       <FadeIn delay={0.1}>
-        <p className="legal-page__updated">Last updated: March 1, 2026</p>
+        <p className="legal-page__updated">Last updated: March 13, 2026</p>
       </FadeIn>
 
       <FadeIn delay={0.12}>
@@ -28,9 +28,11 @@ export default function PrivacyPage() {
           <div className="legal-page__callout">
             <p>
               <strong>The short version:</strong> xsbl scans the public-facing
-              HTML of your website. We don't inject scripts, install cookies on
-              your visitors, or store your source code. We collect what we need
-              to run the service and nothing more.
+              HTML of your website. Our Chrome extension applies accessibility
+              features locally in your browser. We don't inject scripts on your
+              visitors, don't collect browsing history, and don't store your
+              source code. We collect what we need to run the service and
+              nothing more.
             </p>
           </div>
 
@@ -59,6 +61,81 @@ export default function PrivacyPage() {
             the scan results (issue descriptions, element selectors, fix
             suggestions, scores). We do not store full page HTML after the scan
             completes.
+          </p>
+
+          <h3>Chrome extension data</h3>
+          <p>
+            The xsbl Chrome extension runs locally in your browser. Here is
+            exactly what it does and does not access:
+          </p>
+          <p>
+            <strong>Stored locally only (never sent to our servers):</strong>
+          </p>
+          <ul>
+            <li>
+              Your feature toggle settings (contrast, text size, keyboard
+              navigation, dyslexia mode, color blindness filter, ARIA fix)
+            </li>
+            <li>
+              Per-site preferences (which features are active on which domains)
+            </li>
+            <li>Your authentication token (if you sign in for Pro features)</li>
+          </ul>
+          <p>
+            All of the above is stored in <code>chrome.storage.local</code> on
+            your device. We cannot access it from our servers.
+          </p>
+          <p>
+            <strong>Sent to our servers (Pro features only):</strong>
+          </p>
+          <ul>
+            <li>
+              <strong>AI alt text:</strong> When you enable AI alt text on a
+              page, the URLs of images that are missing alt attributes are sent
+              to our edge function. We fetch those images server-side, send them
+              to Anthropic's Claude Vision API for description, and return the
+              generated alt text. We do not store the images or the generated
+              descriptions after the response is returned. Image URLs are logged
+              only for rate-limiting purposes and are deleted after 24 hours.
+            </li>
+            <li>
+              <strong>Authentication:</strong> When you sign in, we generate a
+              token that the extension stores locally. This token is sent with
+              Pro feature requests to verify your identity and plan. We do not
+              receive or store your password — authentication goes through the
+              same Supabase auth flow as the dashboard.
+            </li>
+          </ul>
+          <p>
+            <strong>What the extension does NOT do:</strong>
+          </p>
+          <ul>
+            <li>It does not collect or transmit your browsing history</li>
+            <li>It does not read page content, form inputs, or passwords</li>
+            <li>It does not inject tracking scripts, analytics, or ads</li>
+            <li>
+              It does not modify pages in any way that persists after you
+              navigate away or close the tab
+            </li>
+            <li>
+              It does not communicate with any server other than xsbl.io (our
+              Supabase edge functions)
+            </li>
+            <li>
+              Free features (contrast, text scaling, keyboard navigation) make
+              zero network requests — they are entirely local CSS/DOM changes
+            </li>
+          </ul>
+          <p>
+            <strong>Permissions explained:</strong> The extension requests
+            "access to all websites" (<code>&lt;all_urls&gt;</code>) because its
+            purpose is to apply accessibility improvements to any page you
+            visit. The content script only activates features you have toggled
+            on. The <code>storage</code> permission is used to save your
+            settings locally. The <code>activeTab</code> permission allows the
+            popup to communicate with the current tab's content script. The{" "}
+            <code>scripting</code> permission is required by Manifest V3 for
+            content script injection.
           </p>
 
           <h3>GitHub integration data</h3>

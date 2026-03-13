@@ -7,11 +7,12 @@ var footerColumns = [
   {
     title: "Product",
     links: [
-      { label: "How it works", href: "/#how" },
-      { label: "Features", href: "/#features" },
-      { label: "Demos", href: "/#demos" },
-      { label: "Pricing", href: "/#pricing", pricingOnly: true },
-      { label: "FAQ", href: "/#faq" },
+      { label: "How it works", href: "#how" },
+      { label: "Features", href: "#features" },
+      { label: "Demos", href: "#demos" },
+      { label: "Extension", href: "#extension" },
+      { label: "Pricing", href: "#pricing", pricingOnly: true },
+      { label: "FAQ", href: "#faq" },
     ],
   },
   {
@@ -20,6 +21,7 @@ var footerColumns = [
       { label: "Agency plan", href: "/agency" },
       { label: "Blog", href: "/blog" },
       { label: "Changelog", href: "/changelog" },
+      { label: "Chrome Extension", href: "/extension" },
       { label: "Contact", href: "/contact" },
       { label: "Documentation", href: "/docs" },
       { label: "Free tools", href: "/tools" },

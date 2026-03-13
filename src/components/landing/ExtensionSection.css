@@ -17,12 +17,12 @@
   inset: 0;
   background: linear-gradient(
     135deg,
-    color-mix(in srgb, var(--accent) 42%, var(--paper)),
-    color-mix(in srgb, var(--accent) 32%, var(--paper)) 20%,
-    color-mix(in srgb, var(--green) 34%, var(--paper)) 45%,
-    color-mix(in srgb, var(--amber) 30%, var(--paper)) 65%,
-    color-mix(in srgb, var(--accent) 38%, var(--paper)) 85%,
-    color-mix(in srgb, var(--accent) 44%, var(--paper))
+    color-mix(in srgb, var(--accent) 22%, var(--paper)),
+    color-mix(in srgb, var(--accent) 12%, var(--paper)) 20%,
+    color-mix(in srgb, var(--green) 14%, var(--paper)) 45%,
+    color-mix(in srgb, var(--amber) 10%, var(--paper)) 65%,
+    color-mix(in srgb, var(--accent) 18%, var(--paper)) 85%,
+    color-mix(in srgb, var(--accent) 24%, var(--paper))
   );
   background-size: 300% 300%;
   animation: ext-gradient 12s ease infinite;
@@ -30,10 +30,17 @@
   -webkit-mask-image: linear-gradient(
     to bottom,
     transparent,
-    black 50%,
+    black 30%,
+    black 70%,
     transparent
   );
-  mask-image: linear-gradient(to bottom, transparent, black 50%, transparent);
+  mask-image: linear-gradient(
+    to bottom,
+    transparent,
+    black 30%,
+    black 70%,
+    transparent
+  );
 }
 
 /* Subtle noise texture overlay for depth */
@@ -48,15 +55,15 @@
   -webkit-mask-image: linear-gradient(
     to bottom,
     transparent,
-    black 40%,
-    black 60%,
+    black 30%,
+    black 70%,
     transparent
   );
   mask-image: linear-gradient(
     to bottom,
     transparent,
-    black 40%,
-    black 60%,
+    black 30%,
+    black 70%,
     transparent
   );
 }
@@ -235,6 +242,19 @@
   font-family: var(--mono);
   font-size: 0.62rem;
   color: var(--ink50);
+}
+
+.ext-cta-learn {
+  font-family: var(--body);
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: var(--accent);
+  text-decoration: none;
+  transition: color 0.15s;
+}
+
+.ext-cta-learn:hover {
+  text-decoration: underline;
 }
 
 /* ══════════════════════════════════════════
