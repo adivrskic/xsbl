@@ -82,84 +82,120 @@ function CreateGitHubIssueButton({ issue, site }) {
 
   if (result) {
     return (
-      <div style={{ marginTop: "0.5rem" }}>
-        <a
-          href={result.url}
-          target="_blank"
-          rel="noopener noreferrer"
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: "0.35rem",
-            padding: "0.4rem 0.8rem",
-            borderRadius: 6,
-            background: t.greenBg,
-            border: "1px solid " + t.green + "20",
-            fontFamily: "var(--mono)",
-            fontSize: "0.72rem",
-            fontWeight: 600,
-            color: t.green,
-            textDecoration: "none",
-          }}
-        >
-          <Check size={12} strokeWidth={3} />
-          {result.number ? "Issue #" + result.number : "View GitHub Issue"}
-          <ExternalLink size={10} strokeWidth={2} />
-        </a>
-      </div>
+      <a
+        href={result.url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="gh-actions-result"
+        style={{
+          display: "inline-flex",
+          alignItems: "center",
+          gap: "0.35rem",
+          padding: "0.35rem 0.7rem",
+          borderRadius: 6,
+          background: t.greenBg,
+          fontFamily: "var(--mono)",
+          fontSize: "0.68rem",
+          fontWeight: 600,
+          color: t.green,
+          textDecoration: "none",
+        }}
+      >
+        <Check size={11} strokeWidth={3} />
+        {result.number ? "Issue #" + result.number : "View Issue"}
+        <ExternalLink size={10} strokeWidth={2} />
+      </a>
     );
   }
 
   return (
-    <div style={{ marginTop: "0.5rem" }}>
+    <>
       <button
         onClick={handleCreate}
         disabled={loading}
+        className="gh-actions-btn"
         style={{
-          display: "inline-flex",
+          display: "flex",
           alignItems: "center",
-          gap: "0.4rem",
-          padding: "0.45rem 0.9rem",
-          borderRadius: 7,
-          border: "1.5px solid " + t.ink20,
-          background: "none",
+          gap: "0.3rem",
+          padding: "0.35rem 0.7rem",
+          height: 30,
+          borderRadius: 6,
+          border: "none",
+          background: "transparent",
           color: t.ink50,
           fontFamily: "var(--body)",
-          fontSize: "0.78rem",
+          fontSize: "0.74rem",
           fontWeight: 500,
           cursor: loading ? "not-allowed" : "pointer",
+          transition: "color 0.15s, background 0.15s",
+          whiteSpace: "nowrap",
           opacity: loading ? 0.6 : 1,
-          transition: "all 0.15s",
         }}
         onMouseEnter={function (e) {
           if (!loading) {
-            e.currentTarget.style.borderColor = t.ink50;
+            e.currentTarget.style.background = t.cardBg;
             e.currentTarget.style.color = t.ink;
+            e.currentTarget.style.boxShadow = "0 1px 3px " + t.ink08;
           }
         }}
         onMouseLeave={function (e) {
-          e.currentTarget.style.borderColor = t.ink20;
+          e.currentTarget.style.background = "transparent";
           e.currentTarget.style.color = t.ink50;
+          e.currentTarget.style.boxShadow = "none";
         }}
       >
         {loading ? (
-          <Loader2 size={13} className="xsbl-spin" />
+          <Loader2 size={12} className="xsbl-spin" />
         ) : (
-          <GitHubIcon size={14} fill={t.ink50} />
+          <GitHubIcon size={12} fill={t.ink50} />
         )}
-        {loading ? "Creating…" : "Create GitHub Issue"}
+        {loading ? "Creating…" : "Create Issue"}
       </button>
       {error && (
-        <div
-          style={{
-            marginTop: "0.35rem",
-            fontSize: "0.72rem",
-            color: t.red,
-          }}
-        >
+        <div style={{ fontSize: "0.68rem", color: t.red, marginTop: "0.2rem" }}>
           {error}
         </div>
       )}
+    </>
+  );
+}
+
+/**
+ * GitHubActionsBar — wraps Create PR and Create Issue in a segmented pill bar.
+ */
+function GitHubActionsBar({ issue, site }) {
+  var { t } = useTheme();
+
+  return (
+    <div style={{ marginTop: "1rem" }}>
+      <div
+        style={{
+          fontFamily: "var(--mono)",
+          fontSize: "0.62rem",
+          color: t.ink50,
+          textTransform: "uppercase",
+          letterSpacing: "0.06em",
+          marginBottom: "0.4rem",
+        }}
+      >
+        GitHub actions
+      </div>
+      <div
+        style={{
+          display: "inline-flex",
+          flexWrap: "wrap",
+          borderRadius: 8,
+          background: t.ink04,
+          border: "1px solid " + t.ink08,
+          padding: 3,
+          gap: 2,
+          alignItems: "center",
+        }}
+      >
+        <CreatePRButton issue={issue} site={site} segmented />
+        <CreateGitHubIssueButton issue={issue} site={site} />
+      </div>
     </div>
   );
 }
@@ -844,12 +880,9 @@ export default function IssueDetailModal({
             </PlanGate>
           )}
 
-          {/* GitHub PR button — only shows when site has GitHub connected */}
-          {!readOnly && <CreatePRButton issue={issue} site={site} />}
-
-          {/* Create GitHub Issue — one-click via API */}
+          {/* GitHub actions — segmented bar */}
           {!readOnly && site.github_repo && site.github_token && (
-            <CreateGitHubIssueButton issue={issue} site={site} />
+            <GitHubActionsBar issue={issue} site={site} />
           )}
 
           {/* Status */}

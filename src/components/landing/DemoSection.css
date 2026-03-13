@@ -1,41 +1,9 @@
-/* DemoSection.css — full-width immersive demo experience */
+/* DemoSection.css */
 
-.demo-tabs {
+.demo-tabs-wrap {
   display: flex;
-  gap: 0.4rem;
   justify-content: center;
   margin-bottom: 1.5rem;
-  flex-wrap: wrap;
-}
-
-.demo-tabs__btn {
-  display: flex;
-  align-items: center;
-  gap: 0.45rem;
-  padding: 0.6rem 1.2rem;
-  border-radius: 8px;
-  border: 1.5px solid var(--ink08);
-  background: transparent;
-  color: var(--ink50);
-  font-family: var(--body);
-  font-size: 0.88rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.demo-tabs__btn:hover {
-  border-color: var(--accent);
-  color: var(--ink);
-  transform: translateY(-1px);
-}
-
-.demo-tabs__btn--active {
-  border-color: var(--accent);
-  background: var(--accent-bg);
-  color: var(--accent);
-  font-weight: 600;
-  box-shadow: 0 2px 8px var(--accent-bg);
 }
 
 .demo-body {
@@ -47,7 +15,7 @@
   border: 1px solid var(--ink08);
   background: var(--card-bg);
   padding: clamp(1rem, 2.5vw, 2rem);
-  animation: demo-fade-in 0.35s ease;
+  animation: demo-fade-in 0.3s ease;
   overflow: hidden;
   min-height: 540px;
 }
@@ -55,11 +23,9 @@
 @keyframes demo-fade-in {
   from {
     opacity: 0;
-    transform: translateY(6px);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
   }
 }
 
@@ -85,10 +51,6 @@
 }
 
 @media (max-width: 600px) {
-  .demo-tabs__btn {
-    padding: 0.5rem 0.8rem;
-    font-size: 0.8rem;
-  }
   .demo-panel {
     min-height: auto;
   }

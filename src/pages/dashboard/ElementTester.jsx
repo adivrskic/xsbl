@@ -71,6 +71,21 @@ export default function ElementTester() {
   var handleTest = useCallback(
     function () {
       if (!html.trim()) return;
+
+      // Validate that input contains actual HTML elements
+      // Matches opening tags like <div, <img, <a, <br, <input etc.
+      // Also accepts self-closing <br/>, <img />, and void elements
+      var hasHtmlTags = /<[a-zA-Z][a-zA-Z0-9]*[\s>/]/.test(html);
+
+      if (!hasHtmlTags) {
+        setResults({
+          htmlWarning: true,
+          message:
+            "No HTML elements detected. Paste an HTML snippet containing elements like <img>, <button>, <input>, <a>, <div>, etc.",
+        });
+        return;
+      }
+
       cleanup();
       setRunning(true);
       setResults(null);
@@ -378,7 +393,67 @@ export default function ElementTester() {
       )}
 
       {/* Results */}
-      {results && (
+      {results && results.htmlWarning && (
+        <div
+          style={{
+            borderRadius: 12,
+            border: "1px solid " + t.amber + "30",
+            background: t.amber + "06",
+            padding: "1.2rem",
+            display: "flex",
+            alignItems: "flex-start",
+            gap: "0.6rem",
+          }}
+        >
+          <AlertTriangle
+            size={18}
+            color={t.amber}
+            strokeWidth={2}
+            style={{ flexShrink: 0, marginTop: 2 }}
+          />
+          <div>
+            <div
+              style={{
+                fontSize: "0.88rem",
+                fontWeight: 600,
+                color: t.ink,
+                marginBottom: "0.25rem",
+              }}
+            >
+              Not valid HTML
+            </div>
+            <div
+              style={{
+                fontSize: "0.78rem",
+                color: t.ink50,
+                lineHeight: 1.6,
+                marginBottom: "0.5rem",
+              }}
+            >
+              {results.message}
+            </div>
+            <div
+              style={{
+                fontFamily: "var(--mono)",
+                fontSize: "0.68rem",
+                color: t.ink50,
+                padding: "0.5rem 0.6rem",
+                borderRadius: 6,
+                background: t.ink04,
+                lineHeight: 1.7,
+              }}
+            >
+              {'<img src="photo.jpg">'}
+              <br />
+              {"<button>Click me</button>"}
+              <br />
+              {'<input type="email" placeholder="Email">'}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {results && !results.htmlWarning && (
         <div
           style={{
             borderRadius: 12,

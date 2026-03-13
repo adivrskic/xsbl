@@ -37,7 +37,6 @@ import {
 const navItems = [
   { label: "Overview", path: "/dashboard", icon: LayoutDashboard, end: true },
   { label: "Sites", path: "/dashboard/sites", icon: Globe },
-  { label: "Element Tester", path: "/dashboard/tester", icon: Code },
   { label: "Tools", path: "/dashboard/tools", icon: Wrench },
   {
     label: "Audit Log",

@@ -3,7 +3,7 @@ import { supabase } from "../../lib/supabase";
 import { FileText, Loader2, Download } from "lucide-react";
 import "../../styles/dashboard.css";
 
-export default function ReportButton({ site, scan }) {
+export default function ReportButton({ site, scan, className, style }) {
   const [loading, setLoading] = useState(false);
 
   var handleGenerate = async function () {
@@ -44,14 +44,15 @@ export default function ReportButton({ site, scan }) {
     <button
       onClick={handleGenerate}
       disabled={loading}
-      className="dash-action-btn"
+      className={className || "dash-action-btn"}
+      style={style || {}}
     >
       {loading ? (
-        <Loader2 size={14} className="xsbl-spin" />
+        <Loader2 size={className ? 13 : 14} className="xsbl-spin" />
       ) : (
-        <FileText size={14} />
+        <FileText size={className ? 13 : 14} strokeWidth={1.8} />
       )}
-      {loading ? "Generating..." : "Download report"}
+      {loading ? "Generating…" : className ? "Report" : "Download report"}
     </button>
   );
 }

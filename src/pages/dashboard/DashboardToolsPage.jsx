@@ -1,9 +1,12 @@
 import { useState, useMemo } from "react";
 import { useTheme } from "../../context/ThemeContext";
+import SegmentedControl from "../../components/landing/SegmentedControl";
+import ElementTester from "./ElementTester";
 import {
   Palette,
   ListTree,
   Image,
+  Code,
   Check,
   X,
   ArrowLeftRight,
@@ -80,9 +83,24 @@ function PassFail({ pass, label, t }) {
   );
 }
 
-function ContrastChecker({ t }) {
-  var [fg, setFg] = useState("#333333");
-  var [bg, setBg] = useState("#ffffff");
+function ContrastChecker({ t, dark }) {
+  var lightFg = "#333333";
+  var lightBg = "#ffffff";
+  var darkFg = "#e0e0e0";
+  var darkBg = "#1a1a2e";
+  var defaultFg = dark ? darkFg : lightFg;
+  var defaultBg = dark ? darkBg : lightBg;
+
+  var [fg, setFg] = useState(defaultFg);
+  var [bg, setBg] = useState(defaultBg);
+  var [prevDark, setPrevDark] = useState(dark);
+
+  // When theme toggles, update colors to match new defaults
+  if (dark !== prevDark) {
+    setPrevDark(dark);
+    setFg(dark ? darkFg : lightFg);
+    setBg(dark ? darkBg : lightBg);
+  }
 
   var ratio = useMemo(
     function () {
@@ -344,8 +362,8 @@ function ContrastChecker({ t }) {
 
       <button
         onClick={function () {
-          setFg("#333333");
-          setBg("#ffffff");
+          setFg(defaultFg);
+          setBg(defaultBg);
         }}
         style={{
           display: "inline-flex",
@@ -1133,87 +1151,47 @@ function AltTextChecker({ t }) {
 // ═══════════════════════════════════════════
 
 var TOOLS = [
-  {
-    id: "contrast",
-    label: "Contrast Checker",
-    icon: Palette,
-    color: "#4338f0",
-  },
-  {
-    id: "headings",
-    label: "Heading Analyzer",
-    icon: ListTree,
-    color: "#1a8754",
-  },
-  { id: "alt-text", label: "Alt Text Checker", icon: Image, color: "#b45309" },
+  { id: "tester", label: "Element Tester", icon: Code },
+  { id: "contrast", label: "Contrast", icon: Palette },
+  { id: "headings", label: "Headings", icon: ListTree },
+  { id: "alt-text", label: "Alt Text", icon: Image },
 ];
 
 export default function DashboardToolsPage() {
-  var { t } = useTheme();
-  var [activeTool, setActiveTool] = useState("contrast");
+  var { t, dark } = useTheme();
+  var [activeTool, setActiveTool] = useState("tester");
 
   return (
     <div>
       <div className="dash-page-header">
         <div>
-          <h1 className="dash-page-title">Accessibility Tools</h1>
+          <h1 className="dash-page-title">Tools</h1>
           <p className="dash-page-subtitle">
-            Quick browser-based checks — no data leaves your machine.
+            Test elements, check contrast, analyze headings, and validate alt
+            text.
           </p>
         </div>
       </div>
 
-      {/* Tool tabs */}
-      <div
-        style={{
-          display: "flex",
-          gap: "0.35rem",
-          marginBottom: "1.5rem",
-          flexWrap: "wrap",
-        }}
-      >
-        {TOOLS.map(function (tool) {
-          var Icon = tool.icon;
-          var active = activeTool === tool.id;
-          return (
-            <button
-              key={tool.id}
-              onClick={function () {
-                setActiveTool(tool.id);
-              }}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "0.4rem",
-                padding: "0.5rem 0.9rem",
-                borderRadius: 8,
-                border: "1.5px solid " + (active ? tool.color : t.ink08),
-                background: active ? tool.color + "08" : "none",
-                color: active ? tool.color : t.ink50,
-                fontFamily: "var(--body)",
-                fontSize: "0.82rem",
-                fontWeight: active ? 600 : 400,
-                cursor: "pointer",
-                transition: "all 0.15s",
-              }}
-            >
-              <Icon size={15} strokeWidth={active ? 2 : 1.5} />
-              {tool.label}
-            </button>
-          );
-        })}
+      <div style={{ marginBottom: "1.5rem" }}>
+        <SegmentedControl
+          items={TOOLS}
+          value={activeTool}
+          onChange={setActiveTool}
+        />
       </div>
 
       {/* Tool body */}
       <div
         style={{
-          padding: "1.5rem",
+          padding: activeTool === "tester" ? 0 : "1.5rem",
           borderRadius: 12,
-          border: "1px solid " + t.ink08,
-          background: t.cardBg,
+          border: activeTool === "tester" ? "none" : "1px solid " + t.ink08,
+          background: activeTool === "tester" ? "transparent" : t.cardBg,
         }}
       >
-        {activeTool === "contrast" && <ContrastChecker t={t} />}
+        {activeTool === "tester" && <ElementTester />}
+        {activeTool === "contrast" && <ContrastChecker t={t} dark={dark} />}
         {activeTool === "headings" && <HeadingChecker t={t} />}
         {activeTool === "alt-text" && <AltTextChecker t={t} />}
       </div>

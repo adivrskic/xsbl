@@ -1,4 +1,5 @@
 import { useTheme } from "../../context/ThemeContext";
+import { useAuth } from "../../context/AuthContext";
 import XsblBull from "./XsblBull";
 import "./Footer.css";
 
@@ -8,9 +9,8 @@ var footerColumns = [
     links: [
       { label: "How it works", href: "/#how" },
       { label: "Features", href: "/#features" },
-      { label: "GitHub PRs", href: "/#github" },
-      { label: "Simulator", href: "/#simulator" },
-      { label: "Pricing", href: "/#pricing" },
+      { label: "Demos", href: "/#demos" },
+      { label: "Pricing", href: "/#pricing", pricingOnly: true },
       { label: "FAQ", href: "/#faq" },
     ],
   },
@@ -39,7 +39,12 @@ var footerColumns = [
 
 export default function Footer() {
   var { t } = useTheme();
+  var { user, org } = useAuth();
   var year = new Date().getFullYear();
+
+  // Hide pricing for pro/agency (same logic as Nav)
+  var hidePricing =
+    user && (!org || (org.plan !== "free" && org.plan !== "starter"));
 
   return (
     <footer className="footer">
@@ -67,15 +72,19 @@ export default function Footer() {
               >
                 <h3 className="footer__column-title">{col.title}</h3>
                 <ul className="footer__column-list">
-                  {col.links.map(function (link) {
-                    return (
-                      <li key={link.label}>
-                        <a href={link.href} className="footer__link">
-                          {link.label}
-                        </a>
-                      </li>
-                    );
-                  })}
+                  {col.links
+                    .filter(function (link) {
+                      return !link.pricingOnly || !hidePricing;
+                    })
+                    .map(function (link) {
+                      return (
+                        <li key={link.label}>
+                          <a href={link.href} className="footer__link">
+                            {link.label}
+                          </a>
+                        </li>
+                      );
+                    })}
                 </ul>
               </nav>
             );
@@ -89,7 +98,7 @@ export default function Footer() {
           &copy; {year} xsbl. All rights reserved.
         </span>
         <span className="footer__built">
-          Building a web that works for everyone.
+          Built for the web that works for everyone.
         </span>
       </div>
     </footer>

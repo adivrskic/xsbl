@@ -13,6 +13,9 @@ import {
   Trash2,
   Check,
   AlertTriangle,
+  Lock,
+  ChevronDown,
+  Plus,
 } from "lucide-react";
 import "../../styles/dashboard.css";
 import "../../styles/dashboard-modals.css";
@@ -105,6 +108,14 @@ export default function ScanConfigModal({
   var [pasteInput, setPasteInput] = useState("");
   var [bulkFileName, setBulkFileName] = useState(null);
 
+  // Auth state
+  var [showAuth, setShowAuth] = useState(false);
+  var [authType, setAuthType] = useState("none"); // "none", "basic", "header", "cookie"
+  var [basicUser, setBasicUser] = useState("");
+  var [basicPass, setBasicPass] = useState("");
+  var [customHeaders, setCustomHeaders] = useState([{ key: "", value: "" }]);
+  var [customCookies, setCustomCookies] = useState([{ name: "", value: "" }]);
+
   useEffect(
     function () {
       previousFocus.current = document.activeElement;
@@ -147,6 +158,7 @@ export default function ScanConfigModal({
   var maxPages = PAGE_LIMITS[plan] || PAGE_LIMITS.free;
 
   var handleScan = function () {
+    var config = {};
     if (mode === "manual") {
       var urls = manualUrls
         .split("\n")
@@ -157,12 +169,33 @@ export default function ScanConfigModal({
           return u.length > 0;
         })
         .slice(0, maxPages);
-      onScan({ urls: urls });
+      config.urls = urls;
     } else if (mode === "bulk") {
-      onScan({ urls: bulkUrls.slice(0, maxPages) });
-    } else {
-      onScan({});
+      config.urls = bulkUrls.slice(0, maxPages);
     }
+
+    // Build auth config
+    if (authType === "basic" && basicUser.trim()) {
+      config.scan_auth = {
+        basic_auth: { username: basicUser.trim(), password: basicPass },
+      };
+    } else if (authType === "header") {
+      var validHeaders = customHeaders.filter(function (h) {
+        return h.key.trim() && h.value.trim();
+      });
+      if (validHeaders.length > 0) {
+        config.scan_auth = { headers: validHeaders };
+      }
+    } else if (authType === "cookie") {
+      var validCookies = customCookies.filter(function (c) {
+        return c.name.trim() && c.value.trim();
+      });
+      if (validCookies.length > 0) {
+        config.scan_auth = { cookies: validCookies };
+      }
+    }
+
+    onScan(config);
   };
 
   // ── CSV file handler ──
@@ -888,6 +921,402 @@ export default function ScanConfigModal({
                 ? "Each URL will be loaded in a real browser and scanned with axe-core against WCAG 2.2."
                 : "Imported URLs will be loaded one-by-one in a real browser and scanned against WCAG 2.2 criteria."}
             </span>
+          </div>
+
+          {/* Authentication (collapsible) */}
+          <div
+            style={{
+              borderRadius: 8,
+              border: "1px solid " + t.ink08,
+              marginBottom: "1rem",
+              overflow: "hidden",
+            }}
+          >
+            <button
+              onClick={function () {
+                setShowAuth(!showAuth);
+              }}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                width: "100%",
+                padding: "0.6rem 0.8rem",
+                border: "none",
+                background: showAuth ? t.ink04 : "transparent",
+                color: t.ink50,
+                cursor: "pointer",
+                fontFamily: "var(--body)",
+                fontSize: "0.78rem",
+                fontWeight: 500,
+              }}
+            >
+              <span
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.35rem",
+                }}
+              >
+                <Lock size={13} strokeWidth={1.8} />
+                Authentication
+                {authType !== "none" && (
+                  <span
+                    style={{
+                      fontFamily: "var(--mono)",
+                      fontSize: "0.5rem",
+                      fontWeight: 700,
+                      padding: "0.06rem 0.3rem",
+                      borderRadius: 3,
+                      background: t.green + "15",
+                      color: t.green,
+                      textTransform: "uppercase",
+                    }}
+                  >
+                    {authType}
+                  </span>
+                )}
+              </span>
+              <ChevronDown
+                size={14}
+                style={{
+                  transform: showAuth ? "rotate(180deg)" : "none",
+                  transition: "transform 0.2s",
+                }}
+              />
+            </button>
+
+            {showAuth && (
+              <div
+                style={{ padding: "0.8rem", borderTop: "1px solid " + t.ink08 }}
+              >
+                <p
+                  style={{
+                    fontSize: "0.72rem",
+                    color: t.ink50,
+                    lineHeight: 1.5,
+                    margin: "0 0 0.6rem",
+                  }}
+                >
+                  For sites behind login, staging environments, or intranets.
+                  Credentials are sent directly to the browser and never stored.
+                </p>
+
+                {/* Auth type selector */}
+                <div
+                  style={{
+                    display: "inline-flex",
+                    borderRadius: 7,
+                    background: t.ink04,
+                    border: "1px solid " + t.ink08,
+                    padding: 2,
+                    gap: 2,
+                    marginBottom: "0.8rem",
+                  }}
+                >
+                  {[
+                    { id: "none", label: "None" },
+                    { id: "basic", label: "Basic auth" },
+                    { id: "header", label: "Header" },
+                    { id: "cookie", label: "Cookie" },
+                  ].map(function (opt) {
+                    var active = authType === opt.id;
+                    return (
+                      <button
+                        key={opt.id}
+                        onClick={function () {
+                          setAuthType(opt.id);
+                        }}
+                        style={{
+                          padding: "0.28rem 0.6rem",
+                          borderRadius: 5,
+                          border: "none",
+                          background: active ? t.cardBg : "transparent",
+                          boxShadow: active ? "0 1px 3px " + t.ink08 : "none",
+                          color: active ? t.ink : t.ink50,
+                          fontFamily: "var(--body)",
+                          fontSize: "0.7rem",
+                          fontWeight: active ? 600 : 400,
+                          cursor: "pointer",
+                          transition: "all 0.15s",
+                        }}
+                      >
+                        {opt.label}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Basic auth fields */}
+                {authType === "basic" && (
+                  <div style={{ display: "flex", gap: "0.4rem" }}>
+                    <div style={{ flex: 1 }}>
+                      <label className="dash-config-label">Username</label>
+                      <input
+                        value={basicUser}
+                        onChange={function (e) {
+                          setBasicUser(e.target.value);
+                        }}
+                        placeholder="admin"
+                        style={{
+                          width: "100%",
+                          padding: "0.4rem 0.6rem",
+                          borderRadius: 6,
+                          border: "1.5px solid " + t.ink08,
+                          background: t.paper,
+                          color: t.ink,
+                          fontFamily: "var(--mono)",
+                          fontSize: "0.72rem",
+                          outline: "none",
+                          boxSizing: "border-box",
+                        }}
+                      />
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <label className="dash-config-label">Password</label>
+                      <input
+                        type="password"
+                        value={basicPass}
+                        onChange={function (e) {
+                          setBasicPass(e.target.value);
+                        }}
+                        placeholder="••••••"
+                        style={{
+                          width: "100%",
+                          padding: "0.4rem 0.6rem",
+                          borderRadius: 6,
+                          border: "1.5px solid " + t.ink08,
+                          background: t.paper,
+                          color: t.ink,
+                          fontFamily: "var(--mono)",
+                          fontSize: "0.72rem",
+                          outline: "none",
+                          boxSizing: "border-box",
+                        }}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* Custom headers */}
+                {authType === "header" && (
+                  <div>
+                    <label className="dash-config-label">Custom headers</label>
+                    {customHeaders.map(function (h, i) {
+                      return (
+                        <div
+                          key={i}
+                          style={{
+                            display: "flex",
+                            gap: "0.3rem",
+                            marginBottom: "0.3rem",
+                          }}
+                        >
+                          <input
+                            value={h.key}
+                            onChange={function (e) {
+                              var next = customHeaders.slice();
+                              next[i] = Object.assign({}, next[i], {
+                                key: e.target.value,
+                              });
+                              setCustomHeaders(next);
+                            }}
+                            placeholder="Authorization"
+                            style={{
+                              flex: 1,
+                              padding: "0.35rem 0.5rem",
+                              borderRadius: 5,
+                              border: "1.5px solid " + t.ink08,
+                              background: t.paper,
+                              color: t.ink,
+                              fontFamily: "var(--mono)",
+                              fontSize: "0.68rem",
+                              outline: "none",
+                            }}
+                          />
+                          <input
+                            value={h.value}
+                            onChange={function (e) {
+                              var next = customHeaders.slice();
+                              next[i] = Object.assign({}, next[i], {
+                                value: e.target.value,
+                              });
+                              setCustomHeaders(next);
+                            }}
+                            placeholder="Bearer eyJ..."
+                            style={{
+                              flex: 2,
+                              padding: "0.35rem 0.5rem",
+                              borderRadius: 5,
+                              border: "1.5px solid " + t.ink08,
+                              background: t.paper,
+                              color: t.ink,
+                              fontFamily: "var(--mono)",
+                              fontSize: "0.68rem",
+                              outline: "none",
+                            }}
+                          />
+                          {customHeaders.length > 1 && (
+                            <button
+                              onClick={function () {
+                                setCustomHeaders(
+                                  customHeaders.filter(function (_, j) {
+                                    return j !== i;
+                                  })
+                                );
+                              }}
+                              style={{
+                                background: "none",
+                                border: "none",
+                                color: t.ink50,
+                                cursor: "pointer",
+                                padding: "0 0.2rem",
+                                display: "flex",
+                                alignItems: "center",
+                              }}
+                            >
+                              <Trash2 size={12} />
+                            </button>
+                          )}
+                        </div>
+                      );
+                    })}
+                    <button
+                      onClick={function () {
+                        setCustomHeaders(
+                          customHeaders.concat([{ key: "", value: "" }])
+                        );
+                      }}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "0.2rem",
+                        padding: "0.2rem 0.5rem",
+                        borderRadius: 4,
+                        border: "1px solid " + t.ink08,
+                        background: "none",
+                        color: t.ink50,
+                        fontFamily: "var(--mono)",
+                        fontSize: "0.58rem",
+                        cursor: "pointer",
+                        marginTop: "0.15rem",
+                      }}
+                    >
+                      <Plus size={10} /> Add header
+                    </button>
+                  </div>
+                )}
+
+                {/* Cookies */}
+                {authType === "cookie" && (
+                  <div>
+                    <label className="dash-config-label">Cookies</label>
+                    {customCookies.map(function (c, i) {
+                      return (
+                        <div
+                          key={i}
+                          style={{
+                            display: "flex",
+                            gap: "0.3rem",
+                            marginBottom: "0.3rem",
+                          }}
+                        >
+                          <input
+                            value={c.name}
+                            onChange={function (e) {
+                              var next = customCookies.slice();
+                              next[i] = Object.assign({}, next[i], {
+                                name: e.target.value,
+                              });
+                              setCustomCookies(next);
+                            }}
+                            placeholder="session_id"
+                            style={{
+                              flex: 1,
+                              padding: "0.35rem 0.5rem",
+                              borderRadius: 5,
+                              border: "1.5px solid " + t.ink08,
+                              background: t.paper,
+                              color: t.ink,
+                              fontFamily: "var(--mono)",
+                              fontSize: "0.68rem",
+                              outline: "none",
+                            }}
+                          />
+                          <input
+                            value={c.value}
+                            onChange={function (e) {
+                              var next = customCookies.slice();
+                              next[i] = Object.assign({}, next[i], {
+                                value: e.target.value,
+                              });
+                              setCustomCookies(next);
+                            }}
+                            placeholder="abc123..."
+                            style={{
+                              flex: 2,
+                              padding: "0.35rem 0.5rem",
+                              borderRadius: 5,
+                              border: "1.5px solid " + t.ink08,
+                              background: t.paper,
+                              color: t.ink,
+                              fontFamily: "var(--mono)",
+                              fontSize: "0.68rem",
+                              outline: "none",
+                            }}
+                          />
+                          {customCookies.length > 1 && (
+                            <button
+                              onClick={function () {
+                                setCustomCookies(
+                                  customCookies.filter(function (_, j) {
+                                    return j !== i;
+                                  })
+                                );
+                              }}
+                              style={{
+                                background: "none",
+                                border: "none",
+                                color: t.ink50,
+                                cursor: "pointer",
+                                padding: "0 0.2rem",
+                                display: "flex",
+                                alignItems: "center",
+                              }}
+                            >
+                              <Trash2 size={12} />
+                            </button>
+                          )}
+                        </div>
+                      );
+                    })}
+                    <button
+                      onClick={function () {
+                        setCustomCookies(
+                          customCookies.concat([{ name: "", value: "" }])
+                        );
+                      }}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "0.2rem",
+                        padding: "0.2rem 0.5rem",
+                        borderRadius: 4,
+                        border: "1px solid " + t.ink08,
+                        background: "none",
+                        color: t.ink50,
+                        fontFamily: "var(--mono)",
+                        fontSize: "0.58rem",
+                        cursor: "pointer",
+                        marginTop: "0.15rem",
+                      }}
+                    >
+                      <Plus size={10} /> Add cookie
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Scan button */}

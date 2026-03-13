@@ -15,6 +15,7 @@ import {
   FileCode,
   ArrowRight,
 } from "lucide-react";
+import SegmentedControl from "./SegmentedControl";
 
 /* ═══════════════════════════════════════════
    SHARED DATA & COMPONENTS
@@ -1590,23 +1591,13 @@ export default function GitHubDemo() {
   return (
     <div className="ghd-root">
       {/* Sub-tabs */}
-      <div className="ghd-modes">
-        {MODES.map(function (m) {
-          var Icon = m.icon;
-          var active = mode === m.id;
-          return (
-            <button
-              key={m.id}
-              onClick={function () {
-                setMode(m.id);
-              }}
-              className={"ghd-mode" + (active ? " ghd-mode--active" : "")}
-            >
-              <Icon size={13} strokeWidth={active ? 2 : 1.5} />
-              {m.label}
-            </button>
-          );
-        })}
+      <div style={{ marginBottom: "1rem" }}>
+        <SegmentedControl
+          items={MODES}
+          value={mode}
+          onChange={setMode}
+          size="sm"
+        />
       </div>
 
       {/* Content */}
@@ -1621,24 +1612,6 @@ export default function GitHubDemo() {
         .ghd-root div[style*="height: 420"] > div {
           overflow: hidden;
           min-height: 0;
-        }
-        .ghd-modes {
-          display: flex; gap: 0.3rem; margin-bottom: 1.2rem;
-        }
-        .ghd-mode {
-          display: flex; align-items: center; gap: 0.3rem;
-          padding: 0.4rem 0.8rem; border-radius: 6px;
-          border: 1px solid ${t.ink08}; background: none;
-          color: ${t.ink50}; font-family: var(--body);
-          font-size: 0.76rem; font-weight: 500;
-          cursor: pointer; transition: all 0.15s;
-        }
-        .ghd-mode:hover { border-color: ${t.accent}; color: ${t.ink}; }
-        .ghd-mode--active {
-          border-color: ${t.accent}; background: ${
-        t.accentBg || t.accent + "08"
-      };
-          color: ${t.accent}; font-weight: 600;
         }
         @keyframes ghFadeIn { from { opacity: 0; } to { opacity: 1; } }
         @keyframes ghPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useTheme } from "../../context/ThemeContext";
 import { supabase } from "../../lib/supabase";
-import { Settings, Save, Loader2, X, Plus } from "lucide-react";
+import { Settings, Save, Loader2, X, Plus, Zap } from "lucide-react";
 import "../../styles/dashboard.css";
 
 var COMMON_RULES = [
@@ -17,6 +17,89 @@ var COMMON_RULES = [
   { id: "meta-viewport", desc: "Zoom and scaling must not be disabled" },
 ];
 
+var THIRD_PARTY_WIDGETS = [
+  {
+    id: "intercom",
+    name: "Intercom",
+    selectors: [
+      "#intercom-container",
+      ".intercom-lightweight-app",
+      ".intercom-messenger-frame",
+    ],
+  },
+  {
+    id: "drift",
+    name: "Drift",
+    selectors: [
+      "#drift-widget",
+      ".drift-frame-controller",
+      "#drift-frame-chat",
+    ],
+  },
+  {
+    id: "hubspot",
+    name: "HubSpot Chat",
+    selectors: [
+      "#hubspot-messages-iframe-container",
+      "#hs-web-interactives-top-push-anchor",
+    ],
+  },
+  {
+    id: "zendesk",
+    name: "Zendesk",
+    selectors: ["#launcher", ".zEWidget-launcher", "#webWidget"],
+  },
+  {
+    id: "livechat",
+    name: "LiveChat",
+    selectors: ["#chat-widget-container", ".livechat-widget-container"],
+  },
+  {
+    id: "tawk",
+    name: "Tawk.to",
+    selectors: [
+      ".tawk-chat-panel",
+      "#tawk-bubble-container",
+      ".tawk-min-container",
+    ],
+  },
+  {
+    id: "crisp",
+    name: "Crisp",
+    selectors: [".crisp-client", "#crisp-chatbox"],
+  },
+  {
+    id: "cookie-onetrust",
+    name: "OneTrust (cookies)",
+    selectors: [
+      "#onetrust-banner-sdk",
+      "#onetrust-consent-sdk",
+      ".onetrust-pc-dark-filter",
+    ],
+  },
+  {
+    id: "cookie-cookiebot",
+    name: "CookieBot",
+    selectors: ["#CybotCookiebotDialog", "#CybotCookiebotDialogBodyUnderlay"],
+  },
+  {
+    id: "cookie-generic",
+    name: "Cookie banners (generic)",
+    selectors: [
+      ".cookie-banner",
+      ".cookie-consent",
+      ".cc-banner",
+      "#cookie-notice",
+      ".gdpr-banner",
+    ],
+  },
+  {
+    id: "gtm-noscript",
+    name: "Google Tag Manager",
+    selectors: ["noscript iframe[src*='googletagmanager']"],
+  },
+];
+
 export default function ScanProfileEditor({ site, onUpdate }) {
   var { t } = useTheme();
   var profile = site.scan_profile || {};
@@ -30,6 +113,56 @@ export default function ScanProfileEditor({ site, onUpdate }) {
   var [saving, setSaving] = useState(false);
   var [saved, setSaved] = useState(false);
   var [newRule, setNewRule] = useState("");
+
+  // Compute which widgets are currently excluded based on selectors
+  var currentSelectors = excludeSelectors
+    .split("\n")
+    .map(function (s) {
+      return s.trim();
+    })
+    .filter(Boolean);
+
+  var isWidgetExcluded = function (widget) {
+    return widget.selectors.every(function (sel) {
+      return currentSelectors.indexOf(sel) !== -1;
+    });
+  };
+
+  var handleToggleWidget = function (widget) {
+    var lines = excludeSelectors
+      .split("\n")
+      .map(function (s) {
+        return s.trim();
+      })
+      .filter(Boolean);
+    if (isWidgetExcluded(widget)) {
+      // Remove widget selectors
+      lines = lines.filter(function (s) {
+        return widget.selectors.indexOf(s) === -1;
+      });
+    } else {
+      // Add widget selectors (deduped)
+      widget.selectors.forEach(function (sel) {
+        if (lines.indexOf(sel) === -1) lines.push(sel);
+      });
+    }
+    setExcludeSelectors(lines.join("\n"));
+  };
+
+  var handleExcludeAll = function () {
+    var lines = excludeSelectors
+      .split("\n")
+      .map(function (s) {
+        return s.trim();
+      })
+      .filter(Boolean);
+    THIRD_PARTY_WIDGETS.forEach(function (widget) {
+      widget.selectors.forEach(function (sel) {
+        if (lines.indexOf(sel) === -1) lines.push(sel);
+      });
+    });
+    setExcludeSelectors(lines.join("\n"));
+  };
 
   var handleToggleRule = function (ruleId) {
     if (excludeRules.indexOf(ruleId) !== -1) {
@@ -335,6 +468,98 @@ export default function ScanProfileEditor({ site, onUpdate }) {
           }}
         >
           Elements matching these CSS selectors will be excluded from scans.
+        </div>
+      </div>
+
+      {/* Third-party widget exclusions */}
+      <div style={{ marginBottom: "1rem" }}>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            marginBottom: "0.4rem",
+          }}
+        >
+          <div
+            style={{
+              fontFamily: "var(--mono)",
+              fontSize: "0.58rem",
+              textTransform: "uppercase",
+              letterSpacing: "0.06em",
+              color: t.ink50,
+              display: "flex",
+              alignItems: "center",
+              gap: "0.3rem",
+            }}
+          >
+            <Zap size={11} strokeWidth={2} />
+            Third-party widget exclusions
+          </div>
+          <button
+            onClick={handleExcludeAll}
+            style={{
+              fontFamily: "var(--mono)",
+              fontSize: "0.55rem",
+              fontWeight: 600,
+              color: t.accent,
+              background: "none",
+              border: "none",
+              cursor: "pointer",
+              padding: "0.1rem 0.3rem",
+            }}
+          >
+            Exclude all
+          </button>
+        </div>
+        <p
+          style={{
+            fontSize: "0.68rem",
+            color: t.ink50,
+            lineHeight: 1.5,
+            margin: "0 0 0.5rem",
+          }}
+        >
+          Common chat widgets, cookie banners, and tag managers often generate
+          accessibility violations you can't fix. Exclude them to focus on your
+          own code.
+        </p>
+        <div
+          style={{
+            display: "flex",
+            flexWrap: "wrap",
+            gap: "0.25rem",
+          }}
+        >
+          {THIRD_PARTY_WIDGETS.map(function (widget) {
+            var excluded = isWidgetExcluded(widget);
+            return (
+              <button
+                key={widget.id}
+                onClick={function () {
+                  handleToggleWidget(widget);
+                }}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.25rem",
+                  padding: "0.3rem 0.6rem",
+                  borderRadius: 5,
+                  border: "1px solid " + (excluded ? t.green + "40" : t.ink08),
+                  background: excluded ? t.green + "08" : "transparent",
+                  color: excluded ? t.green : t.ink50,
+                  fontFamily: "var(--body)",
+                  fontSize: "0.68rem",
+                  fontWeight: excluded ? 600 : 400,
+                  cursor: "pointer",
+                  transition: "all 0.15s",
+                }}
+              >
+                {excluded && <X size={10} strokeWidth={2.5} />}
+                {widget.name}
+              </button>
+            );
+          })}
         </div>
       </div>
 

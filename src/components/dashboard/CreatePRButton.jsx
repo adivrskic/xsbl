@@ -13,7 +13,7 @@ function GitHubIcon({ size = 14 }) {
   );
 }
 
-export default function CreatePRButton({ issue, site }) {
+export default function CreatePRButton({ issue, site, segmented }) {
   const { t } = useTheme();
   const toast = useToast();
   const [loading, setLoading] = useState(false);
@@ -78,6 +78,153 @@ export default function CreatePRButton({ issue, site }) {
     }
   }
 
+  // ── Segmented mode: compact rendering inside a pill bar ──
+  if (segmented) {
+    if (loading) {
+      return (
+        <span
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "0.25rem",
+            padding: "0.35rem 0.7rem",
+            height: 30,
+            borderRadius: 6,
+            color: t.accent,
+            fontFamily: "var(--mono)",
+            fontSize: "0.64rem",
+            fontWeight: 600,
+          }}
+        >
+          <Loader2 size={12} className="xsbl-spin" color={t.accent} />
+          {elapsed}s
+        </span>
+      );
+    }
+    if (result && result.status === "created") {
+      return (
+        <a
+          href={result.pr_url}
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "0.25rem",
+            padding: "0.35rem 0.7rem",
+            height: 30,
+            borderRadius: 6,
+            background: t.green + "12",
+            color: t.green,
+            fontFamily: "var(--mono)",
+            fontSize: "0.64rem",
+            fontWeight: 600,
+            textDecoration: "none",
+          }}
+        >
+          <Check size={11} strokeWidth={3} />
+          PR #{result.pr_number}
+          <ExternalLink size={9} strokeWidth={2} />
+        </a>
+      );
+    }
+    if (result && result.status === "suggestion") {
+      return (
+        <span
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "0.25rem",
+            padding: "0.35rem 0.7rem",
+            height: 30,
+            borderRadius: 6,
+            background: t.amber + "12",
+            color: t.amber,
+            fontFamily: "var(--mono)",
+            fontSize: "0.64rem",
+            fontWeight: 600,
+          }}
+        >
+          <AlertTriangle size={11} />
+          Suggestion
+        </span>
+      );
+    }
+    if (result && result.error) {
+      return (
+        <span
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "0.25rem",
+            padding: "0.35rem 0.7rem",
+            height: 30,
+            borderRadius: 6,
+            background: t.red + "12",
+            color: t.red,
+            fontFamily: "var(--mono)",
+            fontSize: "0.64rem",
+            fontWeight: 600,
+          }}
+        >
+          Failed
+        </span>
+      );
+    }
+    return (
+      <button
+        onClick={handleCreatePR}
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: "0.3rem",
+          padding: "0.35rem 0.7rem",
+          height: 30,
+          borderRadius: 6,
+          border: "none",
+          background: "transparent",
+          color: t.ink50,
+          fontFamily: "var(--body)",
+          fontSize: "0.74rem",
+          fontWeight: 500,
+          cursor: "pointer",
+          transition: "color 0.15s, background 0.15s",
+          whiteSpace: "nowrap",
+        }}
+        onMouseEnter={function (e) {
+          e.currentTarget.style.background = t.cardBg;
+          e.currentTarget.style.color = t.ink;
+          e.currentTarget.style.boxShadow = "0 1px 3px " + t.ink08;
+        }}
+        onMouseLeave={function (e) {
+          e.currentTarget.style.background = "transparent";
+          e.currentTarget.style.color = t.ink50;
+          e.currentTarget.style.boxShadow = "none";
+        }}
+      >
+        <GitHubIcon size={12} />
+        Create PR
+        <span
+          style={{
+            fontFamily: "var(--mono)",
+            fontSize: "0.42rem",
+            fontWeight: 700,
+            padding: "0.06rem 0.22rem",
+            borderRadius: 2,
+            background: t.ink08,
+            color: t.ink50,
+            textTransform: "uppercase",
+            letterSpacing: "0.04em",
+            lineHeight: 1,
+          }}
+        >
+          beta
+        </span>
+      </button>
+    );
+  }
+
+  // ── Default (non-segmented) mode ──
   return (
     <div style={{ marginTop: "0.8rem" }}>
       {/* Create PR button / progress */}

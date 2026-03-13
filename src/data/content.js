@@ -22,72 +22,6 @@ export const howSteps = [
   },
 ];
 
-export const scanFeatures = [
-  {
-    title: "Full-page rendering",
-    desc: "We scan the actual rendered DOM in a real Chromium browser — catching issues in SPAs, lazy-loaded content, and dynamic UI that static analyzers miss.",
-    icon: "Globe",
-  },
-  {
-    title: "WCAG 2.2 AA + AAA",
-    desc: "90+ rules covering contrast, alt text, ARIA, keyboard navigation, forms, headings, landmarks, and more. Mapped to specific WCAG success criteria.",
-    icon: "ShieldCheck",
-  },
-  {
-    title: "AI fix suggestions",
-    desc: "Not just 'add an alt attribute' — contextual code snippets that fit your actual markup. Copy, paste, done.",
-    icon: "Lightbulb",
-  },
-  {
-    title: "Continuous monitoring",
-    desc: "Verify your domain, set a schedule, and we rescan daily or weekly. Get alerted when new issues appear after a deploy.",
-    icon: "Clock",
-  },
-  {
-    title: "Score tracking",
-    desc: "Track your accessibility score over time. See trends per page and per site. Know if you're getting better or worse.",
-    icon: "BarChart3",
-  },
-  {
-    title: "Per-page breakdown",
-    desc: "Don't just see a site-wide number — drill into each page to find exactly where the worst issues live.",
-    icon: "FileText",
-  },
-  {
-    title: "AI-generated alt text",
-    desc: "Vision AI describes your images in context — not generic labels, but descriptions that make sense for your specific product.",
-    icon: "Image",
-  },
-  {
-    title: "Slack & email alerts",
-    desc: "Get notified when scans complete, new critical issues are found, or your score changes significantly.",
-    icon: "Bell",
-  },
-];
-
-export const complianceFeatures = [
-  {
-    title: "VPAT generation",
-    desc: "Auto-generate Voluntary Product Accessibility Templates from scan results — ready for procurement teams.",
-    icon: "ClipboardList",
-  },
-  {
-    title: "Audit log",
-    desc: "Timestamped history of every scan, fix, and review. Exportable evidence of ongoing accessibility compliance.",
-    icon: "ScrollText",
-  },
-  {
-    title: "White-label reports",
-    desc: "Branded PDF reports for client deliverables. Your logo, your colors, professional compliance documentation.",
-    icon: "FileText",
-  },
-  {
-    title: "SOC 2 / ISO evidence",
-    desc: "Exportable artifacts proving continuous accessibility monitoring — ready for your next compliance audit.",
-    icon: "BadgeCheck",
-  },
-];
-
 export const pricingPlans = [
   {
     tier: "Free",
@@ -203,24 +137,6 @@ export const codeLines = [
   { type: "comment", text: "{/* contrast 4.56:1 → WCAG AA ✓ */}" },
 ];
 
-export const marqueeItems = [
-  "No bull, just fixes",
-  "Keep it xsbl",
-  "WCAG 2.2 AA + AAA",
-  "Bulk fix issues in one PR",
-  "AI reads your actual source code",
-  "Not an overlay",
-  "Real fixes, not band-aids",
-  "Overlays got fined $1M by the FTC",
-  "Daily & weekly scheduled scans",
-  "White-label reports for agencies",
-  "SOC 2 & ISO evidence export",
-  "Client dashboards included",
-  "Simulate 8 vision conditions",
-  "AI-generated alt text",
-  "Auto-resolves fixed issues",
-  "CI/CD in 5 minutes",
-];
 export const navLinks = [
   { label: "How it works", id: "how" },
   { label: "Features", id: "agent" },

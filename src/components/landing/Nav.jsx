@@ -10,15 +10,15 @@ import "./Nav.css";
 var landingLinks = [
   { label: "How it works", id: "how" },
   { label: "Features", id: "features" },
-  { label: "Integrations", id: "github" },
-  { label: "Simulator", id: "simulator" },
+  { label: "Demos", id: "demos" },
   { label: "Pricing", id: "pricing" },
+  { label: "FAQ", id: "faq" },
 ];
 
 var pageLinks = [
   { label: "Docs", href: "/docs" },
   { label: "Blog", href: "/blog" },
-  { label: "Contact", href: "/contact" },
+  { label: "Tools", href: "/tools" },
   { label: "Pricing", href: "/#pricing" },
 ];
 
@@ -35,7 +35,13 @@ export default function Nav() {
   var pathname = location.pathname;
 
   var isLanding = pathname === "/" || pathname === "";
-  var hidePricing = user && org && org.plan !== "free";
+
+  // Hide pricing for pro/agency. When user is logged in but org hasn't
+  // loaded yet, default to hiding pricing to prevent a flash where it
+  // appears briefly then disappears once the plan loads.
+  var hidePricing =
+    user && (!org || (org.plan !== "free" && org.plan !== "starter"));
+
   var links = isLanding
     ? landingLinks
     : pageLinks.filter(function (link) {

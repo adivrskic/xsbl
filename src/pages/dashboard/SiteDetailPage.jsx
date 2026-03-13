@@ -30,6 +30,7 @@ import {
   X,
   Lightbulb,
   FileText,
+  Settings2,
 } from "lucide-react";
 import IssueDetailModal from "../../components/dashboard/IssueDetailModal";
 import ScoreChart from "../../components/dashboard/ScoreChart";
@@ -1491,9 +1492,30 @@ function ScoreExplainerModal({ t, score, issues, scans, onClose }) {
                           whiteSpace: "nowrap",
                           flex: 1,
                           marginRight: "0.5rem",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "0.3rem",
                         }}
                       >
                         {path}
+                        {pg.carried_forward && (
+                          <span
+                            style={{
+                              fontFamily: "var(--mono)",
+                              fontSize: "0.42rem",
+                              fontWeight: 700,
+                              padding: "0.04rem 0.25rem",
+                              borderRadius: 3,
+                              background: t.accent + "12",
+                              color: t.accent,
+                              textTransform: "uppercase",
+                              letterSpacing: "0.04em",
+                              flexShrink: 0,
+                            }}
+                          >
+                            cached
+                          </span>
+                        )}
                       </span>
                       <span
                         style={{
@@ -1983,6 +2005,7 @@ export default function SiteDetailPage() {
     try {
       const body = { site_id: id };
       if (config.urls) body.urls = config.urls;
+      if (config.scan_auth) body.scan_auth = config.scan_auth;
       const res = await supabase.functions.invoke("scan-site", {
         body,
         headers: { Authorization: `Bearer ${session?.access_token}` },
@@ -1996,6 +2019,8 @@ export default function SiteDetailPage() {
           score: scanData.score,
           pages: scanData.pages_scanned,
           issues: scanData.issues_found,
+          carriedForward: scanData.pages_carried_forward || 0,
+          incremental: scanData.incremental || false,
           time: Date.now(),
         });
       }
@@ -2966,124 +2991,165 @@ export default function SiteDetailPage() {
                       : "No scans yet"}
                   </p>
                 </div>
-                <div
-                  style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}
+                <button
+                  onClick={() => handleScan()}
+                  disabled={scanning}
+                  style={{
+                    padding: "0.55rem 1.4rem",
+                    borderRadius: 8,
+                    border: "none",
+                    background: t.accent,
+                    color: "white",
+                    fontFamily: "var(--body)",
+                    fontSize: "0.88rem",
+                    fontWeight: 600,
+                    cursor: scanning ? "not-allowed" : "pointer",
+                    opacity: scanning ? 0.6 : 1,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "0.5rem",
+                  }}
                 >
-                  <button
-                    onClick={() => handleScan()}
-                    disabled={scanning}
-                    style={{
-                      padding: "0.6rem 1.4rem",
-                      borderRadius: 8,
-                      border: "none",
-                      background: t.accent,
-                      color: "white",
-                      fontFamily: "var(--body)",
-                      fontSize: "0.88rem",
-                      fontWeight: 600,
-                      cursor: scanning ? "not-allowed" : "pointer",
-                      opacity: scanning ? 0.6 : 1,
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "0.5rem",
-                    }}
-                  >
-                    {scanning ? (
-                      <Loader2 size={15} className="xsbl-spin" />
-                    ) : (
-                      <Play size={15} fill="white" />
-                    )}
-                    {scanning ? "Scanning" : "Scan"}
-                  </button>
-                  <button
-                    onClick={() => setShowScanConfig(true)}
-                    disabled={scanning}
-                    className="dash-action-btn"
-                  >
-                    Configure scan
-                  </button>
-                  {scans.length > 0 && (
-                    <PlanGate
-                      currentPlan={plan}
-                      requiredPlan="pro"
-                      feature="PDF reports"
-                      compact
-                    >
-                      <ReportButton site={site} scan={scans[0]} />
-                    </PlanGate>
+                  {scanning ? (
+                    <Loader2 size={15} className="xsbl-spin" />
+                  ) : (
+                    <Play size={15} fill="white" />
                   )}
-                  {scans.length > 0 && (
-                    <PlanGate
-                      currentPlan={plan}
-                      requiredPlan="starter"
-                      feature="Simulator"
-                      compact
-                    >
+                  {scanning ? "Scanning" : "Scan now"}
+                </button>
+              </div>
+
+              {/* Secondary action bar */}
+              <div
+                style={{
+                  display: "inline-flex",
+                  flexWrap: "wrap",
+                  borderRadius: 8,
+                  background: t.ink04,
+                  border: "1px solid " + t.ink08,
+                  padding: 3,
+                  gap: 2,
+                  marginTop: "0.8rem",
+                }}
+              >
+                {[
+                  {
+                    label: "Configure",
+                    icon: Settings2,
+                    onClick: function () {
+                      setShowScanConfig(true);
+                    },
+                    show: true,
+                  },
+                  {
+                    label: "Simulator",
+                    icon: Eye,
+                    onClick: function () {
+                      setShowSimulator(true);
+                    },
+                    show: scans.length > 0,
+                    planGate: "starter",
+                    planFeature: "Simulator",
+                  },
+                  {
+                    label: "Statement",
+                    icon: FileText,
+                    onClick: function () {
+                      setShowStatement(true);
+                    },
+                    show: site.score != null,
+                  },
+                ]
+                  .filter(function (a) {
+                    return a.show;
+                  })
+                  .map(function (action) {
+                    var Icon = action.icon;
+                    var btn = (
                       <button
-                        onClick={function () {
-                          setShowSimulator(true);
-                        }}
+                        key={action.label}
+                        onClick={action.onClick}
+                        disabled={scanning}
                         style={{
                           display: "flex",
                           alignItems: "center",
-                          gap: "0.4rem",
-                          padding: "0.5rem 1rem",
-                          borderRadius: 7,
-                          border: "1.5px solid " + t.accent + "40",
+                          gap: "0.3rem",
+                          padding: "0.35rem 0.7rem",
+                          height: 30,
+                          borderRadius: 6,
+                          border: "none",
                           background: "transparent",
-                          color: t.accent,
+                          color: t.ink50,
                           fontFamily: "var(--body)",
-                          fontSize: "0.82rem",
-                          fontWeight: 600,
-                          cursor: "pointer",
-                          transition: "all 0.2s",
+                          fontSize: "0.76rem",
+                          fontWeight: 500,
+                          cursor: scanning ? "not-allowed" : "pointer",
+                          transition: "color 0.15s, background 0.15s",
+                          whiteSpace: "nowrap",
                         }}
                         onMouseEnter={function (e) {
-                          e.currentTarget.style.background = t.accent;
-                          e.currentTarget.style.color = "white";
+                          e.currentTarget.style.background = t.cardBg;
+                          e.currentTarget.style.color = t.ink;
+                          e.currentTarget.style.boxShadow =
+                            "0 1px 3px " + t.ink08;
                         }}
                         onMouseLeave={function (e) {
                           e.currentTarget.style.background = "transparent";
-                          e.currentTarget.style.color = t.accent;
+                          e.currentTarget.style.color = t.ink50;
+                          e.currentTarget.style.boxShadow = "none";
                         }}
                       >
-                        <Eye size={14} /> Accessibility Simulator
+                        <Icon size={13} strokeWidth={1.8} />
+                        {action.label}
                       </button>
-                    </PlanGate>
-                  )}
-                  {site.score != null && (
-                    <button
-                      onClick={function () {
-                        setShowStatement(true);
-                      }}
+                    );
+                    if (action.planGate) {
+                      return (
+                        <PlanGate
+                          key={action.label}
+                          currentPlan={plan}
+                          requiredPlan={action.planGate}
+                          feature={action.planFeature}
+                          compact
+                        >
+                          {btn}
+                        </PlanGate>
+                      );
+                    }
+                    return btn;
+                  })}
+                {scans.length > 0 && (
+                  <PlanGate
+                    currentPlan={plan}
+                    requiredPlan="pro"
+                    feature="PDF reports"
+                    compact
+                  >
+                    <ReportButton
+                      site={site}
+                      scan={scans[0]}
+                      className="scan-seg-btn"
                       style={{
                         display: "flex",
                         alignItems: "center",
-                        gap: "0.4rem",
-                        padding: "0.5rem 1rem",
-                        borderRadius: 7,
-                        border: "1.5px solid " + t.ink20,
+                        gap: "0.3rem",
+                        padding: "0.35rem 0.7rem",
+                        height: 30,
+                        borderRadius: 6,
+                        border: "none",
                         background: "transparent",
                         color: t.ink50,
                         fontFamily: "var(--body)",
-                        fontSize: "0.82rem",
+                        fontSize: "0.76rem",
                         fontWeight: 500,
                         cursor: "pointer",
-                        transition: "all 0.15s",
+                        transition: "color 0.15s, background 0.15s",
+                        whiteSpace: "nowrap",
+                        boxSizing: "border-box",
                       }}
-                      onMouseEnter={function (e) {
-                        e.currentTarget.style.borderColor = t.ink50;
-                        e.currentTarget.style.color = t.ink;
-                      }}
-                      onMouseLeave={function (e) {
-                        e.currentTarget.style.borderColor = t.ink20;
-                        e.currentTarget.style.color = t.ink50;
-                      }}
-                    >
-                      <FileText size={14} strokeWidth={2} /> Statement
-                    </button>
-                  )}
-                </div>
+                    />
+                  </PlanGate>
+                )}
               </div>
 
               {/* Progress + error below buttons */}
@@ -3294,6 +3360,13 @@ export default function SiteDetailPage() {
                       (scanJustCompleted.issues !== 1 ? "s" : "")}
                   {scanJustCompleted.score != null &&
                     " · score " + Math.round(scanJustCompleted.score)}
+                  {scanJustCompleted.incremental && (
+                    <div style={{ color: t.accent }}>
+                      {scanJustCompleted.carriedForward} unchanged page
+                      {scanJustCompleted.carriedForward !== 1 ? "s" : ""}{" "}
+                      skipped
+                    </div>
+                  )}
                 </div>
               </div>
               <div
@@ -4029,6 +4102,58 @@ export default function SiteDetailPage() {
                   </span>
                 )}
               </div>
+              {sortMode === "quick-wins" &&
+                (function () {
+                  var fixableGroups = groupedIssues.filter(function (g) {
+                    return g.fixableCount > 0;
+                  }).length;
+                  var totalFixable = groupedIssues.reduce(function (s, g) {
+                    return s + g.fixableCount;
+                  }, 0);
+                  return fixableGroups > 0 ? (
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "0.5rem",
+                        padding: "0.6rem 0.8rem",
+                        borderRadius: 7,
+                        background: t.green + "08",
+                        border: "1px solid " + t.green + "20",
+                        marginBottom: "0.3rem",
+                      }}
+                    >
+                      <Lightbulb size={14} color={t.green} strokeWidth={2} />
+                      <span
+                        style={{
+                          fontSize: "0.78rem",
+                          color: t.ink,
+                          fontWeight: 500,
+                        }}
+                      >
+                        <strong style={{ color: t.green }}>
+                          {totalFixable} issues
+                        </strong>{" "}
+                        across {fixableGroups} groups have AI fixes ready —
+                        start with these.
+                      </span>
+                    </div>
+                  ) : (
+                    <div
+                      style={{
+                        padding: "0.6rem 0.8rem",
+                        borderRadius: 7,
+                        background: t.ink04,
+                        fontSize: "0.78rem",
+                        color: t.ink50,
+                        marginBottom: "0.3rem",
+                      }}
+                    >
+                      No AI fix suggestions available yet. Run a scan with AI
+                      fixes enabled.
+                    </div>
+                  );
+                })()}
               {groupedIssues.map(function (group, gi) {
                 var groupKey = group.rule_id + "-" + gi;
                 var isExpanded = !!expandedGroups[groupKey];
@@ -4040,15 +4165,34 @@ export default function SiteDetailPage() {
                   group.allIds.some(function (id) {
                     return selectedForFix.indexOf(id) !== -1;
                   });
+                var isQW = sortMode === "quick-wins";
+                var hasAIFix = group.fixableCount > 0;
                 return (
-                  <div key={group.rule_id + "-" + gi}>
+                  <div
+                    key={group.rule_id + "-" + gi}
+                    style={{
+                      opacity: isQW && !hasAIFix ? 0.45 : 1,
+                      transition: "opacity 0.2s",
+                    }}
+                  >
                     <div
                       style={{
                         padding: "0.85rem 1.1rem",
                         borderRadius: isExpanded ? "8px 8px 0 0" : 8,
                         border:
-                          "1px solid " + (allSelected ? t.accent : t.ink08),
-                        background: allSelected ? t.accentBg : t.cardBg,
+                          "1px solid " +
+                          (allSelected
+                            ? t.accent
+                            : isQW && hasAIFix
+                            ? t.green + "40"
+                            : t.ink08),
+                        borderLeft:
+                          isQW && hasAIFix ? "3px solid " + t.green : undefined,
+                        background: allSelected
+                          ? t.accentBg
+                          : isQW && hasAIFix
+                          ? t.green + "04"
+                          : t.cardBg,
                         cursor: "pointer",
                         display: "flex",
                         alignItems: "center",
@@ -4061,7 +4205,8 @@ export default function SiteDetailPage() {
                       }}
                       onMouseLeave={function (e) {
                         if (!allSelected)
-                          e.currentTarget.style.borderColor = t.ink08;
+                          e.currentTarget.style.borderColor =
+                            isQW && hasAIFix ? t.green + "40" : t.ink08;
                       }}
                     >
                       {site.github_repo && !isClient && (
@@ -4747,6 +4892,12 @@ export default function SiteDetailPage() {
                       {(scan.pages_scanned || 0) !== 1 ? "s" : ""} ·{" "}
                       {scan.issues_found || 0} issue
                       {(scan.issues_found || 0) !== 1 ? "s" : ""}
+                      {scan.summary_json?.incremental && (
+                        <span style={{ color: t.accent, marginLeft: "0.3rem" }}>
+                          ⚡ {scan.summary_json.total_pages_carried_forward}{" "}
+                          cached
+                        </span>
+                      )}
                     </div>
                   </div>
                   <div

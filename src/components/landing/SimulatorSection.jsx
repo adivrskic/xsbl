@@ -5,13 +5,16 @@ import FadeIn from "./FadeIn";
 import Section from "./Section";
 import { Eyebrow, H2, SubText, Italic } from "./Typography";
 import { Eye, Lock, ArrowRight, Search, Circle } from "lucide-react";
+import SegmentedControl from "./SegmentedControl";
 import "./SimulatorSection.css";
 
 var DEMO_MODES = [
   {
     id: "normal",
     name: "Normal vision",
+    label: "Normal",
     icon: <Eye size={14} />,
+    iconElement: <Eye size={11} />,
     type: "none",
   },
 
@@ -19,38 +22,50 @@ var DEMO_MODES = [
   {
     id: "protanopia",
     name: "Protanopia (no red)",
+    label: "No red",
     icon: <Circle size={12} fill="#ef4444" stroke="none" />,
+    iconElement: <Circle size={8} fill="#ef4444" stroke="none" />,
     type: "color",
   },
   {
     id: "deuteranopia",
     name: "Deuteranopia (no green)",
+    label: "No green",
     icon: <Circle size={12} fill="#22c55e" stroke="none" />,
+    iconElement: <Circle size={8} fill="#22c55e" stroke="none" />,
     type: "color",
   },
   {
     id: "tritanopia",
     name: "Tritanopia (no blue)",
+    label: "No blue",
     icon: <Circle size={12} fill="#3b82f6" stroke="none" />,
+    iconElement: <Circle size={8} fill="#3b82f6" stroke="none" />,
     type: "color",
   },
   {
     id: "achromatopsia",
     name: "Achromatopsia (no color)",
+    label: "No color",
     icon: <Circle size={12} fill="#374151" stroke="none" />,
+    iconElement: <Circle size={8} fill="#374151" stroke="none" />,
     type: "color",
   },
   // Low-vision / blur
   {
     id: "low-vision",
     name: "Low vision (blur)",
+    label: "Blur",
     icon: <Search size={14} />,
+    iconElement: <Search size={11} />,
     type: "blur",
   },
   {
     id: "cataracts",
     name: "Cataracts (cloudy)",
+    label: "Cataracts",
     icon: <Search size={14} />,
+    iconElement: <Search size={11} />,
     type: "contrast",
   },
 ];
@@ -278,30 +293,25 @@ export default function SimulatorSection({ bare }) {
           <FadeIn delay={0.2}>
             <div className="sim-demo">
               <div
-                className="sim-modes"
-                role="radiogroup"
-                aria-label="Vision simulation mode"
+                className="sim-modes-wrap"
+                style={{
+                  display: "flex",
+                  justifyContent: "center",
+                  marginBottom: "0.8rem",
+                }}
               >
-                {DEMO_MODES.map(function (mode) {
-                  var isActive = active === mode.id;
-                  return (
-                    <button
-                      key={mode.id}
-                      role="radio"
-                      aria-checked={isActive}
-                      onClick={function () {
-                        setActive(mode.id);
-                      }}
-                      className={
-                        "sim-mode-btn" +
-                        (isActive ? " sim-mode-btn--active" : "")
-                      }
-                    >
-                      <span className="sim-mode-btn__icon">{mode.icon}</span>
-                      {mode.name}
-                    </button>
-                  );
-                })}
+                <SegmentedControl
+                  items={DEMO_MODES.map(function (m) {
+                    return {
+                      id: m.id,
+                      label: m.label,
+                      iconElement: m.iconElement,
+                    };
+                  })}
+                  value={active}
+                  onChange={setActive}
+                  size="sm"
+                />
               </div>
 
               <DemoSite t={t} />

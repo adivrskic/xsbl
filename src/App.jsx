@@ -61,7 +61,6 @@ import SettingsPage from "./pages/dashboard/SettingsPage";
 import BillingPage from "./pages/dashboard/BillingPage";
 import AuditLogPage from "./pages/dashboard/AuditLogPage";
 import EvidenceExportPage from "./pages/dashboard/EvidenceExportPage";
-import ElementTester from "./pages/dashboard/ElementTester";
 import DashboardToolsPage from "./pages/dashboard/DashboardToolsPage";
 import OnboardingPage from "./pages/dashboard/OnboardingPage";
 import NotFoundPage from "./pages/NotFoundPage";
@@ -73,8 +72,12 @@ import { blogArticles } from "./data/blogArticles";
 import { getCriterionBySlug } from "./data/wcagCriteria";
 
 function LandingPage() {
-  const { org } = useAuth();
-  const showPricing = !org || org.plan === "free";
+  const { org, user } = useAuth();
+  // Show pricing for non-logged-in visitors, free, and starter plans.
+  // When logged in but org hasn't loaded yet, hide pricing to prevent
+  // a flash where it appears then disappears once the plan resolves.
+  const showPricing =
+    !user || (org && (org.plan === "free" || org.plan === "starter"));
   return (
     <>
       <a href="#main-content" className="skip-to-content">
@@ -407,7 +410,6 @@ export default function App() {
                   <Route index element={<OverviewPage />} />
                   <Route path="sites" element={<SitesPage />} />
                   <Route path="sites/:id" element={<SiteDetailPage />} />
-                  <Route path="tester" element={<ElementTester />} />
                   <Route path="tools" element={<DashboardToolsPage />} />
                   <Route path="audit-log" element={<AuditLogPage />} />
                   <Route path="evidence" element={<EvidenceExportPage />} />

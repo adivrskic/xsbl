@@ -2365,9 +2365,20 @@ export default function SettingsPage() {
   const [notifThreshold, setNotifThreshold] = useState(null);
   const [notifSaving, setNotifSaving] = useState(false);
   const [showDigestPreview, setShowDigestPreview] = useState(false);
+  const [showScanPreview, setShowScanPreview] = useState(false);
+  const [showCriticalPreview, setShowCriticalPreview] = useState(false);
+  const [showRegressionPreview, setShowRegressionPreview] = useState(false);
+
+  // Org-wide defaults state
+  const [useOrgDefaults, setUseOrgDefaults] = useState(true);
+  const [orgDefaults, setOrgDefaults] = useState(null); // null = not loaded, {} = loaded
+  const [orgDefaultsSaving, setOrgDefaultsSaving] = useState(false);
+  const [orgSyncCount, setOrgSyncCount] = useState(0); // members using org defaults
 
   const isOwner = org?.role === "owner";
+  const isAdmin = org?.role === "owner" || org?.role === "admin";
   const canInvite = ["pro", "agency"].includes(org?.plan);
+  const isTeamPlan = org?.plan === "pro" || org?.plan === "agency";
 
   const membersLoaded = useRef(null);
 
@@ -2420,23 +2431,84 @@ export default function SettingsPage() {
   }, [org?.id]);
 
   useEffect(() => {
-    if (!user) return;
-    supabase
-      .from("notification_prefs")
-      .select("*")
-      .eq("user_id", user.id)
-      .maybeSingle()
-      .then(({ data }) => {
-        if (data) {
-          setNotifScans(data.scan_complete ?? false);
-          setNotifIssues(data.critical_issues ?? false);
-          setNotifWeekly(data.weekly_digest ?? false);
-          setNotifThreshold(
-            data.score_threshold != null ? data.score_threshold : null
-          );
-        }
-      });
-  }, [user]);
+    if (!user || !org) return;
+
+    // Load both in parallel, resolve in one step to avoid race conditions
+    Promise.all([
+      supabase
+        .from("notification_prefs")
+        .select("*")
+        .eq("user_id", user.id)
+        .maybeSingle(),
+      supabase
+        .from("org_notification_defaults")
+        .select("*")
+        .eq("org_id", org.id)
+        .maybeSingle(),
+    ]).then(function (results) {
+      var personalData = results[0].data;
+      var orgData = results[1].data;
+
+      setOrgDefaults(orgData || {});
+
+      var followsOrg = personalData
+        ? personalData.use_org_defaults !== false
+        : true;
+      setUseOrgDefaults(followsOrg);
+
+      if (followsOrg && orgData) {
+        // Use org defaults
+        setNotifScans(orgData.scan_complete ?? false);
+        setNotifIssues(orgData.critical_issues ?? false);
+        setNotifWeekly(orgData.weekly_digest ?? false);
+        setNotifThreshold(
+          orgData.score_threshold != null ? orgData.score_threshold : null
+        );
+      } else if (personalData) {
+        // Use personal prefs
+        setNotifScans(personalData.scan_complete ?? false);
+        setNotifIssues(personalData.critical_issues ?? false);
+        setNotifWeekly(personalData.weekly_digest ?? false);
+        setNotifThreshold(
+          personalData.score_threshold != null
+            ? personalData.score_threshold
+            : null
+        );
+      }
+    });
+
+    // Count how many members use org defaults (admin only)
+    if (org.role === "owner" || org.role === "admin") {
+      supabase
+        .from("org_members")
+        .select("user_id")
+        .eq("org_id", org.id)
+        .then(({ data: members }) => {
+          if (!members || members.length === 0) return;
+          var ids = members.map(function (m) {
+            return m.user_id;
+          });
+          supabase
+            .from("notification_prefs")
+            .select("user_id, use_org_defaults")
+            .in("user_id", ids)
+            .then(({ data: prefs }) => {
+              if (!prefs) return;
+              // Count members who either have no prefs (default=true) or use_org_defaults=true
+              var prefsMap = {};
+              prefs.forEach(function (p) {
+                prefsMap[p.user_id] = p;
+              });
+              var count = ids.filter(function (uid) {
+                return (
+                  !prefsMap[uid] || prefsMap[uid].use_org_defaults !== false
+                );
+              }).length;
+              setOrgSyncCount(count);
+            });
+        });
+    }
+  }, [user, org?.id]);
 
   const handleOrgNameSave = async (name) => {
     await supabase.from("organizations").update({ name }).eq("id", org.id);
@@ -2476,15 +2548,23 @@ export default function SettingsPage() {
         critical_issues: notifIssues,
         weekly_digest: notifWeekly,
         score_threshold: notifThreshold,
+        use_org_defaults: useOrgDefaults,
       },
       { onConflict: "user_id" }
     );
-    toast.success("Notification preferences saved");
+    toast.success(
+      useOrgDefaults
+        ? "Using organization defaults"
+        : "Personal preferences saved"
+    );
     logAudit({
       action: "settings.updated",
       resourceType: "settings",
-      description: "Notification preferences updated",
+      description: useOrgDefaults
+        ? "Switched to org notification defaults"
+        : "Personal notification preferences updated",
       metadata: {
+        use_org_defaults: useOrgDefaults,
         scan_complete: notifScans,
         critical_issues: notifIssues,
         weekly_digest: notifWeekly,
@@ -2492,6 +2572,53 @@ export default function SettingsPage() {
       },
     });
     setNotifSaving(false);
+  };
+
+  const handleSaveOrgDefaults = async () => {
+    if (!isAdmin) return;
+    setOrgDefaultsSaving(true);
+    var defaults = {
+      org_id: org.id,
+      scan_complete: notifScans,
+      critical_issues: notifIssues,
+      weekly_digest: notifWeekly,
+      score_threshold: notifThreshold,
+      updated_at: new Date().toISOString(),
+      updated_by: user.id,
+    };
+    await supabase
+      .from("org_notification_defaults")
+      .upsert(defaults, { onConflict: "org_id" });
+    setOrgDefaults(defaults);
+    toast.success(
+      "Organization defaults saved — applies to " +
+        orgSyncCount +
+        " member" +
+        (orgSyncCount !== 1 ? "s" : "")
+    );
+    logAudit({
+      action: "settings.updated",
+      resourceType: "org_settings",
+      description: "Organization notification defaults updated",
+      metadata: defaults,
+    });
+    setOrgDefaultsSaving(false);
+  };
+
+  const handleSwitchToOrgDefaults = function () {
+    setUseOrgDefaults(true);
+    if (orgDefaults && orgDefaults.org_id) {
+      setNotifScans(orgDefaults.scan_complete ?? false);
+      setNotifIssues(orgDefaults.critical_issues ?? false);
+      setNotifWeekly(orgDefaults.weekly_digest ?? false);
+      setNotifThreshold(
+        orgDefaults.score_threshold != null ? orgDefaults.score_threshold : null
+      );
+    }
+  };
+
+  const handleSwitchToPersonal = function () {
+    setUseOrgDefaults(false);
   };
 
   const handleDeleteAccount = async () => {
@@ -2582,7 +2709,6 @@ export default function SettingsPage() {
 
   var [settingsTab, setSettingsTab] = useState("general");
   var [searchParams, setSearchParams] = useSearchParams();
-  const isAdmin = org?.role === "owner" || org?.role === "admin";
 
   // Read ?tab= from URL (e.g. from HelpSearch navigation)
   useEffect(
@@ -3249,6 +3375,109 @@ export default function SettingsPage() {
       {/* ═══ Alerts tab ═══ */}
       {settingsTab === "alerts" && (
         <>
+          {/* Org/Personal scope banner (team plans only) */}
+          {isTeamPlan && (
+            <div
+              style={{
+                padding: "1rem 1.2rem",
+                borderRadius: 10,
+                border:
+                  "1px solid " + (useOrgDefaults ? t.accent + "25" : t.ink08),
+                background: useOrgDefaults ? t.accentBg : t.cardBg,
+                marginBottom: "1rem",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                flexWrap: "wrap",
+                gap: "0.6rem",
+              }}
+            >
+              <div>
+                <div
+                  style={{
+                    fontSize: "0.84rem",
+                    fontWeight: 600,
+                    color: t.ink,
+                    marginBottom: "0.15rem",
+                  }}
+                >
+                  {useOrgDefaults
+                    ? "Using organization defaults"
+                    : "Using personal settings"}
+                </div>
+                <div
+                  style={{
+                    fontSize: "0.72rem",
+                    color: t.ink50,
+                    lineHeight: 1.5,
+                  }}
+                >
+                  {useOrgDefaults
+                    ? isAdmin
+                      ? orgSyncCount +
+                        " member" +
+                        (orgSyncCount !== 1 ? "s" : "") +
+                        " synced to these defaults. Changes you save as org defaults apply to everyone."
+                      : "Your admin manages these settings for the team. You can switch to personal settings to customize."
+                    : "Only you see these settings. Other team members use " +
+                      (orgDefaults && orgDefaults.org_id
+                        ? "organization defaults"
+                        : "their own settings") +
+                      "."}
+                </div>
+              </div>
+              <div
+                style={{
+                  display: "inline-flex",
+                  borderRadius: 7,
+                  background: t.ink04,
+                  border: "1px solid " + t.ink08,
+                  padding: 2,
+                  gap: 2,
+                }}
+              >
+                <button
+                  onClick={handleSwitchToOrgDefaults}
+                  style={{
+                    padding: "0.3rem 0.65rem",
+                    borderRadius: 5,
+                    border: "none",
+                    background: useOrgDefaults ? t.cardBg : "transparent",
+                    boxShadow: useOrgDefaults ? "0 1px 3px " + t.ink08 : "none",
+                    color: useOrgDefaults ? t.accent : t.ink50,
+                    fontFamily: "var(--body)",
+                    fontSize: "0.72rem",
+                    fontWeight: useOrgDefaults ? 600 : 400,
+                    cursor: "pointer",
+                    transition: "all 0.15s",
+                  }}
+                >
+                  Organization
+                </button>
+                <button
+                  onClick={handleSwitchToPersonal}
+                  style={{
+                    padding: "0.3rem 0.65rem",
+                    borderRadius: 5,
+                    border: "none",
+                    background: !useOrgDefaults ? t.cardBg : "transparent",
+                    boxShadow: !useOrgDefaults
+                      ? "0 1px 3px " + t.ink08
+                      : "none",
+                    color: !useOrgDefaults ? t.ink : t.ink50,
+                    fontFamily: "var(--body)",
+                    fontSize: "0.72rem",
+                    fontWeight: !useOrgDefaults ? 600 : 400,
+                    cursor: "pointer",
+                    transition: "all 0.15s",
+                  }}
+                >
+                  Personal
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* Notifications */}
           <div
             style={{
@@ -3362,90 +3591,144 @@ export default function SettingsPage() {
                 />
               </div>
               {notifThreshold != null && (
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "0.6rem",
-                  }}
-                >
-                  <span
-                    style={{
-                      fontFamily: "var(--mono)",
-                      fontSize: "0.72rem",
-                      color: t.ink50,
-                    }}
-                  >
-                    Alert when score drops below
-                  </span>
-                  <input
-                    type="number"
-                    min={0}
-                    max={100}
-                    value={notifThreshold}
-                    onChange={function (e) {
-                      var val = parseInt(e.target.value, 10);
-                      if (isNaN(val)) val = 0;
-                      if (val > 100) val = 100;
-                      if (val < 0) val = 0;
-                      setNotifThreshold(val);
-                    }}
-                    style={{
-                      width: 56,
-                      padding: "0.35rem 0.5rem",
-                      borderRadius: 6,
-                      border: "1.5px solid " + t.ink08,
-                      background: t.cardBg,
-                      color: t.ink,
-                      fontFamily: "var(--mono)",
-                      fontSize: "0.82rem",
-                      fontWeight: 700,
-                      textAlign: "center",
-                      outline: "none",
-                    }}
-                    onFocus={function (e) {
-                      e.target.style.borderColor = t.accent;
-                    }}
-                    onBlur={function (e) {
-                      e.target.style.borderColor = t.ink08;
-                    }}
-                  />
+                <div>
                   <div
                     style={{
-                      flex: 1,
-                      height: 4,
-                      borderRadius: 2,
-                      background: t.ink04,
-                      position: "relative",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "0.6rem",
+                      marginBottom: "0.4rem",
                     }}
                   >
-                    <div
+                    <span
                       style={{
-                        position: "absolute",
-                        left: 0,
-                        top: 0,
-                        height: 4,
-                        borderRadius: 2,
-                        width: notifThreshold + "%",
-                        background:
-                          notifThreshold >= 80
-                            ? t.green
-                            : notifThreshold >= 50
-                            ? t.amber
-                            : t.red,
-                        transition: "width 0.2s, background 0.2s",
+                        fontFamily: "var(--mono)",
+                        fontSize: "0.72rem",
+                        color: t.ink50,
+                      }}
+                    >
+                      Alert below
+                    </span>
+                    <input
+                      type="number"
+                      min={0}
+                      max={100}
+                      value={notifThreshold}
+                      onChange={function (e) {
+                        var val = parseInt(e.target.value, 10);
+                        if (isNaN(val)) val = 0;
+                        if (val > 100) val = 100;
+                        if (val < 0) val = 0;
+                        setNotifThreshold(val);
+                      }}
+                      style={{
+                        width: 52,
+                        padding: "0.3rem 0.4rem",
+                        borderRadius: 5,
+                        border: "1.5px solid " + t.ink08,
+                        background: t.cardBg,
+                        color: t.ink,
+                        fontFamily: "var(--mono)",
+                        fontSize: "0.82rem",
+                        fontWeight: 700,
+                        textAlign: "center",
+                        outline: "none",
+                      }}
+                      onFocus={function (e) {
+                        e.target.style.borderColor = t.accent;
+                      }}
+                      onBlur={function (e) {
+                        e.target.style.borderColor = t.ink08;
                       }}
                     />
                   </div>
+                  {/* Range slider */}
+                  <div style={{ position: "relative" }}>
+                    <input
+                      type="range"
+                      min={0}
+                      max={100}
+                      step={1}
+                      value={notifThreshold}
+                      onChange={function (e) {
+                        setNotifThreshold(parseInt(e.target.value, 10));
+                      }}
+                      style={{
+                        width: "100%",
+                        height: 6,
+                        appearance: "none",
+                        WebkitAppearance: "none",
+                        borderRadius: 3,
+                        outline: "none",
+                        cursor: "pointer",
+                        background:
+                          "linear-gradient(to right, " +
+                          t.red +
+                          " 0%, " +
+                          t.amber +
+                          " 50%, " +
+                          t.green +
+                          " 100%)",
+                      }}
+                    />
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        fontFamily: "var(--mono)",
+                        fontSize: "0.5rem",
+                        color: t.ink50,
+                        marginTop: "0.15rem",
+                      }}
+                    >
+                      <span>0</span>
+                      <span>50</span>
+                      <span>100</span>
+                    </div>
+                  </div>
+                  <style>{`
+                    input[type="range"]::-webkit-slider-thumb {
+                      -webkit-appearance: none;
+                      width: 18px; height: 18px;
+                      border-radius: 50%;
+                      background: ${t.cardBg};
+                      border: 2.5px solid ${
+                        notifThreshold >= 80
+                          ? t.green
+                          : notifThreshold >= 50
+                          ? t.amber
+                          : t.red
+                      };
+                      box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+                      cursor: pointer;
+                      transition: border-color 0.2s;
+                    }
+                    input[type="range"]::-moz-range-thumb {
+                      width: 18px; height: 18px;
+                      border-radius: 50%;
+                      background: ${t.cardBg};
+                      border: 2.5px solid ${
+                        notifThreshold >= 80
+                          ? t.green
+                          : notifThreshold >= 50
+                          ? t.amber
+                          : t.red
+                      };
+                      box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+                      cursor: pointer;
+                    }
+                  `}</style>
                 </div>
               )}
             </div>
 
+            {/* Action bar: Save + org default + preview buttons */}
             <div
               style={{
                 display: "flex",
                 alignItems: "center",
                 gap: "0.5rem",
+                flexWrap: "wrap",
               }}
             >
               <button
@@ -3471,41 +3754,152 @@ export default function SettingsPage() {
                   <Loader2 size={13} className="xsbl-spin" />
                 ) : (
                   <Save size={13} />
-                )}{" "}
-                Save preferences
+                )}
+                {useOrgDefaults && isTeamPlan ? "Save" : "Save preferences"}
               </button>
-              {notifWeekly && (
+
+              {/* Save as org default — admin only, team plans */}
+              {isAdmin && isTeamPlan && (
                 <button
-                  onClick={function () {
-                    setShowDigestPreview(true);
-                  }}
+                  onClick={handleSaveOrgDefaults}
+                  disabled={orgDefaultsSaving}
                   style={{
                     padding: "0.45rem 0.9rem",
                     borderRadius: 6,
-                    border: "1.5px solid " + t.ink20,
-                    background: "none",
-                    color: t.ink50,
+                    border: "1.5px solid " + t.accent + "40",
+                    background: "transparent",
+                    color: t.accent,
                     fontFamily: "var(--body)",
                     fontSize: "0.8rem",
-                    fontWeight: 500,
-                    cursor: "pointer",
+                    fontWeight: 600,
+                    cursor: orgDefaultsSaving ? "not-allowed" : "pointer",
+                    opacity: orgDefaultsSaving ? 0.5 : 1,
                     display: "flex",
                     alignItems: "center",
                     gap: "0.3rem",
                     transition: "all 0.15s",
                   }}
                   onMouseEnter={function (e) {
-                    e.currentTarget.style.borderColor = t.accent;
-                    e.currentTarget.style.color = t.accent;
+                    if (!orgDefaultsSaving) {
+                      e.currentTarget.style.background = t.accent;
+                      e.currentTarget.style.color = "white";
+                    }
                   }}
                   onMouseLeave={function (e) {
-                    e.currentTarget.style.borderColor = t.ink20;
-                    e.currentTarget.style.color = t.ink50;
+                    e.currentTarget.style.background = "transparent";
+                    e.currentTarget.style.color = t.accent;
                   }}
                 >
-                  <Eye size={13} />
-                  Preview digest
+                  {orgDefaultsSaving ? (
+                    <Loader2 size={13} className="xsbl-spin" />
+                  ) : (
+                    <Users size={13} />
+                  )}
+                  Save as org default
+                  <span
+                    style={{
+                      fontFamily: "var(--mono)",
+                      fontSize: "0.5rem",
+                      padding: "0.06rem 0.3rem",
+                      borderRadius: 3,
+                      background: t.accent + "15",
+                      fontWeight: 700,
+                    }}
+                  >
+                    {orgSyncCount}
+                  </span>
                 </button>
+              )}
+
+              {/* Preview buttons in segmented pill */}
+              {(notifScans ||
+                notifIssues ||
+                notifWeekly ||
+                notifThreshold != null) && (
+                <div
+                  style={{
+                    display: "inline-flex",
+                    borderRadius: 7,
+                    background: t.ink04,
+                    border: "1px solid " + t.ink08,
+                    padding: 2,
+                    gap: 2,
+                    alignItems: "center",
+                  }}
+                >
+                  {[
+                    {
+                      show: notifScans,
+                      label: "Scan complete",
+                      onClick: function () {
+                        setShowScanPreview(true);
+                      },
+                    },
+                    {
+                      show: notifIssues,
+                      label: "Critical issues",
+                      onClick: function () {
+                        setShowCriticalPreview(true);
+                      },
+                    },
+                    {
+                      show: notifWeekly,
+                      label: "Weekly digest",
+                      onClick: function () {
+                        setShowDigestPreview(true);
+                      },
+                    },
+                    {
+                      show: notifThreshold != null,
+                      label: "Regression",
+                      onClick: function () {
+                        setShowRegressionPreview(true);
+                      },
+                    },
+                  ]
+                    .filter(function (b) {
+                      return b.show;
+                    })
+                    .map(function (b) {
+                      return (
+                        <button
+                          key={b.label}
+                          onClick={b.onClick}
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "0.25rem",
+                            padding: "0.3rem 0.6rem",
+                            height: 28,
+                            borderRadius: 5,
+                            border: "none",
+                            background: "transparent",
+                            color: t.ink50,
+                            fontFamily: "var(--body)",
+                            fontSize: "0.7rem",
+                            fontWeight: 500,
+                            cursor: "pointer",
+                            transition: "all 0.15s",
+                            whiteSpace: "nowrap",
+                          }}
+                          onMouseEnter={function (e) {
+                            e.currentTarget.style.background = t.cardBg;
+                            e.currentTarget.style.color = t.ink;
+                            e.currentTarget.style.boxShadow =
+                              "0 1px 3px " + t.ink08;
+                          }}
+                          onMouseLeave={function (e) {
+                            e.currentTarget.style.background = "transparent";
+                            e.currentTarget.style.color = t.ink50;
+                            e.currentTarget.style.boxShadow = "none";
+                          }}
+                        >
+                          <Eye size={11} strokeWidth={1.8} />
+                          {b.label}
+                        </button>
+                      );
+                    })}
+                </div>
               )}
             </div>
           </div>
@@ -3614,6 +4008,491 @@ export default function SettingsPage() {
             </button>
           </div>
         </>
+      )}
+
+      {/* Scan complete preview modal */}
+      {showScanPreview && (
+        <div
+          className="dash-modal"
+          onClick={function (e) {
+            if (e.target === e.currentTarget) setShowScanPreview(false);
+          }}
+        >
+          <div className="dash-modal__dialog" style={{ maxWidth: 480 }}>
+            <div className="dash-modal__header">
+              <h3 className="dash-modal__title">Scan complete email preview</h3>
+              <button
+                onClick={function () {
+                  setShowScanPreview(false);
+                }}
+                className="dash-modal__close"
+                aria-label="Close preview"
+              >
+                <X size={16} />
+              </button>
+            </div>
+            <div className="dash-modal__body" style={{ padding: 0 }}>
+              <div
+                style={{
+                  background: "#f6f1eb",
+                  padding: "1.5rem",
+                  fontFamily: "sans-serif",
+                  fontSize: "14px",
+                  color: "#1a1714",
+                }}
+              >
+                <div
+                  style={{
+                    maxWidth: 420,
+                    margin: "0 auto",
+                    background: "white",
+                    borderRadius: 12,
+                    border: "1px solid #e8e4df",
+                    overflow: "hidden",
+                  }}
+                >
+                  <div style={{ padding: "1.5rem 1.5rem 1rem" }}>
+                    <div
+                      style={{
+                        fontWeight: 700,
+                        fontSize: "16px",
+                        marginBottom: "0.3rem",
+                      }}
+                    >
+                      Scan complete
+                    </div>
+                    <div
+                      style={{
+                        color: "#888",
+                        fontSize: "12px",
+                        marginBottom: "1rem",
+                      }}
+                    >
+                      example.com — just now
+                    </div>
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "0.8rem",
+                        marginBottom: "1rem",
+                      }}
+                    >
+                      <div
+                        style={{
+                          width: 48,
+                          height: 48,
+                          borderRadius: "50%",
+                          background: "#1a8754",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          color: "white",
+                          fontWeight: 700,
+                          fontSize: "18px",
+                        }}
+                      >
+                        92
+                      </div>
+                      <div>
+                        <div style={{ fontWeight: 600, fontSize: "14px" }}>
+                          Score: 92/100
+                        </div>
+                        <div style={{ color: "#888", fontSize: "12px" }}>
+                          5 pages scanned · 4 issues found
+                        </div>
+                      </div>
+                    </div>
+                    <table
+                      style={{
+                        width: "100%",
+                        fontSize: "12px",
+                        borderCollapse: "collapse",
+                      }}
+                    >
+                      <tr style={{ borderBottom: "1px solid #f0f0f0" }}>
+                        <td style={{ padding: "6px 0", color: "#888" }}>
+                          Critical
+                        </td>
+                        <td
+                          style={{
+                            textAlign: "right",
+                            fontWeight: 600,
+                            color: "#c0392b",
+                          }}
+                        >
+                          0
+                        </td>
+                      </tr>
+                      <tr style={{ borderBottom: "1px solid #f0f0f0" }}>
+                        <td style={{ padding: "6px 0", color: "#888" }}>
+                          Serious
+                        </td>
+                        <td
+                          style={{
+                            textAlign: "right",
+                            fontWeight: 600,
+                            color: "#b45309",
+                          }}
+                        >
+                          2
+                        </td>
+                      </tr>
+                      <tr style={{ borderBottom: "1px solid #f0f0f0" }}>
+                        <td style={{ padding: "6px 0", color: "#888" }}>
+                          Moderate
+                        </td>
+                        <td
+                          style={{
+                            textAlign: "right",
+                            fontWeight: 600,
+                            color: "#4338f0",
+                          }}
+                        >
+                          1
+                        </td>
+                      </tr>
+                      <tr>
+                        <td style={{ padding: "6px 0", color: "#888" }}>
+                          Minor
+                        </td>
+                        <td
+                          style={{
+                            textAlign: "right",
+                            fontWeight: 600,
+                            color: "#999",
+                          }}
+                        >
+                          1
+                        </td>
+                      </tr>
+                    </table>
+                  </div>
+                  <div
+                    style={{
+                      padding: "1rem 1.5rem",
+                      borderTop: "1px solid #f0f0f0",
+                      textAlign: "center",
+                    }}
+                  >
+                    <span
+                      style={{
+                        display: "inline-block",
+                        padding: "8px 24px",
+                        borderRadius: 6,
+                        background: "#4338f0",
+                        color: "white",
+                        fontWeight: 600,
+                        fontSize: "13px",
+                      }}
+                    >
+                      View full results
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Critical issues preview modal */}
+      {showCriticalPreview && (
+        <div
+          className="dash-modal"
+          onClick={function (e) {
+            if (e.target === e.currentTarget) setShowCriticalPreview(false);
+          }}
+        >
+          <div className="dash-modal__dialog" style={{ maxWidth: 480 }}>
+            <div className="dash-modal__header">
+              <h3 className="dash-modal__title">
+                Critical issues email preview
+              </h3>
+              <button
+                onClick={function () {
+                  setShowCriticalPreview(false);
+                }}
+                className="dash-modal__close"
+                aria-label="Close preview"
+              >
+                <X size={16} />
+              </button>
+            </div>
+            <div className="dash-modal__body" style={{ padding: 0 }}>
+              <div
+                style={{
+                  background: "#f6f1eb",
+                  padding: "1.5rem",
+                  fontFamily: "sans-serif",
+                  fontSize: "14px",
+                  color: "#1a1714",
+                }}
+              >
+                <div
+                  style={{
+                    maxWidth: 420,
+                    margin: "0 auto",
+                    background: "white",
+                    borderRadius: 12,
+                    border: "1px solid #e8e4df",
+                    overflow: "hidden",
+                  }}
+                >
+                  <div style={{ padding: "1.5rem 1.5rem 1rem" }}>
+                    <div
+                      style={{
+                        fontWeight: 700,
+                        fontSize: "16px",
+                        color: "#c0392b",
+                        marginBottom: "0.3rem",
+                      }}
+                    >
+                      Critical issues found
+                    </div>
+                    <div
+                      style={{
+                        color: "#888",
+                        fontSize: "12px",
+                        marginBottom: "1rem",
+                      }}
+                    >
+                      example.com — 3 new critical violations
+                    </div>
+                    {[
+                      {
+                        rule: "color-contrast",
+                        count: 4,
+                        desc: "Elements must meet minimum contrast ratio",
+                      },
+                      {
+                        rule: "button-name",
+                        count: 1,
+                        desc: "Buttons must have discernible text",
+                      },
+                      {
+                        rule: "image-alt",
+                        count: 2,
+                        desc: "Images must have alt text",
+                      },
+                    ].map(function (issue, i) {
+                      return (
+                        <div
+                          key={i}
+                          style={{
+                            padding: "8px 0",
+                            borderBottom: i < 2 ? "1px solid #f0f0f0" : "none",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "8px",
+                          }}
+                        >
+                          <span
+                            style={{
+                              width: 6,
+                              height: 6,
+                              borderRadius: "50%",
+                              background: "#c0392b",
+                              flexShrink: 0,
+                            }}
+                          />
+                          <div style={{ flex: 1 }}>
+                            <div style={{ fontWeight: 600, fontSize: "13px" }}>
+                              {issue.rule}{" "}
+                              <span style={{ color: "#888", fontWeight: 400 }}>
+                                ×{issue.count}
+                              </span>
+                            </div>
+                            <div style={{ fontSize: "11px", color: "#888" }}>
+                              {issue.desc}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <div
+                    style={{
+                      padding: "1rem 1.5rem",
+                      borderTop: "1px solid #f0f0f0",
+                      textAlign: "center",
+                    }}
+                  >
+                    <span
+                      style={{
+                        display: "inline-block",
+                        padding: "8px 24px",
+                        borderRadius: 6,
+                        background: "#c0392b",
+                        color: "white",
+                        fontWeight: 600,
+                        fontSize: "13px",
+                      }}
+                    >
+                      Fix critical issues
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Regression alert preview modal */}
+      {showRegressionPreview && (
+        <div
+          className="dash-modal"
+          onClick={function (e) {
+            if (e.target === e.currentTarget) setShowRegressionPreview(false);
+          }}
+        >
+          <div className="dash-modal__dialog" style={{ maxWidth: 480 }}>
+            <div className="dash-modal__header">
+              <h3 className="dash-modal__title">
+                Score regression email preview
+              </h3>
+              <button
+                onClick={function () {
+                  setShowRegressionPreview(false);
+                }}
+                className="dash-modal__close"
+                aria-label="Close preview"
+              >
+                <X size={16} />
+              </button>
+            </div>
+            <div className="dash-modal__body" style={{ padding: 0 }}>
+              <div
+                style={{
+                  background: "#f6f1eb",
+                  padding: "1.5rem",
+                  fontFamily: "sans-serif",
+                  fontSize: "14px",
+                  color: "#1a1714",
+                }}
+              >
+                <div
+                  style={{
+                    maxWidth: 420,
+                    margin: "0 auto",
+                    background: "white",
+                    borderRadius: 12,
+                    border: "1px solid #e8e4df",
+                    overflow: "hidden",
+                  }}
+                >
+                  <div style={{ padding: "1.5rem 1.5rem 1rem" }}>
+                    <div
+                      style={{
+                        fontWeight: 700,
+                        fontSize: "16px",
+                        color: "#b45309",
+                        marginBottom: "0.3rem",
+                      }}
+                    >
+                      Score dropped below threshold
+                    </div>
+                    <div
+                      style={{
+                        color: "#888",
+                        fontSize: "12px",
+                        marginBottom: "1rem",
+                      }}
+                    >
+                      example.com — score regression detected
+                    </div>
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "1rem",
+                        marginBottom: "1rem",
+                        padding: "0.8rem",
+                        borderRadius: 8,
+                        background: "#fef3c7",
+                      }}
+                    >
+                      <div style={{ textAlign: "center" }}>
+                        <div
+                          style={{
+                            fontSize: "24px",
+                            fontWeight: 700,
+                            color: "#c0392b",
+                          }}
+                        >
+                          {Math.max(10, (notifThreshold || 80) - 12)}
+                        </div>
+                        <div style={{ fontSize: "10px", color: "#888" }}>
+                          Current
+                        </div>
+                      </div>
+                      <div style={{ fontSize: "16px", color: "#888" }}>←</div>
+                      <div style={{ textAlign: "center" }}>
+                        <div
+                          style={{
+                            fontSize: "24px",
+                            fontWeight: 700,
+                            color: "#888",
+                          }}
+                        >
+                          {(notifThreshold || 80) + 5}
+                        </div>
+                        <div style={{ fontSize: "10px", color: "#888" }}>
+                          Previous
+                        </div>
+                      </div>
+                      <div style={{ flex: 1, textAlign: "right" }}>
+                        <div
+                          style={{
+                            fontSize: "11px",
+                            color: "#b45309",
+                            fontWeight: 600,
+                          }}
+                        >
+                          Threshold: {notifThreshold || 80}
+                        </div>
+                      </div>
+                    </div>
+                    <div
+                      style={{
+                        fontSize: "13px",
+                        color: "#555",
+                        lineHeight: 1.6,
+                      }}
+                    >
+                      The accessibility score for <strong>example.com</strong>{" "}
+                      dropped from {(notifThreshold || 80) + 5} to{" "}
+                      {Math.max(10, (notifThreshold || 80) - 12)}, which is
+                      below your alert threshold of {notifThreshold || 80}.
+                    </div>
+                  </div>
+                  <div
+                    style={{
+                      padding: "1rem 1.5rem",
+                      borderTop: "1px solid #f0f0f0",
+                      textAlign: "center",
+                    }}
+                  >
+                    <span
+                      style={{
+                        display: "inline-block",
+                        padding: "8px 24px",
+                        borderRadius: 6,
+                        background: "#b45309",
+                        color: "white",
+                        fontWeight: 600,
+                        fontSize: "13px",
+                      }}
+                    >
+                      View scan details
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Digest preview modal */}
