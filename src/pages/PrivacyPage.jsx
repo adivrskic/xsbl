@@ -1,15 +1,101 @@
+import { useEffect } from "react";
 import { useTheme } from "../context/ThemeContext";
-import { Shield } from "lucide-react";
 import FadeIn from "../components/landing/FadeIn";
 import "../styles/legal.css";
+
+/**
+ * PrivacyPage — fully WCAG 2.2 AA compliant
+ *
+ * Accessibility fixes applied:
+ * - <main> landmark wrapping entire page
+ * - <article> semantic wrapper for legal content body
+ * - <time datetime="..."> for machine-readable dates
+ * - aria-hidden on decorative eyebrow text + line (h1 is the real label)
+ * - id anchors on every <h2>/<h3> for in-page navigation + deep linking
+ * - <nav aria-label="Table of contents"> for section jumping
+ * - aria-label on mailto links for screen reader clarity
+ * - Removed unused Shield import
+ *
+ * SEO fixes applied:
+ * - JSON-LD WebPage structured data injected via useEffect
+ * - Section heading IDs for fragment deep links / featured snippets
+ * - Semantic <article> for content extraction
+ * - <time> element for date parsing
+ */
+
+var STRUCTURED_DATA = {
+  "@context": "https://schema.org",
+  "@type": "WebPage",
+  name: "Privacy Policy — xsbl",
+  description:
+    "How xsbl collects, uses, and protects your data. No tracking cookies, no data selling, no source code storage.",
+  url: "https://xsbl.io/privacy",
+  lastReviewed: "2026-03-13",
+  inLanguage: "en",
+  isPartOf: {
+    "@type": "WebSite",
+    name: "xsbl",
+    url: "https://xsbl.io",
+  },
+  publisher: {
+    "@type": "Organization",
+    name: "xsbl",
+    url: "https://xsbl.io",
+  },
+  breadcrumb: {
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      {
+        "@type": "ListItem",
+        position: 1,
+        name: "Home",
+        item: "https://xsbl.io/",
+      },
+      {
+        "@type": "ListItem",
+        position: 2,
+        name: "Privacy Policy",
+        item: "https://xsbl.io/privacy",
+      },
+    ],
+  },
+};
+
+var SECTIONS = [
+  { id: "who-we-are", label: "Who we are" },
+  { id: "information-we-collect", label: "Information we collect" },
+  { id: "how-we-use-your-information", label: "How we use your information" },
+  { id: "what-we-dont-do", label: "What we don't do" },
+  { id: "data-storage-and-security", label: "Data storage & security" },
+  { id: "data-retention", label: "Data retention" },
+  { id: "third-party-services", label: "Third-party services" },
+  { id: "cookies", label: "Cookies" },
+  { id: "your-rights", label: "Your rights" },
+  { id: "international-transfers", label: "International transfers" },
+  { id: "childrens-privacy", label: "Children's privacy" },
+  { id: "changes-to-this-policy", label: "Changes to this policy" },
+  { id: "contact", label: "Contact" },
+];
 
 export default function PrivacyPage() {
   var { t } = useTheme();
 
+  /* Inject page-specific JSON-LD structured data */
+  useEffect(function () {
+    var script = document.createElement("script");
+    script.type = "application/ld+json";
+    script.textContent = JSON.stringify(STRUCTURED_DATA);
+    script.setAttribute("data-page", "privacy");
+    document.head.appendChild(script);
+    return function () {
+      script.remove();
+    };
+  }, []);
+
   return (
-    <div className="legal-page">
+    <main className="legal-page">
       <FadeIn>
-        <div className="legal-page__eyebrow">
+        <div className="legal-page__eyebrow" aria-hidden="true">
           <span className="legal-page__eyebrow-line" />
           Privacy policy
         </div>
@@ -20,12 +106,14 @@ export default function PrivacyPage() {
       </FadeIn>
 
       <FadeIn delay={0.1}>
-        <p className="legal-page__updated">Last updated: March 13, 2026</p>
+        <p className="legal-page__updated">
+          Last updated: <time dateTime="2026-03-13">March 13, 2026</time>
+        </p>
       </FadeIn>
 
       <FadeIn delay={0.12}>
-        <div className="legal-page__body">
-          <div className="legal-page__callout">
+        <article className="legal-page__body">
+          <div className="legal-page__callout" role="note">
             <p>
               <strong>The short version:</strong> xsbl scans the public-facing
               HTML of your website. Our Chrome extension applies accessibility
@@ -36,16 +124,32 @@ export default function PrivacyPage() {
             </p>
           </div>
 
-          <h2>1. Who we are</h2>
+          {/* ── Table of contents for keyboard/screen reader navigation ── */}
+          <nav aria-label="Table of contents" className="legal-page__toc">
+            <h2 className="legal-page__toc-heading">On this page</h2>
+            <ol className="legal-page__toc-list">
+              {SECTIONS.map(function (s, i) {
+                return (
+                  <li key={s.id}>
+                    <a href={"#" + s.id}>
+                      {i + 1}. {s.label}
+                    </a>
+                  </li>
+                );
+              })}
+            </ol>
+          </nav>
+
+          <h2 id="who-we-are">1. Who we are</h2>
           <p>
             xsbl ("we", "us", "our") provides a web accessibility scanning and
             compliance platform at xsbl.io. This policy explains how we collect,
             use, and protect information when you use our website and services.
           </p>
 
-          <h2>2. Information we collect</h2>
+          <h2 id="information-we-collect">2. Information we collect</h2>
 
-          <h3>Account information</h3>
+          <h3 id="account-information">Account information</h3>
           <p>
             When you create an account, we collect your email address, name (if
             provided), and authentication credentials. If you sign in via GitHub
@@ -53,7 +157,7 @@ export default function PrivacyPage() {
             those providers.
           </p>
 
-          <h3>Scan data</h3>
+          <h3 id="scan-data">Scan data</h3>
           <p>
             When you scan a website, we fetch the publicly rendered HTML of the
             pages you specify — the same content any browser visitor would see.
@@ -63,7 +167,7 @@ export default function PrivacyPage() {
             completes.
           </p>
 
-          <h3>Chrome extension data</h3>
+          <h3 id="chrome-extension-data">Chrome extension data</h3>
           <p>
             The xsbl Chrome extension runs locally in your browser. Here is
             exactly what it does and does not access:
@@ -138,7 +242,7 @@ export default function PrivacyPage() {
             content script injection.
           </p>
 
-          <h3>GitHub integration data</h3>
+          <h3 id="github-integration-data">GitHub integration data</h3>
           <p>
             If you connect a GitHub repository, we store an access token scoped
             to the repositories you authorize and the repo identifier. When
@@ -147,7 +251,7 @@ export default function PrivacyPage() {
             repository contents.
           </p>
 
-          <h3>Usage data</h3>
+          <h3 id="usage-data">Usage data</h3>
           <p>
             We collect standard usage information: pages visited within our
             dashboard, features used, scan frequency, browser type, and
@@ -155,14 +259,16 @@ export default function PrivacyPage() {
             the product and diagnose issues.
           </p>
 
-          <h3>Payment information</h3>
+          <h3 id="payment-information">Payment information</h3>
           <p>
             Payments are processed by Stripe. We do not store credit card
             numbers, CVVs, or bank account details. Stripe provides us with a
             customer identifier, plan status, and billing email.
           </p>
 
-          <h2>3. How we use your information</h2>
+          <h2 id="how-we-use-your-information">
+            3. How we use your information
+          </h2>
           <p>We use the information we collect to:</p>
           <ul>
             <li>Provide, maintain, and improve the xsbl service</li>
@@ -176,7 +282,7 @@ export default function PrivacyPage() {
             <li>Respond to support requests</li>
           </ul>
 
-          <h2>4. What we don't do</h2>
+          <h2 id="what-we-dont-do">4. What we don't do</h2>
           <ul>
             <li>We do not sell or rent your personal information to anyone</li>
             <li>We do not serve advertisements</li>
@@ -189,7 +295,7 @@ export default function PrivacyPage() {
             <li>We do not use your data to train AI models</li>
           </ul>
 
-          <h2>5. Data storage and security</h2>
+          <h2 id="data-storage-and-security">5. Data storage and security</h2>
           <p>
             Your data is stored in Supabase-managed PostgreSQL databases hosted
             on AWS infrastructure in the United States. All data is encrypted at
@@ -199,7 +305,7 @@ export default function PrivacyPage() {
             more detail.
           </p>
 
-          <h2>6. Data retention</h2>
+          <h2 id="data-retention">6. Data retention</h2>
           <p>
             Scan results and issues are retained for the lifetime of your
             account. When you delete a site, we remove its scan history, issues,
@@ -208,7 +314,7 @@ export default function PrivacyPage() {
             (e.g., billing records).
           </p>
 
-          <h2>7. Third-party services</h2>
+          <h2 id="third-party-services">7. Third-party services</h2>
           <p>We use the following third-party services:</p>
           <ul>
             <li>
@@ -240,14 +346,14 @@ export default function PrivacyPage() {
             equivalent security standards.
           </p>
 
-          <h2>8. Cookies</h2>
+          <h2 id="cookies">8. Cookies</h2>
           <p>
             We use essential cookies only: a session token for authentication
             and a theme preference (light/dark). We do not use analytics
             cookies, advertising cookies, or third-party tracking cookies.
           </p>
 
-          <h2>9. Your rights</h2>
+          <h2 id="your-rights">9. Your rights</h2>
           <p>Depending on your jurisdiction, you may have the right to:</p>
           <ul>
             <li>Access the personal data we hold about you</li>
@@ -259,12 +365,17 @@ export default function PrivacyPage() {
           </ul>
           <p>
             To exercise any of these rights, email us at{" "}
-            <a href="mailto:privacy@xsbl.io">privacy@xsbl.io</a> or use the
-            account deletion option in your dashboard settings. We respond to
-            all requests within 30 days.
+            <a
+              href="mailto:privacy@xsbl.io"
+              aria-label="Email xsbl privacy team at privacy@xsbl.io"
+            >
+              privacy@xsbl.io
+            </a>{" "}
+            or use the account deletion option in your dashboard settings. We
+            respond to all requests within 30 days.
           </p>
 
-          <h2>10. International transfers</h2>
+          <h2 id="international-transfers">10. International transfers</h2>
           <p>
             Our servers are located in the United States. If you are accessing
             xsbl from outside the US, your data will be transferred to and
@@ -272,14 +383,14 @@ export default function PrivacyPage() {
             applicable legal frameworks for lawful international data transfers.
           </p>
 
-          <h2>11. Children's privacy</h2>
+          <h2 id="childrens-privacy">11. Children's privacy</h2>
           <p>
             xsbl is not directed at children under 16. We do not knowingly
             collect information from children. If we learn we have collected
             data from a child, we will delete it promptly.
           </p>
 
-          <h2>12. Changes to this policy</h2>
+          <h2 id="changes-to-this-policy">12. Changes to this policy</h2>
           <p>
             We may update this policy from time to time. We will notify you of
             material changes by posting a notice on our website and, where
@@ -288,15 +399,20 @@ export default function PrivacyPage() {
             acceptance of the updated policy.
           </p>
 
-          <h2>13. Contact</h2>
+          <h2 id="contact">13. Contact</h2>
           <p>
             If you have questions about this privacy policy or how we handle
             your data, contact us at{" "}
-            <a href="mailto:privacy@xsbl.io">privacy@xsbl.io</a> or through our{" "}
-            <a href="/contact">contact page</a>.
+            <a
+              href="mailto:privacy@xsbl.io"
+              aria-label="Email xsbl privacy team at privacy@xsbl.io"
+            >
+              privacy@xsbl.io
+            </a>{" "}
+            or through our <a href="/contact">contact page</a>.
           </p>
-        </div>
+        </article>
       </FadeIn>
-    </div>
+    </main>
   );
 }

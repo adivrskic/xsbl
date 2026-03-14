@@ -20,6 +20,10 @@ import {
   PenLine,
   Pause,
   Subtitles,
+  Volume2,
+  BookMarked,
+  Palette,
+  Type,
 } from "lucide-react";
 import "./ExtensionSection.css";
 
@@ -368,6 +372,30 @@ var FEATURES = [
     desc: "Automatically describes undescribed images using vision AI. Injected live into the page so screen readers just work.",
     tier: "pro",
   },
+  {
+    icon: Volume2,
+    title: "Read aloud (TTS)",
+    desc: "Text-to-speech reads page content paragraph by paragraph with highlighted tracking. Uses the Web Speech API.",
+    tier: "pro",
+  },
+  {
+    icon: BookMarked,
+    title: "Reading mode",
+    desc: "Strips ads, nav, and clutter. Shows just the article text in a clean, distraction-free view.",
+    tier: "pro",
+  },
+  {
+    icon: Palette,
+    title: "Color tint overlays",
+    desc: "12 tint colors for visual stress and Irlen syndrome. Peach, lemon, mint, lavender, and more.",
+    tier: "pro",
+  },
+  {
+    icon: Type,
+    title: "Accessible fonts",
+    desc: "Switch any site to Lexend, Atkinson Hyperlegible, or OpenDyslexic — fonts designed for readability.",
+    tier: "pro",
+  },
 ];
 
 /* ═══════════════════════════════════════════
@@ -378,7 +406,7 @@ export default function ExtensionSection() {
   var { t } = useTheme();
 
   return (
-    <section id="extension" className="ext-section">
+    <section className="ext-section">
       <div className="ext-section__inner">
         {/* Text side */}
         <div className="ext-section__text">

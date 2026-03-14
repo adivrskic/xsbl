@@ -1060,6 +1060,10 @@ function StepExtension({ onNext, onSkip }) {
     { label: "Color blindness correction filters", free: false },
     { label: "ARIA & heading hierarchy auto-fix", free: false },
     { label: "Caption detection for uncaptioned media", free: false },
+    { label: "Read aloud (text-to-speech)", free: false },
+    { label: "Reading mode (strip clutter)", free: false },
+    { label: "Color tint overlays (12 colors)", free: false },
+    { label: "Accessible font override (Lexend, Atkinson)", free: false },
     { label: "AI-generated alt text for images", free: false },
   ];
 

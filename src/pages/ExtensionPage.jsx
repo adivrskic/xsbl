@@ -22,6 +22,10 @@ import {
   ChevronDown,
   Pause,
   Subtitles,
+  Volume2,
+  BookMarked,
+  Palette,
+  Type,
 } from "lucide-react";
 import "../styles/extension-page.css";
 
@@ -75,6 +79,26 @@ var PRO_FEATURES = [
     icon: Subtitles,
     title: "Caption detection",
     desc: "Scans the page for HTML5 videos without <track> captions, YouTube and Vimeo embeds, and audio elements without transcripts. Overlays a visible warning on each uncaptioned element with instructions to enable platform captions where available.",
+  },
+  {
+    icon: Volume2,
+    title: "Read aloud (text-to-speech)",
+    desc: "Reads page content aloud paragraph by paragraph using the Web Speech API. Each paragraph highlights as it's spoken, scrolling smoothly into view. Adjustable speed. Works on any text-heavy page — articles, docs, emails.",
+  },
+  {
+    icon: BookMarked,
+    title: "Reading mode",
+    desc: "Strips away navigation, sidebars, ads, popups, and visual clutter. Shows just the article content in a clean serif-font overlay with comfortable 680px max-width and generous line-height. Close button to exit instantly.",
+  },
+  {
+    icon: Palette,
+    title: "Color tint overlays",
+    desc: "Adds a semi-transparent colored overlay to the entire page. 12 preset colors — peach, lemon, mint, lavender, ice blue, rose, cream, sage, blush, sky, sand, and grey. Essential for Irlen syndrome and visual stress.",
+  },
+  {
+    icon: Type,
+    title: "Accessible font override",
+    desc: "Replaces the page font with Lexend (optimized for reading speed), Atkinson Hyperlegible (designed by the Braille Institute for low vision), or OpenDyslexic. Fonts are loaded from Google Fonts CDN.",
   },
 ];
 
@@ -182,6 +206,10 @@ var COMPARE = [
   { feature: "Color blindness correction", free: false, pro: true },
   { feature: "ARIA & heading auto-fix", free: false, pro: true },
   { feature: "Caption detection", free: false, pro: true },
+  { feature: "Read aloud (TTS)", free: false, pro: true },
+  { feature: "Reading mode", free: false, pro: true },
+  { feature: "Color tint overlays", free: false, pro: true },
+  { feature: "Accessible font override", free: false, pro: true },
   { feature: "AI alt text generation", free: false, pro: true },
   { feature: "Per-site settings", free: true, pro: true },
   { feature: "AI images per day", free: "—", pro: "100–500" },
@@ -240,7 +268,7 @@ export default function ExtensionPage() {
         <FadeIn delay={0.18}>
           <div className="ext-page__hero-stats">
             <div className="ext-page__stat">
-              <span className="ext-page__stat-value">8</span>
+              <span className="ext-page__stat-value">12</span>
               <span className="ext-page__stat-label">Features</span>
             </div>
             <div className="ext-page__stat-divider" />
