@@ -103,7 +103,7 @@ export default function Nav() {
         xsbl<span className="nav__logo-dot">.</span>
       </a>
 
-      {/* Center links — desktop */}
+      {/* Center links â desktop */}
       <div className="nav__center">
         {links.map(function (link) {
           var isPageLink = !!link.href;
@@ -133,6 +133,7 @@ export default function Nav() {
           onClick={toggle}
           aria-label={dark ? "Switch to light theme" : "Switch to dark theme"}
           className="nav__theme-btn"
+          style={{ minHeight: "44px", minWidth: "44px", padding: "10px" }}
         >
           {dark ? (
             <Sun size={16} strokeWidth={2} />
@@ -157,7 +158,7 @@ export default function Nav() {
           </>
         )}
 
-        {/* Hamburger — mobile only */}
+        {/* Hamburger â mobile only */}
         <button
           className="nav__hamburger"
           onClick={function () {
