@@ -262,27 +262,27 @@ export default function DocsPage() {
               return (
                 <div key={g.name} className="docs-sidebar__group">
                   <div className="docs-sidebar__group-label">{g.name}</div>
-                  <div className="docs-sidebar__links" role="list">
+                  <ul className="docs-sidebar__links" role="list">
                     {g.items.map(function (item) {
                       var isActive = activeSection === item.id;
                       return (
-                        <button
-                          key={item.id}
-                          role="listitem"
-                          onClick={function () {
-                            scrollTo(item.id);
-                          }}
-                          className={
-                            "docs-sidebar__link" +
-                            (isActive ? " docs-sidebar__link--active" : "")
-                          }
-                          aria-current={isActive ? "true" : undefined}
-                        >
-                          {item.label}
-                        </button>
+                        <li key={item.id} role="listitem">
+                          <button
+                            onClick={function () {
+                              scrollTo(item.id);
+                            }}
+                            className={
+                              "docs-sidebar__link" +
+                              (isActive ? " docs-sidebar__link--active" : "")
+                            }
+                            aria-current={isActive ? "true" : undefined}
+                          >
+                            {item.label}
+                          </button>
+                        </li>
                       );
                     })}
-                  </div>
+                  </ul>
                 </div>
               );
             })}
