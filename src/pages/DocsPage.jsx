@@ -189,14 +189,14 @@ export default function DocsPage() {
         var offset;
 
         if (isMobile) {
-          // On mobile, sidebar is sticky above content — measure its collapsed height
+          // On mobile, sidebar is sticky above content â measure its collapsed height
           var sidebarEl = document.querySelector(".docs-sidebar");
           var sidebarH = sidebarEl
             ? sidebarEl.getBoundingClientRect().height
             : 48;
           offset = navH + sidebarH + 12;
         } else {
-          // On desktop, sidebar is alongside — only nav offset needed
+          // On desktop, sidebar is alongside â only nav offset needed
           offset = navH + 24;
         }
 
@@ -268,7 +268,6 @@ export default function DocsPage() {
                       return (
                         <button
                           key={item.id}
-                          role="listitem"
                           onClick={function () {
                             scrollTo(item.id);
                           }}
@@ -307,7 +306,7 @@ export default function DocsPage() {
             </div>
           </FadeIn>
 
-          {/* ═══ GUIDES ═══ */}
+          {/* âââ GUIDES âââ */}
 
           <Sec id="getting-started" icon={Book} title="Getting started">
             <p>
@@ -315,21 +314,21 @@ export default function DocsPage() {
               axe-core in a real browser. Here are the main ways to use it:
             </p>
             <p>
-              <strong>1. Dashboard</strong> — add sites, run scans, view issues,
+              <strong>1. Dashboard</strong> â add sites, run scans, view issues,
               and generate reports at{" "}
               <Link to="/dashboard">xsbl.io/dashboard</Link>.
             </p>
             <p>
-              <strong>2. Scheduled scans</strong> — set daily or weekly scans
+              <strong>2. Scheduled scans</strong> â set daily or weekly scans
               per site and get alerted when new issues appear after a deploy.
             </p>
             <p>
-              <strong>3. GitHub integration</strong> — connect your repo, select
+              <strong>3. GitHub integration</strong> â connect your repo, select
               issues, and xsbl creates a pull request with AI-generated code
               fixes.
             </p>
             <p>
-              <strong>4. API & CI/CD</strong> — trigger scans from your
+              <strong>4. API & CI/CD</strong> â trigger scans from your
               deployment pipeline using API keys.
             </p>
             <Note>
@@ -339,7 +338,7 @@ export default function DocsPage() {
             </Note>
             <p>
               <strong>Verify your site</strong> to unlock scheduled scans and
-              compliance reports. Go to your site → the verification banner at
+              compliance reports. Go to your site â the verification banner at
               the top. Choose DNS (add a TXT record), Meta tag (add a meta tag
               to your HTML), or File upload (host a verification file). Click
               "Verify" once done.
@@ -352,7 +351,7 @@ export default function DocsPage() {
               Starter, Pro, and Agency plans.
             </p>
             <p>
-              Go to any site → Settings tab → Scan Schedule. Choose daily or
+              Go to any site â Settings tab â Scan Schedule. Choose daily or
               weekly and select the hour (UTC) you want scans to run.
             </p>
             <Note>
@@ -377,7 +376,7 @@ export default function DocsPage() {
               accessibility fixes.
             </p>
             <p>
-              <strong>Step 1:</strong> Go to your site → Settings → GitHub
+              <strong>Step 1:</strong> Go to your site â Settings â GitHub
               Integration.
             </p>
             <p>
@@ -397,11 +396,11 @@ export default function DocsPage() {
               >
                 github.com/settings/tokens
               </a>{" "}
-              — select the "repo" scope.
+              â select the "repo" scope.
             </Note>
             <p>
-              <strong>Single fix:</strong> Open any issue → click "Create fix
-              PR" → xsbl reads your source code, generates a fix with AI, and
+              <strong>Single fix:</strong> Open any issue â click "Create fix
+              PR" â xsbl reads your source code, generates a fix with AI, and
               opens a PR.
             </p>
             <p>
@@ -421,7 +420,7 @@ export default function DocsPage() {
           <Sec id="cicd" icon={Terminal} title="CI/CD (GitHub Actions)">
             <p>Run accessibility scans automatically after every deploy.</p>
             <p>
-              <strong>Step 1:</strong> Create an API key in Settings → API Keys
+              <strong>Step 1:</strong> Create an API key in Settings â API Keys
               (Pro or Agency required).
             </p>
             <p>
@@ -429,11 +428,11 @@ export default function DocsPage() {
             </p>
             <div className="docs-param-list">
               <div>
-                <span className="docs-param-list__key">XSBL_API_KEY</span> —
+                <span className="docs-param-list__key">XSBL_API_KEY</span> â
                 your API key
               </div>
               <div>
-                <span className="docs-param-list__key">XSBL_SITE_ID</span> —
+                <span className="docs-param-list__key">XSBL_SITE_ID</span> â
                 your site UUID (from the URL in the dashboard)
               </div>
             </div>
@@ -480,8 +479,8 @@ jobs:
           <Sec id="slack-email" icon={Bell} title="Slack & email alerts">
             <p>Get notified after every scan completes.</p>
             <p>
-              <strong>Slack:</strong> Go to Settings → Alert Integrations →
-              paste your Slack webhook URL → click Test. You'll get a rich
+              <strong>Slack:</strong> Go to Settings â Alert Integrations â
+              paste your Slack webhook URL â click Test. You'll get a rich
               message with score, issues, and a dashboard link.
             </p>
             <Note>
@@ -495,7 +494,7 @@ jobs:
               </a>
             </Note>
             <p>
-              <strong>Email:</strong> Add email addresses in Settings → Alert
+              <strong>Email:</strong> Add email addresses in Settings â Alert
               Integrations, or leave blank to use team members' addresses based
               on their notification preferences.
             </p>
@@ -503,19 +502,19 @@ jobs:
 
           <Sec id="team-management" icon={Users} title="Team management">
             <p>
-              Invite team members from Settings → Team. Enter their email and
+              Invite team members from Settings â Team. Enter their email and
               choose a role:
             </p>
             <p>
-              <strong>Owner</strong> — full access including billing and account
+              <strong>Owner</strong> â full access including billing and account
               deletion. One per workspace.
             </p>
             <p>
-              <strong>Admin</strong> — can manage sites, settings, and team
+              <strong>Admin</strong> â can manage sites, settings, and team
               members. Cannot change billing or delete the account.
             </p>
             <p>
-              <strong>Member</strong> — can run scans, view issues, and create
+              <strong>Member</strong> â can run scans, view issues, and create
               fix PRs. Cannot change settings or manage the team.
             </p>
             <Note>
@@ -531,7 +530,7 @@ jobs:
               conditions. Available on Pro and Agency plans.
             </p>
             <p>
-              Go to any site → Simulator tab → select a condition. The simulator
+              Go to any site â Simulator tab â select a condition. The simulator
               takes a real screenshot of your site and applies scientifically
               accurate filters for:
             </p>
@@ -549,7 +548,7 @@ jobs:
           <Sec id="status-page" icon={Globe} title="Public status page">
             <p>
               Enable a public accessibility status page for your organization.
-              Go to Settings → General → toggle "Public status page."
+              Go to Settings â General â toggle "Public status page."
             </p>
             <p>
               Your status page lives at{" "}
@@ -563,7 +562,7 @@ jobs:
             </p>
           </Sec>
 
-          {/* ═══ AGENCY ═══ */}
+          {/* âââ AGENCY âââ */}
 
           <Sec
             id="client-dashboards"
@@ -575,12 +574,12 @@ jobs:
               full dashboard. Agency plan only.
             </p>
             <p>
-              <strong>Invite a client:</strong> Go to Settings → Integrations →
-              Client Access → enter their email and select which sites they can
+              <strong>Invite a client:</strong> Go to Settings â Integrations â
+              Client Access â enter their email and select which sites they can
               see. They receive an invite link with a unique access token.
             </p>
             <p>
-              Clients see their assigned sites, scores, issues, and reports —
+              Clients see their assigned sites, scores, issues, and reports â
               but cannot trigger scans, change settings, or see other clients'
               data.
             </p>
@@ -600,13 +599,13 @@ jobs:
               reports. Agency plan only.
             </p>
             <p>
-              Go to Settings → Integrations → Scheduled Reports. Enable
+              Go to Settings â Integrations â Scheduled Reports. Enable
               white-label, enter your company name, add recipient emails, and
               set the delivery schedule (weekly or monthly).
             </p>
             <p>
               Reports include the overall score, per-page breakdowns, top issues
-              with severity and WCAG criteria, and remediation guidance — all
+              with severity and WCAG criteria, and remediation guidance â all
               under your brand.
             </p>
           </Sec>
@@ -617,17 +616,17 @@ jobs:
             title="Custom scan profiles (Agency)"
           >
             <p>Customize what gets scanned per site. Agency plan only.</p>
-            <p>Go to any site → Settings → Scan Profile. You can:</p>
+            <p>Go to any site â Settings â Scan Profile. You can:</p>
             <p>
-              <strong>Exclude rules</strong> — skip specific axe-core rules that
+              <strong>Exclude rules</strong> â skip specific axe-core rules that
               aren't relevant (e.g. rules for content you don't control).
             </p>
             <p>
-              <strong>Exclude selectors</strong> — skip specific page elements
+              <strong>Exclude selectors</strong> â skip specific page elements
               like third-party widgets, chat bubbles, or ad containers.
             </p>
             <p>
-              <strong>Toggle best practices</strong> — include or exclude
+              <strong>Toggle best practices</strong> â include or exclude
               best-practice checks that go beyond WCAG requirements.
             </p>
             <Note>
@@ -646,27 +645,27 @@ jobs:
               HIPAA audits. Agency plan only.
             </p>
             <p>
-              Go to Dashboard → Evidence Export. Select a framework, date range,
+              Go to Dashboard â Evidence Export. Select a framework, date range,
               and which sections to include:
             </p>
             <p>
-              <strong>Vulnerability management</strong> — open/fixed issues,
+              <strong>Vulnerability management</strong> â open/fixed issues,
               severity breakdown, remediation timelines.
             </p>
             <p>
-              <strong>Access control</strong> — team members, roles, access
+              <strong>Access control</strong> â team members, roles, access
               change history.
             </p>
             <p>
-              <strong>Change management</strong> — pull requests created, files
+              <strong>Change management</strong> â pull requests created, files
               changed, approval status.
             </p>
             <p>
-              <strong>Monitoring</strong> — scan history, scheduled scan
+              <strong>Monitoring</strong> â scan history, scheduled scan
               configuration, scan completion rates.
             </p>
             <p>
-              <strong>Asset inventory</strong> — all monitored sites with
+              <strong>Asset inventory</strong> â all monitored sites with
               scores, scan schedules, and GitHub connections.
             </p>
             <p>
@@ -675,7 +674,7 @@ jobs:
             </p>
           </Sec>
 
-          {/* ═══ API REFERENCE ═══ */}
+          {/* âââ API REFERENCE âââ */}
 
           <Sec id="api-keys" icon={Key} title="API keys">
             <p>
@@ -683,7 +682,7 @@ jobs:
               Pro and Agency.
             </p>
             <p>
-              Create keys in Settings → API Keys. Each key is shown once — copy
+              Create keys in Settings â API Keys. Each key is shown once â copy
               it immediately.
             </p>
             <CodeBlock
@@ -845,37 +844,37 @@ jobs:
             />
             <div className="docs-param-list">
               <div>
-                <span className="docs-param-list__key">domain</span> — required
+                <span className="docs-param-list__key">domain</span> â required
               </div>
               <div>
-                <span className="docs-param-list__key">style</span> —{" "}
+                <span className="docs-param-list__key">style</span> â{" "}
                 <Mono>flat</Mono> (default), <Mono>plastic</Mono>,{" "}
                 <Mono>minimal</Mono>
               </div>
               <div>
-                <span className="docs-param-list__key">label</span> — left-side
+                <span className="docs-param-list__key">label</span> â left-side
                 text (default: "accessibility")
               </div>
             </div>
           </Sec>
 
-          {/* ═══ REFERENCE ═══ */}
+          {/* âââ REFERENCE âââ */}
 
           <Sec id="rate-limits" icon={Shield} title="Rate limits">
             <div className="docs-param-list">
               <div>
-                Free — 3 scans/month, 1 site, 10 AI suggestions, 1 GitHub PR
+                Free â 3 scans/month, 1 site, 10 AI suggestions, 1 GitHub PR
               </div>
               <div>
-                Starter ($19/mo) — 10 scans/month, 1 site, 50 AI suggestions, 5
+                Starter ($19/mo) â 10 scans/month, 1 site, 50 AI suggestions, 5
                 GitHub PRs
               </div>
               <div>
-                Pro ($69/mo) — 100 scans/month, unlimited sites, 200 AI
+                Pro ($69/mo) â 100 scans/month, unlimited sites, 200 AI
                 suggestions, 25 GitHub PRs, API keys, CI/CD
               </div>
               <div>
-                Agency ($249/mo) — 999 scans/month, unlimited sites, unlimited
+                Agency ($249/mo) â 999 scans/month, unlimited sites, unlimited
                 AI suggestions, unlimited GitHub PRs, white-label reports,
                 client dashboards
               </div>
@@ -901,7 +900,7 @@ jobs:
   }).subscribe();`}
             />
             <p>
-              Slack and email alerts fire automatically after every scan —
+              Slack and email alerts fire automatically after every scan â
               configure in Settings.
             </p>
           </Sec>
